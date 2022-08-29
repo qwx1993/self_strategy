@@ -347,7 +347,7 @@ class Logic:
 			if datetime_obj.hour == 15 and datetime_obj.minute == 0:
 				return True
 		return False
-	
+
 	"""
 	判断是否为实盘时间，如果是就重置
 	"""
