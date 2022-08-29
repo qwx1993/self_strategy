@@ -3,6 +3,7 @@ from types import SimpleNamespace
 import os
 import copy
 from datetime import datetime
+from datetime import timedelta
 from self_strategy.constants import Constants
 
 class Logic:
@@ -326,6 +327,12 @@ class Logic:
 			if prices[i].low < merged.low:
 				merged.low = prices[i].low
 		return merged
+
+	"""
+	根据目标时间获取指定前后的时间
+	"""
+	def get_date_str(obj_data_str, day):
+		return (obj_data_str+timedelta(days=day)).strftime("%Y%m%d")
 
 	"""
 	判断当前时间是否为当天收盘前的最后一分钟，如果是，需要主动平掉所有仓，因为目前的策略只做日内交易

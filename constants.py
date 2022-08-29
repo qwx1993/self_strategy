@@ -1,4 +1,9 @@
 class Constants:
+    # 米筐用户名
+    RQDATA_USERNAME = 'license'
+    # 米筐账户密码token
+    RQDATA_PASSWORD = 'ioy7idT7M-0_UjoQaFGKuJOQxdSS7qWLTWW6IRcutIvZuHWxgfoJ7lxQblmhG2G31Vnrnk6QwjjIB3W36L3OqtEJqaPviE98-c-slvEwX0Cr-4pDwPee1omGjHIy29jkJmzZ6eQNmLO9CLBDLn8JO6dbMoUEmWnVz98U9MTuu18=C6KPKOUYUmbNtg_4ci5iIQmOi_O0vn8hd0v-VlJXUJVbSiUlV8tk_MmCRT8pRWvAVtS6CtofFrH4DuLZQAwgbxQGhnFCXxdrg3iTquW-zvODJjUXek63KGnYQgYetB_jUGfoN_uNoPvEFTzLiphnSxzSaYqW-t4trJb22hU5ZNA='
+    
     OSCILLATING_INTERVAL_POINT_NUMBER = 3  # 振荡区间高点数B1
     MULTIPLE_OF_BREAKTHROUGH = 5 # D突破振荡区间后的价格D1大于振荡区间5倍
 
