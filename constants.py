@@ -99,6 +99,11 @@ class Constants:
     INDEX_COUNTER_TREND_LONG = 20  # 逆趋势开多
     INDEX_COUNTER_TREND_CLOSE_A_POSITION = 21  # 逆趋势平仓
 
+
+    HISTORY_STATUS_OF_NONE = 0 # 初始状态
+    HISTORY_STATUS_OF_TREND = 1 # 趋势中状态
+
+
     STR_ACTIONS_AND_STATES = {
         OPEN_A_POSITION_ONE_LONG: {
             "cn": "情况一开多",

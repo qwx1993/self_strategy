@@ -1,4 +1,6 @@
 import sys
+from telnetlib import Telnet
+from tkinter.tix import Tree
 from types import SimpleNamespace
 import os
 import copy
@@ -219,6 +221,15 @@ class Logic:
 			return True
 		else:
 			return False
+	
+	"""
+	判断两点是否方向一致
+	"""
+	def is_same_direction_by_two_point(last_cd, cd):
+		if last_cd.close >= last_cd.open and cd.close >= cd.open:
+			return True
+		else:
+			return False
 
 	"""
 	止盈判断
@@ -260,9 +271,20 @@ class Logic:
 	"""
 	def max_down_for_long(cd):
 		return max(abs(cd.start - cd.low), abs(cd.high -cd.close))
-	
+	"""
+	获取最大的上涨幅度
+	"""
 	def max_up_for_short(cd):
 		return max(abs(cd.start - cd.high), abs(cd.low -cd.close))
+
+	"""
+	根据方向获取最大的上涨长度
+	"""
+	def get_max_len_by_direction(cd):
+		if cd.close > cd.open:
+			return Logic.max_up_for_short(cd)
+		else:
+			return Logic.max_down_for_long(cd)
 
 	"""
 	将file文件的读取位置倒回去n行
