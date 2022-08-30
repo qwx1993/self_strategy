@@ -256,6 +256,15 @@ class Logic:
 		return abs(cd.high - cd.low)
 
 	"""
+	获取最大的下降幅度
+	"""
+	def max_down_for_long(cd):
+		return max(abs(cd.start - cd.low), abs(cd.high -cd.close))
+	
+	def max_up_for_short(cd):
+		return max(abs(cd.start - cd.high), abs(cd.low -cd.close))
+
+	"""
 	将file文件的读取位置倒回去n行
 	"""
 	def revert_n_lines(n, file):
