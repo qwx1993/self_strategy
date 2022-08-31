@@ -21,8 +21,10 @@ class Constants:
     DEFAULT_TIME_LIMIT_AFTER_FALL_SPEEDING = 10  # 此处为默认值，加速下跌完成后的时间限制
     DEFAULT_TIME_TO_IMMEDIATE_CLOSE_SHORT = 2
 
-    BREAKTHROUGH_DIRECTION_UP = 1 # 向上
-    BREAKTHROUGH_DIRECTION_DOWN = -1 # 向下
+    DIRECTION_UP = 1 # 向上
+    DIRECTION_NONE = 0 # 无方向
+    DIRECTION_DOWN = -1 # 向下
+
     # 新的状态集
     STATUS_NONE = -1
     NON_ACCELERATING_OSCILLATION = 1  # 非加速振荡

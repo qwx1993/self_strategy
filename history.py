@@ -9,23 +9,19 @@ from tkinter.messagebox import NO
 from self_strategy.constants import Constants
 from self_strategy.logic import Logic
 
-class Analysis:
+class History:
     reference_point_d = None  # 振荡的参考点D
-    b1_to_b2_interval = None  # 振荡区间的最大值跟最小值的距离
-    b_list = []  # b1的close值
-    breakthrough_direction = None  # 突破的方向 -1 开空 1 开多
+    direction = None  # 突破的方向 -1 开空 1 开多
     non_accelerating_oscillation_sub_status = None  # 非加速振荡子状态
 
     # 情况一的参数
     stop_loss_ln_price = None  # 情况一的止损点价位，出现新的dn才重置
     s1_status = None  # 情况一的状态
     ln_price = None  # 用作情况二的止损价格, 止损点为ln - 1
-    b1_price = None  # b1点的价位
-
-    lowest_point_l = None  # l的最地点
 
     max_l_to_d_interval = None  # 最大上涨的间隔,即R
     max_r = None  # 表示从dn-ln的最大值，d1点开始
+    rrn = None  # 逆趋势止盈使用的参数  todo 暂时不使用
 
     current_status = Constants.STATUS_NONE  # 当前状态，目前就无状态跟非加速振荡
 
@@ -44,18 +40,13 @@ class Analysis:
     s2_need_day_close = False
     extremum_d_price = None  # 极致d的price
     extremum_d = None  # 极值点D
-    situation2_max_l_to_h = None  # 用作情况二的上升幅度 [对应文档中的rrn]
     last_oscillation_number = 0  # 前面振荡的次数
 
     s2_status = None  # 情况二的状态
-
-    rrn = None  # 逆趋势止盈使用的参数  todo 暂时不使用
-
     s1_action_record = None  # 交易动作记录
     counter_trend_action_record = None
-    test_count = 1
 
-    history_status = None # 历史状态
+    history_status = Constants.HISTORY_STATUS_OF_NONE # 历史状态
     last_cd = None # 上一点
 
 
@@ -110,7 +101,6 @@ class Analysis:
 
     def reset_reference_point_a(self):
         self.oscillating_interval_list = []
-        self.b1_to_b2_interval = None
 
     """
     设置当前是否为逆趋势中， 包括两种状态，逆趋势状态、非逆趋势状态
@@ -148,7 +138,7 @@ class Analysis:
     def set_stop_loss_ln(self, cd):
         if self.stop_loss_ln_price is None:
             self.stop_loss_ln_price = cd.close
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             if cd.low > self.stop_loss_ln_price:
                 self.stop_loss_ln_price = cd.low
         else:
@@ -175,20 +165,16 @@ class Analysis:
     """
     rrn 表示的是寻找Dn过程中，出现比Dn小的Hn过程的最大值
     """
-    def set_rrn(self, cd):
-        if self.is_same_direction(cd):
-            current_rrn = Logic.max_amplitude_length(cd)
-        else:
-            current_rrn = Logic.amplitude_length_for_long(cd, self.breakthrough_direction)
-        if (self.rrn is None) or current_rrn > self.rrn:
-            self.rrn = current_rrn
+    def set_rrn(self, current_rrn):
+       if self.rrn is None or current_rrn > self.rrn:
+        self.rrn = current_rrn 
 
     """
     设置情况二开仓需要的ln_price
     """
 
     def set_ln_price(self, cd):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             if (self.ln_price is None) or cd.low < self.ln_price:
                 self.ln_price = cd.low
         else:
@@ -201,7 +187,7 @@ class Analysis:
 
     def set_extremum_d(self, dn):
         self.extremum_d = dn
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             if (self.extremum_d_price is None) or dn.high > self.extremum_d_price:
                 self.extremum_d_price = dn.high
         else:
@@ -248,8 +234,12 @@ class Analysis:
     当前状态为STATUS_NONE时的逻辑
     """
 
-    def histoty_status_none(self, cd, line):
-        self.set_break_through_direction()
+    def histoty_status_none(self, cd):
+        # 初始化时为十字星不处理
+        if Logic.is_crossing_starlike(cd):
+            return
+
+        self.set_break_through_direction(cd)
         # 设置最大的上涨幅度
         self.max_l_to_d_interval = None
         self.set_max_l_to_d_interval_data(Logic.max_amplitude_length(cd))
@@ -270,24 +260,47 @@ class Analysis:
     初始化设置max_r
     """
     def init_max_r(self, cd):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
-            self.max_r = max(abs(cd.start - cd.low), abs(cd.high - cd.close))     
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
+            self.max_r = max(abs(cd.open - cd.low), abs(cd.high - cd.close))     
         else:
-            self.max_r = max(abs(cd.high - cd.start), abs(cd.close - cd.low))
+            self.max_r = max(abs(cd.high - cd.open), abs(cd.close - cd.low))
 
+    """
+    分析统计R、r、rrn
+    """
+    def statistic(self, cd):
+        print(f"{cd.datetime}")
+        # 十字星情况，将方向设置为跟上一分钟一致
+        if Logic.is_crossing_starlike(cd):
+            cd.direction == self.last_cd.direction
+
+        # 统计R、统计rrn
+        self.history_statistic_max_l_to_d(cd)
+
+        # 统计r
+        self.history_statistic_max_r(cd)
+
+        # 逆趋势判断
+        if Logic.is_counter_trend1(self.max_l_to_d_interval, self.max_r):
+            # print(f"逆趋势 => R: {self.max_l_to_d_interval} r: {self.max_r}")
+            self.restart()
+            # print(f"出现了逆趋势 => {cd}")
+  
+
+        # todo 逆趋势判断
     
     """
     趋势分析
     """
-    def history_statistic_max_l_to_d(self, cd, line):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+    def history_statistic_max_l_to_d(self, cd):
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             # 方向相同统计R
             if self.is_same_direction(cd):
                 if Logic.is_same_direction_by_two_point(self.last_cd, cd): 
-                    if cd.open == cd.low and self.last_cd.high == self.last_cd.close and cd.open >= self.last_cd.close:
+                    if self.last_cd.high == self.last_cd.close and cd.open == cd.low and cd.open >= self.last_cd.close:
                         max_l_to_d = abs(cd.high - self.last_cd.low)
                     else:  
-                        max_l_to_d = Logic.max_amplitude_length(cd)   
+                        max_l_to_d = Logic.max_amplitude_length(cd) 
                 else:
                     if self.last_cd.close > self.last_cd.low and cd.open == cd.low and cd.open >= self.last_cd.close:
                         max_l_to_d = abs(cd.high - self.last_cd.low)
@@ -327,14 +340,21 @@ class Analysis:
                     if self.last_cd.close == self.last_cd.low and cd.open > cd.low and self.last_cd.close >= cd.open:
                         max_l_to_d = max(abs(self.last_cd.high - cd.low), abs(cd.high - cd.close))
                     else:
-                        max_l_to_d = max(abs(cd.open - cd.low), abs(cd.high - cd.close)) 
+                        max_l_to_d = max(abs(cd.open - cd.low), abs(cd.high - cd.close))
+
+        # 判断是否出现极值d点
+        if self.exceed_extremum_d(cd):
+            # 设置点D
+            self.set_extremum_d(cd)   
+        else:
+            self.set_rrn(max_l_to_d)
         self.set_max_l_to_d_interval_data(max_l_to_d)
 
     """
     分析统计最大的max_r
     """
-    def history_statistic_max_r(self, cd):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+    def history_statistic_max_r(self, cd):                
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             if self.is_same_direction(cd):
                 if Logic.is_same_direction_by_two_point(self.last_cd, cd):
                     if  self.last_cd.close < self.last_cd.high and cd.open > cd.low and self.last_cd.close >= cd.open:
@@ -527,9 +547,9 @@ class Analysis:
 
     def set_break_through_direction(self, cd):
         if cd.close > cd.open:
-            self.breakthrough_direction = Constants.BREAKTHROUGH_DIRECTION_UP
+            self.breakthrough_direction = Constants.DIRECTION_UP
         else:
-            self.breakthrough_direction = Constants.BREAKTHROUGH_DIRECTION_DOWN
+            self.breakthrough_direction = Constants.DIRECTION_DOWN
 
     """
     设置最小的ln
@@ -539,7 +559,7 @@ class Analysis:
         if self.lowest_point_l is None:
             self.lowest_point_l = cd
         else:
-            if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+            if self.breakthrough_direction == Constants.DIRECTION_UP:
                 if cd.low < self.lowest_point_l.low:
                     self.lowest_point_l = cd
             else:
@@ -715,7 +735,7 @@ class Analysis:
     """
 
     def counter_trend_open_a_position(self, cd, temp_file, line):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_DOWN:
+        if self.breakthrough_direction == Constants.DIRECTION_DOWN:
             open_a_position_price = cd.high - self.max_l_to_d_interval
         else:
             open_a_position_price = cd.low + self.max_l_to_d_interval
@@ -740,7 +760,7 @@ class Analysis:
     """
 
     def has_opportunity(self, cd):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             if cd.low > self.b1_price:
                 return True
             else:
@@ -869,7 +889,7 @@ class Analysis:
 
     def get_counter_trend_close_a_position_price(self, cd):
         d_close_price = self.reference_point_d.close
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             close_a_position_price = cd.high - self.b1_to_b2_interval
             close_a_position_price = max(d_close_price, close_a_position_price)
             if cd.high < d_close_price:
@@ -903,7 +923,7 @@ class Analysis:
     """
 
     def get_situation1_open_a_position_price(self, cd):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             return max(self.reference_point_d.high, cd.low)
         else:
             return min(self.reference_point_d.low, cd.high)
@@ -936,12 +956,12 @@ class Analysis:
 
     def get_annotation_index_for_situation1_open_a_position(self):
         if self.in_a_counter_trend():
-            if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+            if self.breakthrough_direction == Constants.DIRECTION_UP:
                 index = Constants.REVERSE_OPEN_A_POSITION_ONE_LONG
             else:
                 index = Constants.REVERSE_OPEN_A_POSITION_ONE_SHORT
         else:
-            if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+            if self.breakthrough_direction == Constants.DIRECTION_UP:
                 index = Constants.OPEN_A_POSITION_ONE_LONG
             else:
                 index = Constants.OPEN_A_POSITION_ONE_SHORT
@@ -952,7 +972,7 @@ class Analysis:
     """
 
     def get_annotation_index_for_counter_trend(self):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             index = Constants.INDEX_COUNTER_TREND_LONG
         else:
             index = Constants.INDEX_COUNTER_TREND_SHORT
@@ -975,7 +995,7 @@ class Analysis:
     """
 
     def set_b1_price_by_lowest_point_l(self):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             self.b1_price = self.lowest_point_l.low
         else:
             self.b1_price = self.lowest_point_l.high
@@ -986,7 +1006,7 @@ class Analysis:
     """
 
     def situation2_init(self, cd):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             self.stop_loss_ln_price = cd.low
         else:
             self.stop_loss_ln_price = cd.high
@@ -1019,12 +1039,12 @@ class Analysis:
 
     def get_annotation_index_for_situation2_open_a_position(self):
         if self.in_a_counter_trend():
-            if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+            if self.breakthrough_direction == Constants.DIRECTION_UP:
                 index = Constants.REVERSE_OPEN_A_POSITION_TWO_LONG
             else:
                 index = Constants.REVERSE_OPEN_A_POSITION_TWO_SHORT
         else:
-            if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+            if self.breakthrough_direction == Constants.DIRECTION_UP:
                 index = Constants.OPEN_A_POSITION_TWO_LONG
             else:
                 index = Constants.OPEN_A_POSITION_TWO_SHORT
@@ -1035,7 +1055,7 @@ class Analysis:
     """
 
     def get_stop_surplus_price(self, cd):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             return cd.high - self.max_r
         else:
             return cd.low + self.max_r
@@ -1045,7 +1065,7 @@ class Analysis:
     """
 
     def get_situation2_stop_loss_price(self, cd):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             return min(self.stop_loss_ln_price, cd.high)
         else:
             return max(self.stop_loss_ln_price, cd.low)
@@ -1055,7 +1075,7 @@ class Analysis:
     """
 
     def situation2_open_a_position_price(self, cd):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             return cd.low + self.situation2_max_l_to_h
         else:
             return cd.high - self.situation2_max_l_to_h
@@ -1067,7 +1087,7 @@ class Analysis:
     """
 
     def action_open_long_or_short(self, cd, price, actions_index):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             if self.in_a_counter_trend():
                 self.add_action(cd, Constants.ACTION_REVERSE_OPEN_LONG, price, actions_index)
             else:
@@ -1085,7 +1105,7 @@ class Analysis:
     """
 
     def action_close_long_or_short(self, cd, price, actions_index):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             if self.in_a_counter_trend():
                 self.add_action(cd, Constants.ACTION_REVERSE_CLOSE_LONG, price, actions_index)
             else:
@@ -1112,13 +1132,13 @@ class Analysis:
     """
 
     def exceed_extremum_d(self, cd):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
-            if cd.high > self.extremum_d_price:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
+            if cd.high >= self.extremum_d_price:
                 return True
             else:
                 return False
         else:
-            if cd.low < self.extremum_d_price:
+            if cd.low <= self.extremum_d_price:
                 return True
             else:
                 return False
@@ -1165,7 +1185,7 @@ class Analysis:
     """
 
     def counter_trend_reset_r(self, cd):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             self.max_r = abs(cd.high - cd.close)
         else:
             self.max_r = abs(cd.low - cd.close)
@@ -1175,46 +1195,26 @@ class Analysis:
     """
 
     def reverse_direct(self):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
-            self.breakthrough_direction = Constants.BREAKTHROUGH_DIRECTION_DOWN
-        elif self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_DOWN:
-            self.breakthrough_direction = Constants.BREAKTHROUGH_DIRECTION_UP
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
+            self.breakthrough_direction = Constants.DIRECTION_DOWN
+        elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
+            self.breakthrough_direction = Constants.DIRECTION_UP
 
     """
     没有试错机会重新开始
     """
 
     def restart(self):
-        self.oscillating_interval_list = []
         self.reference_point_d = None  # 振荡的参考点D
         self.extremum_d_price = None  # 设置极值d_price为None
-        self.b1_to_b2_interval = None
-        self.b1_price = None  # b1的close值
         self.breakthrough_direction = None  # 突破的方向 -1 向下 1 向上
-
-        self.non_accelerating_oscillation_sub_status = None
-
-        self.stop_loss_ln_price = None  # 情况一的止损点价位
-
-        self.lowest_point_l = None  # l的最地点
-
         self.max_l_to_d_interval = None  # 最大上涨的间隔
-
         self.current_status = Constants.STATUS_NONE  # 当前状态
-
         self.counter_trend_status = Constants.STATUS_COUNTER_TREND_NO  # 逆趋势状态
         self.need_check_oscillation_status = Constants.NEED_CHECK_OSCILLATION_STATUS_NO  # 振荡检测
-        self.ln_price = None  # 情况二需要的止损价格
-        self.situation2_max_l_to_h = None  # 情况二需要的最大上涨幅度
-        self.oscillating_interval_list = []
         self.max_r = None
-
-        # 设置状态为None
-        self.s1_status = None
-        self.s2_status = None
-
-        # 设置rrn为None
-        self.rrn = None
+        self.rrn = None 
+        self.history_status = Constants.HISTORY_STATUS_OF_NONE # 历史分析状态
 
     """
     试错重新设置值
@@ -1273,47 +1273,17 @@ class Analysis:
     """
  
     def is_same_direction(self, cd):
-        if cd.close > cd.open and self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if cd.direction == Constants.DIRECTION_UP and self.breakthrough_direction == Constants.DIRECTION_UP:
             return True
-        elif cd.close < cd.open and self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_DOWN:
+        elif cd.direction == Constants.DIRECTION_DOWN and self.breakthrough_direction == Constants.DIRECTION_DOWN:
             return True
         else:
             return False
 
     """
-    一行行地读取文件数据并且分析
-    """
-
-    def analysis(self, bar, temp_file):
-        line = Logic.format_bar_data_to_line(bar)
-        self.has_current_line_written = False
-        try:
-            cd = Logic.bar_to_data_object(bar)  # 当前时间单位的相关数据
-        except:
-            # print("skipping line: " + line) # 略过csv的header
-            print(f"读取数据出错了...")
-            return
-        # 判断是否为一天的起始点。实盘开盘时间为21:00:00
-        if Logic.is_firm_offer_start_minute(cd.datetime):
-            self.restart()
-            
-        # 如果是当天收盘前的最后一分钟，主动平仓
-        if Logic.is_last_minute(cd.datetime):
-            self.last_minute_of_the_day(cd, temp_file, line)
-        elif self.current_status == Constants.STATUS_NONE:  # 寻找振荡
-            self.status_none(cd, temp_file, line)
-        elif self.current_status == Constants.NON_ACCELERATING_OSCILLATION:  # 非加速振荡
-            self.non_accelerating_oscillation(cd, temp_file, line)
-        # 将没有任何状态/动作的数据行也写入到临时文件中
-        if not self.has_current_line_written:
-            self.write_to_temp(temp_file, line, Constants.INDEX_OBSERVE)
-
-        self.test_count += 1
-
-    """
     历史行情数据分析
     """
-    def history_analysis(self, vt_symbol, frequent):
+    def analysis(self, vt_symbol, frequent):
         try:
            data_file = open('C:/Users/Administrator/strategies/data/' + f"{vt_symbol}_{frequent}m.csv", 'r')
         except:
@@ -1325,27 +1295,19 @@ class Analysis:
                 break
 
             temp_array = line.split(',')
-            self.has_current_line_written = False
             if len(temp_array) > 0:
                 try:
                     cd = Logic.raw_to_data_object(
                         temp_array, count, line)  # 当前时间单位的相关数据
                 except:
                     continue
-                
                 if self.history_status == Constants.HISTORY_STATUS_OF_NONE: 
-                    self.histoty_status_none(cd, line)
+                    self.histoty_status_none(cd)
                 elif self.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中
-                    self.non_accelerating_oscillation(cd, temp_file, line)
-            # 将没有任何状态/动作的数据行也写入到临时文件中
-            if not self.has_current_line_written:
-                self.write_to_temp(temp_file, line, Constants.INDEX_OBSERVE)
+                    self.statistic(cd, line)
+                
+                self.last_cd = cd
             count += 1
-
         data_file.close()
-        #  情况一 + 情况二 + 逆趋势
-        actions = self.s1_actions + self.s2_actions + self.actions
-        # actions = self.actions
-        Logic.calculate_rate(actions, os.path.basename(self.filename))
         self.actions.clear()
  

@@ -1,6 +1,4 @@
 import sys
-from telnetlib import Telnet
-from tkinter.tix import Tree
 from types import SimpleNamespace
 import os
 import copy
@@ -100,7 +98,7 @@ class Logic:
 	"""
 
 	def situation1(d2, breakthrough_direction, reference_point_d):
-		if breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+		if breakthrough_direction == Constants.DIRECTION_UP:
 			if d2.high > reference_point_d.high:
 				return True
 			else:
@@ -118,7 +116,7 @@ class Logic:
 	"""
 
 	def situation1_stop_loss(cd, stop_loss_ln_price, breakthrough_direction):
-		if breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+		if breakthrough_direction == Constants.DIRECTION_UP:
 			if cd.low < stop_loss_ln_price:
 				return True
 			else:
@@ -135,7 +133,7 @@ class Logic:
 	"""
 
 	def situation2(d2, breakthrough_direction, reference_point_d, b1_price):
-		if breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+		if breakthrough_direction == Constants.DIRECTION_UP:
 			if reference_point_d.high >= d2.high and b1_price < d2.low:
 				return True
 			else:
@@ -150,7 +148,7 @@ class Logic:
 	开空情况下如果b1_price小于d2的最高点为真
 	"""
 	def need_restart(d2, breakthrough_direction, b1_price):
-		if breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+		if breakthrough_direction == Constants.DIRECTION_UP:
 			if b1_price > d2.low:
 				return True
 			else:
@@ -168,7 +166,7 @@ class Logic:
 
 	def situation2_open_a_position(cd, breakthrough_direction, stop_loss_ln_price, max_l_to_h):
 		current_l_to_h = abs(cd.high - cd.low)
-		if breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+		if breakthrough_direction == Constants.DIRECTION_UP:
 			if cd.low > stop_loss_ln_price and current_l_to_h > max_l_to_h:
 				return True
 			else:
@@ -184,7 +182,7 @@ class Logic:
 	"""
 
 	def situation2_stop_loss(cd, breakthrough_direction, ln_price):
-		if breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+		if breakthrough_direction == Constants.DIRECTION_UP:
 			if cd.low < ln_price:
 				return True
 			else:
@@ -210,14 +208,23 @@ class Logic:
 			return False
 
 	"""
+	新的逆趋势判定
+	"""
+	def is_counter_trend1(max_l_to_d, max_r):
+		if max_r >= max_l_to_d:
+			return True
+		else:
+			return False
+
+	"""
 	判断当前方向是否跟突破后的方向一致
 	在开多情况下，如果当前点是上涨就为True
 	在开空情况下，如果当前点是下跌就为True
 	"""
 	def is_same_direction(cd, breakthrough_direction):
-		if cd.close > cd.open and breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+		if cd.close > cd.open and breakthrough_direction == Constants.DIRECTION_UP:
 			return True
-		elif cd.close < cd.open and breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_DOWN:
+		elif cd.close < cd.open and breakthrough_direction == Constants.DIRECTION_DOWN:
 			return True
 		else:
 			return False
@@ -226,7 +233,7 @@ class Logic:
 	判断两点是否方向一致
 	"""
 	def is_same_direction_by_two_point(last_cd, cd):
-		if last_cd.close >= last_cd.open and cd.close >= cd.open:
+		if last_cd.direction == cd.direction:
 			return True
 		else:
 			return False
@@ -248,7 +255,7 @@ class Logic:
 			return False
 
 	def amplitude_length(cd, breakthrough_direction):
-		if breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+		if breakthrough_direction == Constants.DIRECTION_UP:
 			return abs(cd.high - cd.close)
 		else:
 			return abs(cd.low - cd.close)
@@ -257,7 +264,7 @@ class Logic:
 	获取上涨幅度
 	"""
 	def amplitude_length_for_long(cd, breakthrough_direction):
-		if breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+		if breakthrough_direction == Constants.DIRECTION_UP:
 			return abs(cd.low - cd.close)
 		else:
 			return abs(cd.high - cd.close)
@@ -265,6 +272,15 @@ class Logic:
 
 	def max_amplitude_length(cd):
 		return abs(cd.high - cd.low)
+	
+	"""
+	是否为十字星，即open=close
+	"""
+	def is_crossing_starlike(cd):
+		if cd.direction == Constants.DIRECTION_NONE:
+			return True
+		else:
+			return False
 
 	"""
 	获取最大的下降幅度
@@ -409,6 +425,42 @@ class Logic:
 		current.raw_string = raw_string
 
 		return current
+	
+	"""
+	将csv数据文件中的一行数据转变成一个时间单位的价格信息object
+	order_book_id,datetime,open,low,total_turnover,close,high,num_trades,volume
+	000001.XSHE,2022-08-19 09:31:00,12.27,12.23,57819078.0,12.29,12.31,1982.0,4713600.0
+	"""
+	def history_price_to_data_object(temp_array, line_count, raw_string):
+		opening_price = float(temp_array[2])
+		closing_price = float(temp_array[5])
+		high = float(temp_array[6])
+		low = float(temp_array[3])
+
+		current = SimpleNamespace()
+		current.datetime = temp_array[1]
+		current.flunc = round(abs(closing_price - opening_price), 2)
+		current.open = opening_price
+		current.close = closing_price
+		current.high = high
+		current.low = low
+		current.line = line_count
+		current.direction = Logic.get_direction_value(opening_price, closing_price)
+
+		current.raw_string = raw_string
+
+		return current
+	
+	"""
+	获取方向值
+	"""
+	def get_direction_value(opening_price, closing_price):
+		if closing_price > opening_price:
+			return Constants.DIRECTION_UP
+		elif closing_price < opening_price:
+			return Constants.DIRECTION_DOWN
+		else:
+			return Constants.DIRECTION_NONE
 
 	
 	"""
