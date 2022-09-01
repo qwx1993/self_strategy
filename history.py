@@ -8,6 +8,7 @@ from tkinter import E
 from tkinter.messagebox import NO
 from self_strategy.constants import Constants
 from self_strategy.logic import Logic
+from types import SimpleNamespace
 
 class History:
     reference_point_d = None  # 振荡的参考点D
@@ -48,6 +49,7 @@ class History:
 
     history_status = Constants.HISTORY_STATUS_OF_NONE # 历史状态
     last_cd = None # 上一点
+    max_amplitude = None # 最大幅度对象
 
 
     """
@@ -239,7 +241,8 @@ class History:
         if Logic.is_crossing_starlike(cd):
             return
 
-        self.set_break_through_direction(cd)
+        # 设置走势方向，设置最大的幅度对象，包括最大幅度的起始、结束值跟幅度
+        self.init_set_max_amplitude(cd)
         # 设置最大的上涨幅度
         self.max_l_to_d_interval = None
         self.set_max_l_to_d_interval_data(Logic.max_amplitude_length(cd))
@@ -278,14 +281,55 @@ class History:
         # 统计r
         self.history_statistic_max_r(cd)
 
+        # 判断是否最大的幅度
+   
+
         # 逆趋势判断
         if Logic.is_counter_trend1(self.max_l_to_d_interval, self.max_r):
             print(f"逆趋势 => R: {self.max_l_to_d_interval} r: {self.max_r} datetime: {cd.datetime}")
             self.restart()
             # print(f"出现了逆趋势 => {cd}")
-  
+
+
 
         # todo 逆趋势判断
+    
+    # def handle_max_amplitude(self, cd):
+    #     if self.max_l_to_d_interval > self.max_amplitude.length:
+    #         if cd.direction == Constants.DIRECTION_UP:
+    #             self.max_amplitude.end = cd.high
+    #             self.max_amplitude.start = cd.high - self.max_l_to_d_interval
+    #         else:
+    #             self.max_amplitude.end = cd.low
+    #             self.max_amplitude.start = cd.low + self.max_l_to_d_interval
+    #         self.max_amplitude.length = self.max_l_to_d_interval
+    #     elif self.max_r > self.max_amplitude.length:
+    #         if cd.direction == Constants.DIRECTION_UP:
+    #             self.max_amplitude.end = cd.high
+    #             self.max_amplitude.start = cd.high - self.max_r
+    #         else:
+    #             self.max_amplitude.end = cd.low
+    #             self.max_amplitude.start = cd.low + self.max_r
+
+
+        # todo 有bug
+        if self.max_l_to_d_interval > self.max_amplitude.length:
+            if cd.direction == Constants.DIRECTION_UP:
+                self.max_amplitude.end = cd.high
+                self.max_amplitude.start = cd.high - self.max_l_to_d_interval
+            else:
+                self.max_amplitude.end = cd.low
+                self.max_amplitude.start = cd.low + self.max_l_to_d_interval
+            self.max_amplitude.length = self.max_l_to_d_interval
+        elif self.max_r > self.max_amplitude.length:
+            if cd.direction == Constants.DIRECTION_UP:
+                self.max_amplitude.end = cd.high
+                self.max_amplitude.start = cd.high - self.max_r
+            else:
+                self.max_amplitude.end = cd.low
+                self.max_amplitude.start = cd.low + self.max_r
+        
+
     
     """
     趋势分析
@@ -543,16 +587,22 @@ class History:
             self.b1_price = min(self.b_list)
 
     """
-    设置突破方向
-    向上就是开多的过程
-    向下就是开空的过程
+    设置走势方向
+    设置最大的幅度，包括开始价、结束价，幅度值
     """
-
-    def set_break_through_direction(self, cd):
-        if cd.close > cd.open:
-            self.breakthrough_direction = Constants.DIRECTION_UP
+    def init_set_max_amplitude(self, cd):
+        # 当前点的方向决定走势方向
+        self.breakthrough_direction = cd.direction
+        current = SimpleNamespace()
+        current.length = Logic.max_amplitude_length(cd)
+        current.direction = cd.direction
+        if cd.direction == Constants.DIRECTION_UP:
+            current.start = cd.low
+            current.end = cd.high
         else:
-            self.breakthrough_direction = Constants.DIRECTION_DOWN
+            current.start = cd.high
+            current.end = cd.low
+        self.max_amplitude = current
 
     """
     设置最小的ln

@@ -1,0 +1,4 @@
+1、max_amplitude是最大的上涨下跌幅度
+2、max_amplitude出现决定了曲线方向
+3、max_amplitude出现设置起点价跟结束价
+4、当超出max_amplitude的范围就重置，包括max_amplitude、R、r、rrn、d、l等
