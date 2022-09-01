@@ -15,6 +15,7 @@ import os
 from history import History
 from logic import Logic
 from types import SimpleNamespace
+import sys
 
 class TestHistorys(unittest.TestCase):
 
@@ -27,7 +28,6 @@ class TestHistorys(unittest.TestCase):
 			if not line:
 				break
 			temp_array = line.split(',')
-			print(f"temp_array => {temp_array}")
 			if len(temp_array) > 0:
 				# try:
 				cd = Logic.history_price_to_data_object(temp_array, count, line)
@@ -44,19 +44,15 @@ class TestHistorys(unittest.TestCase):
 
 	def test_history_statistic_max_l_to_d(self):
 		ls = self.get_data_from_test_csv('000001.XSHE_1m.csv')
-		print(ls)
 		history = History()
 		for cd in ls:
-			print(f"out cd => {cd.datetime}")
 			if history.history_status == Constants.HISTORY_STATUS_OF_NONE: 
 				history.histoty_status_none(cd)
 			elif history.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中
 				history.statistic(cd)
 			history.last_cd = cd
 
-		print(f"R => {history.max_l_to_d_interval}")
-		print(f"r => {history.max_r}")
-		print(f"rrn => {history.rrn}")		
+			print(f"R:{history.max_l_to_d_interval} r:{history.max_r} rrn:{history.rrn} datetime:{cd.datetime}")
 
 
 

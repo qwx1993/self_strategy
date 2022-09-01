@@ -8,7 +8,7 @@ class Constants:
     MULTIPLE_OF_BREAKTHROUGH = 5 # D突破振荡区间后的价格D1大于振荡区间5倍
 
     # 用来判断上涨加速阶段或下跌加速阶段的时间单位长度，包括加速之前的若干参考波动的时间单位和加速上涨/下跌本身的时间单位长度
-    REFERENCE_AND_SPEEDING_LENGTH = 15
+    REFERENCE_AND_SPEEDING_LENGTH = 50000
     AVG_FLUNC_LENGTH = 10  # 加速上涨/下跌之前参考平均波动的时间单位长度
     AVG_MULTIPLIER = 3  # 参考平均波动的倍数
     # 当天开盘的第一分钟的开盘价已经大于（前一天最后10分钟平均波动的3倍+前一天最后的收盘价），并且开盘的第一分钟是上涨的，则算作3次宽幅上涨

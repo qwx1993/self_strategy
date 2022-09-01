@@ -269,11 +269,9 @@ class History:
     分析统计R、r、rrn
     """
     def statistic(self, cd):
-        print(f"{cd.datetime}")
         # 十字星情况，将方向设置为跟上一分钟一致
         if Logic.is_crossing_starlike(cd):
-            cd.direction == self.last_cd.direction
-
+            cd.direction = self.last_cd.direction
         # 统计R、统计rrn
         self.history_statistic_max_l_to_d(cd)
 
@@ -282,7 +280,7 @@ class History:
 
         # 逆趋势判断
         if Logic.is_counter_trend1(self.max_l_to_d_interval, self.max_r):
-            # print(f"逆趋势 => R: {self.max_l_to_d_interval} r: {self.max_r}")
+            print(f"逆趋势 => R: {self.max_l_to_d_interval} r: {self.max_r} datetime: {cd.datetime}")
             self.restart()
             # print(f"出现了逆趋势 => {cd}")
   
@@ -315,6 +313,7 @@ class History:
                         max_l_to_d = max(abs(cd.high - cd.open), abs(cd.close - cd.low))
                 else:
                     if self.last_cd.high == self.last_cd.close and cd.high > cd.open and cd.open >= self.last_cd.close:
+                        # 这里已经测试
                         max_l_to_d = abs(cd.high - self.last_cd.low)
                     else:
                         max_l_to_d = max(abs(cd.high - cd.open), abs(cd.close - cd.low))
@@ -353,7 +352,7 @@ class History:
     """
     分析统计最大的max_r
     """
-    def history_statistic_max_r(self, cd):                
+    def history_statistic_max_r(self, cd): 
         if self.breakthrough_direction == Constants.DIRECTION_UP:
             if self.is_same_direction(cd):
                 if Logic.is_same_direction_by_two_point(self.last_cd, cd):
@@ -370,6 +369,7 @@ class History:
             else:
                 if Logic.is_same_direction_by_two_point(self.last_cd, cd):
                     if self.last_cd.close == self.last_cd.low and cd.open == cd.high and self.last_cd.close >= cd.open:
+                        # 已经测试
                         max_len = abs(self.last_cd.high - cd.low)
                     else:
                         max_len = Logic.max_amplitude_length(cd)
@@ -377,11 +377,13 @@ class History:
                     if self.last_cd.high > self.last_cd.close and cd.open == cd.high and self.last_cd.close >= cd.open:
                         max_len = abs(self.last_cd.high - cd.low)
                     else:
+                        # 已经测试
                         max_len = Logic.max_amplitude_length(cd)
         else:
             if self.is_same_direction(cd):
                 if Logic.is_same_direction_by_two_point(self.last_cd, cd):
                     if self.last_cd.close > self.last_cd.low and cd.open < cd.high and cd.open >= self.last_cd.close:
+
                         max_len = abs(cd.high - self.last_cd.low)
                     else:
                         max_len = max(abs(cd.high - cd.open), abs(cd.close - cd.low))
@@ -395,6 +397,7 @@ class History:
                     if self.last_cd.close == self.last_cd.high and cd.open == cd.high and cd.open >= self.last_cd.close:
                         max_len = abs(cd.high - self.last_cd.low)
                     else:
+                        # 已测试
                         max_len = Logic.max_amplitude_length(cd)
                 else:
                     if self.last_cd.close > self.last_cd.low and cd.open == cd.high and cd.open >= self.last_cd.close:

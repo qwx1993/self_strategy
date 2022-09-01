@@ -142,7 +142,7 @@ class Analysis:
     def set_stop_loss_ln(self, cd):
         if self.stop_loss_ln_price is None:
             self.stop_loss_ln_price = cd.close
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             if cd.low > self.stop_loss_ln_price:
                 self.stop_loss_ln_price = cd.low
         else:
@@ -183,7 +183,7 @@ class Analysis:
     """
 
     def set_ln_price(self, cd):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             if (self.ln_price is None) or cd.low < self.ln_price:
                 self.ln_price = cd.low
         else:
@@ -196,7 +196,7 @@ class Analysis:
 
     def set_extremum_d(self, dn):
         self.extremum_d = dn
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             if (self.extremum_d_price is None) or dn.high > self.extremum_d_price:
                 self.extremum_d_price = dn.high
         else:
@@ -384,10 +384,10 @@ class Analysis:
 
     def set_break_through_direction_and_b1_price(self, cd):
         if cd.close > cd.open:
-            self.breakthrough_direction = Constants.BREAKTHROUGH_DIRECTION_UP
+            self.breakthrough_direction = Constants.DIRECTION_UP
             self.b1_price = max(self.b_list)
         else:
-            self.breakthrough_direction = Constants.BREAKTHROUGH_DIRECTION_DOWN
+            self.breakthrough_direction = Constants.DIRECTION_DOWN
             self.b1_price = min(self.b_list)
 
     """
@@ -398,7 +398,7 @@ class Analysis:
         if self.lowest_point_l is None:
             self.lowest_point_l = cd
         else:
-            if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+            if self.breakthrough_direction == Constants.DIRECTION_UP:
                 if cd.low < self.lowest_point_l.low:
                     self.lowest_point_l = cd
             else:
@@ -583,7 +583,7 @@ class Analysis:
     """
 
     def counter_trend_open_a_position(self, cd, temp_file, line):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_DOWN:
+        if self.breakthrough_direction == Constants.DIRECTION_DOWN:
             open_a_position_price = cd.high - self.max_l_to_d_interval
         else:
             open_a_position_price = cd.low + self.max_l_to_d_interval
@@ -608,7 +608,7 @@ class Analysis:
     """
 
     def has_opportunity(self, cd):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             if cd.low > self.b1_price:
                 return True
             else:
@@ -737,7 +737,7 @@ class Analysis:
 
     def get_counter_trend_close_a_position_price(self, cd):
         d_close_price = self.reference_point_d.close
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             close_a_position_price = cd.high - self.b1_to_b2_interval
             close_a_position_price = max(d_close_price, close_a_position_price)
             if cd.high < d_close_price:
@@ -771,7 +771,7 @@ class Analysis:
     """
 
     def get_situation1_open_a_position_price(self, cd):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             return max(self.reference_point_d.high, cd.low)
         else:
             return min(self.reference_point_d.low, cd.high)
@@ -804,12 +804,12 @@ class Analysis:
 
     def get_annotation_index_for_situation1_open_a_position(self):
         if self.in_a_counter_trend():
-            if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+            if self.breakthrough_direction == Constants.DIRECTION_UP:
                 index = Constants.REVERSE_OPEN_A_POSITION_ONE_LONG
             else:
                 index = Constants.REVERSE_OPEN_A_POSITION_ONE_SHORT
         else:
-            if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+            if self.breakthrough_direction == Constants.DIRECTION_UP:
                 index = Constants.OPEN_A_POSITION_ONE_LONG
             else:
                 index = Constants.OPEN_A_POSITION_ONE_SHORT
@@ -820,7 +820,7 @@ class Analysis:
     """
 
     def get_annotation_index_for_counter_trend(self):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             index = Constants.INDEX_COUNTER_TREND_LONG
         else:
             index = Constants.INDEX_COUNTER_TREND_SHORT
@@ -843,7 +843,7 @@ class Analysis:
     """
 
     def set_b1_price_by_lowest_point_l(self):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             self.b1_price = self.lowest_point_l.low
         else:
             self.b1_price = self.lowest_point_l.high
@@ -854,7 +854,7 @@ class Analysis:
     """
 
     def situation2_init(self, cd):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             self.stop_loss_ln_price = cd.low
         else:
             self.stop_loss_ln_price = cd.high
@@ -887,12 +887,12 @@ class Analysis:
 
     def get_annotation_index_for_situation2_open_a_position(self):
         if self.in_a_counter_trend():
-            if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+            if self.breakthrough_direction == Constants.DIRECTION_UP:
                 index = Constants.REVERSE_OPEN_A_POSITION_TWO_LONG
             else:
                 index = Constants.REVERSE_OPEN_A_POSITION_TWO_SHORT
         else:
-            if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+            if self.breakthrough_direction == Constants.DIRECTION_UP:
                 index = Constants.OPEN_A_POSITION_TWO_LONG
             else:
                 index = Constants.OPEN_A_POSITION_TWO_SHORT
@@ -903,7 +903,7 @@ class Analysis:
     """
 
     def get_stop_surplus_price(self, cd):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             return cd.high - self.max_r
         else:
             return cd.low + self.max_r
@@ -913,7 +913,7 @@ class Analysis:
     """
 
     def get_situation2_stop_loss_price(self, cd):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             return min(self.stop_loss_ln_price, cd.high)
         else:
             return max(self.stop_loss_ln_price, cd.low)
@@ -923,7 +923,7 @@ class Analysis:
     """
 
     def situation2_open_a_position_price(self, cd):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             return cd.low + self.situation2_max_l_to_h
         else:
             return cd.high - self.situation2_max_l_to_h
@@ -935,7 +935,7 @@ class Analysis:
     """
 
     def action_open_long_or_short(self, cd, price, actions_index):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             if self.in_a_counter_trend():
                 self.add_action(cd, Constants.ACTION_REVERSE_OPEN_LONG, price, actions_index)
             else:
@@ -953,7 +953,7 @@ class Analysis:
     """
 
     def action_close_long_or_short(self, cd, price, actions_index):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             if self.in_a_counter_trend():
                 self.add_action(cd, Constants.ACTION_REVERSE_CLOSE_LONG, price, actions_index)
             else:
@@ -980,7 +980,7 @@ class Analysis:
     """
 
     def exceed_extremum_d(self, cd):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             if cd.high > self.extremum_d_price:
                 return True
             else:
@@ -1033,7 +1033,7 @@ class Analysis:
     """
 
     def counter_trend_reset_r(self, cd):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
             self.max_r = abs(cd.high - cd.close)
         else:
             self.max_r = abs(cd.low - cd.close)
@@ -1043,10 +1043,10 @@ class Analysis:
     """
 
     def reverse_direct(self):
-        if self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
-            self.breakthrough_direction = Constants.BREAKTHROUGH_DIRECTION_DOWN
-        elif self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_DOWN:
-            self.breakthrough_direction = Constants.BREAKTHROUGH_DIRECTION_UP
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
+            self.breakthrough_direction = Constants.DIRECTION_DOWN
+        elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
+            self.breakthrough_direction = Constants.DIRECTION_UP
 
     """
     没有试错机会重新开始
@@ -1141,9 +1141,9 @@ class Analysis:
     """
 
     def is_same_direction(self, cd):
-        if cd.close > cd.open and self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_UP:
+        if cd.close > cd.open and self.breakthrough_direction == Constants.DIRECTION_UP:
             return True
-        elif cd.close < cd.open and self.breakthrough_direction == Constants.BREAKTHROUGH_DIRECTION_DOWN:
+        elif cd.close < cd.open and self.breakthrough_direction == Constants.DIRECTION_DOWN:
             return True
         else:
             return False
