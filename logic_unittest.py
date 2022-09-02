@@ -7,6 +7,7 @@ logic.py的单元测试，该单元测试用到了一系列测试用的csv文件
 * open_fall.csv：包含了开盘下跌的情况，即当天第1分钟是下跌的，并且该分钟的开盘价小于（前一天的最后收盘价 - 前一天收盘前10分钟的平均波动的3倍）
 """
 
+from re import L
 from types import SimpleNamespace
 from collections import deque
 from constants import Constants
@@ -54,6 +55,47 @@ class TestLogics(unittest.TestCase):
 	# 	file.close()
 	# 	os.remove(filename)
 
+	"""
+	检测是否需要合并
+	"""
+	def test_need_merge(self):
+		last_cd = SimpleNamespace()
+		# 方向向上
+		last_cd.open = 100
+		last_cd.low = 99
+		last_cd.high = 105
+		last_cd.close = 105
+		last_cd.direction = Constants.DIRECTION_UP
+
+		cd = SimpleNamespace()
+		cd.open = 105
+		cd.low = 105
+		cd.high = 108
+		cd.close = 108
+		cd.direction = Constants.DIRECTION_UP
+
+		self.assertTrue(Logic.need_merge(last_cd, cd))
+		cd.close = 106
+		# 方向向下
+		last_cd.open = 100
+		last_cd.high = 105
+		last_cd.low = 95
+		last_cd.close = 95
+		last_cd.direction = Constants.DIRECTION_DOWN
+
+		cd.open = 95
+		cd.high = 95
+		cd.low = 90
+		cd.close = 90
+		cd.direction = Constants.DIRECTION_DOWN
+		self.assertTrue(Logic.need_merge(last_cd, cd))
+
+		prices = []
+		prices.append(last_cd)
+		prices.append(cd)
+		merge = Logic.merge_multiple_time_units(prices)
+
+		print(merge)
 
 	def test_is_last_minute(self):
 		date_str1 = '2014-08-23 12:33:00'

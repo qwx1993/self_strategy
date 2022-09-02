@@ -373,7 +373,23 @@ class Logic:
 				merged.high = prices[i].high
 			if prices[i].low < merged.low:
 				merged.low = prices[i].low
+		merged.direction = Logic.get_direction_value(merged.open, merged.close)
 		return merged
+	
+	"""
+	判断是否需要合并数据
+	"""
+	def need_merge(last_cd, cd):
+		if not last_cd.direction == cd.direction:
+			return False
+		
+		if cd.direction == Constants.DIRECTION_UP:
+			if cd.open == cd.low and cd.close == cd.high and last_cd.close == last_cd.high and cd.open >= last_cd.close:
+				return True
+		else:
+			if cd.open == cd.high and cd.close == cd.low and last_cd.close == last_cd.low and cd.open <= last_cd.close:
+				return True		
+		return False
 
 	"""
 	根据目标时间获取指定前后的时间
@@ -672,6 +688,8 @@ class Logic:
 			return True, Constants.POSSIBLE_SPEEDING_3
 
 		return False, -1
+	
+
 
 	"""
 	计算胜率和赔率]】
