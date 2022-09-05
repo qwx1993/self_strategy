@@ -5,8 +5,6 @@ main.py
 from asyncio import constants
 import os
 import sys
-from tkinter import E
-from tkinter.messagebox import NO
 from self_strategy.constants import Constants
 from self_strategy.logic import Logic
 from types import SimpleNamespace
@@ -42,7 +40,10 @@ class History:
     s2_need_day_close = False
     extremum_d_price = None  # 极致d的price
     extremum_d = None  # 极值点D
-    last_oscillation_number = 0  # 前面振荡的次数
+    extremum_l_price = None # 极值点l的price
+    extremum_l = None # 极值点l
+
+    h_price = None # h点，表示比仅次于d点第二高点
 
     s2_status = None  # 情况二的状态
     s1_action_record = None  # 交易动作记录
@@ -57,11 +58,9 @@ class History:
     初始化
     """
 
-    def __init__(self):
-        # 所有的list数据需要初始化
-        self.oscillating_interval_list = []
-        self.b_list = []
-
+    # def __init__(self):
+    #     # 所有的list数据需要初始化
+    #     print(f"初始化")
 
     """
     添加对应的动作，目前包括开空、平空、开多、平多、逆开空、逆平空、逆开多、逆平多
@@ -98,12 +97,6 @@ class History:
     def set_status(self, status):
         self.current_status = status
 
-    """
-    重置A点，振荡区间、b1tob2间隔
-    """
-
-    def reset_reference_point_a(self):
-        self.oscillating_interval_list = []
 
     """
     设置当前是否为逆趋势中， 包括两种状态，逆趋势状态、非逆趋势状态
@@ -193,9 +186,50 @@ class History:
         if self.breakthrough_direction == Constants.DIRECTION_UP:
             if (self.extremum_d_price is None) or dn.high > self.extremum_d_price:
                 self.extremum_d_price = dn.high
+                
         else:
             if (self.extremum_d_price is None) or dn.low < self.extremum_d_price:
                 self.extremum_d_price = dn.low
+    
+    """
+    重新设置极值d
+    """
+    def reset_extremum_d(self):
+        self.extremum_d = None
+        self.extremum_d_price = None
+
+    """
+    设置l1的相关值
+    """
+    def set_extremum_l(self, ln):
+        if self.extremum_d_price is not None:
+            if self.breakthrough_direction == Constants.DIRECTION_UP:
+                if (self.extremum_l_price is None) or ln.low < self.extremum_l_price:
+                    self.extremum_l_price = ln.low
+                    self.extremum_l = ln
+            else:
+                if (self.extremum_l_price is None) or ln.high > self.extremum_l_price:
+                    self.extremum_l_price = ln.high
+                    self.extremum_l = ln
+    
+    """
+    设置h_price参数
+    """
+    def set_h_price(self, cd):
+        if self.extremum_d_price is not None:
+            if self.breakthrough_direction == Constants.DIRECTION_UP:
+                if (self.h_price is None) or cd.high > self.h_price:
+                    self.h_price = cd.high
+            elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
+                if (self.h_price is None) or cd.low < self.h_price:
+                    self.h_price = cd.low
+        
+    """
+    重置extremum_l的值
+    """
+    def reset_extremum_l(self):
+        self.extremum_l = None
+        self.extremum_l_price = None
 
     """
     将当前行的数据前面加上行数，后面加上状态/动作，写入临时文件
@@ -245,9 +279,11 @@ class History:
         # 设置走势方向，设置最大的幅度对象，包括最大幅度的起始、结束值跟幅度
         self.init_set_max_amplitude(cd)
         # 设置最大的上涨幅度
-        self.init_max_l_to_d_interval_obj(cd)
+        self.max_l_to_d_interval = None
+        # self.init_max_l_to_d_interval_obj(cd)
         # 初始化最大的下降幅度
-        self.init_max_r_obj(cd)
+        self.max_r = None
+        # self.init_max_r_obj(cd)
         # 设置参考点d
         self.reference_point_d = cd
         # 设置极限d_price
@@ -307,15 +343,18 @@ class History:
 
         # 判断是否需要合并,当当前分钟为直线时考虑
         if Logic.need_merge(self.last_cd, cd):
-            self.last_cd = Logic.merge_multiple_time_units(self.last_cd, cd)
-        
+            prices = []
+            prices.append(self.last_cd)
+            prices.append(cd)
+            self.last_cd = Logic.merge_multiple_time_units(prices)
         # 处理出现最大的幅度情况
         self.handle_max_amplitude(cd)
-
+        print(f"最后的方向 => {self.breakthrough_direction}")
         # 逆趋势判断
+        print(f"d_price => {self.extremum_d_price}  l_price => {self.extremum_l_price} rrn => {self.rrn} h_price => {self.h_price}")
         if Logic.is_counter_trend1(self.max_l_to_d_interval, self.max_r):
             print(f"逆趋势 => R: {self.max_l_to_d_interval} r: {self.max_r} datetime: {cd.datetime}")
-            self.restart()
+            # self.restart()
             # print(f"出现了逆趋势 => {cd}")
 
 
@@ -323,30 +362,31 @@ class History:
         # todo 逆趋势判断
     
     def handle_max_amplitude(self, cd):
+        print(f"max_amplitude => {self.max_amplitude.length} {self.max_r.length}  {self.max_l_to_d_interval.length}")
         appear = False
-        if self.max_l_to_d_interval.length > self.max_amplitude.length:
-            self.max_amplitude.start = self.max_l_to_d_interval.start_price            
-            self.max_amplitude.end = self.max_l_to_d_interval.end_price
-            self.max_amplitude.length = abs(self.max_amplitude.start - self.max_amplitude.end)
-            appear = True
-        elif self.max_r.length > self.max_amplitude.length:
-            # 当r为最大的幅度时，改变方向
-            self.reverse_direct()
-            self.max_amplitude.direction = self.breakthrough_direction 
-            self.max_amplitude.start = self.max_r.start_price
-            self.max_amplitude.end = self.max_r.end_price
-            self.max_amplitude.length = abs(self.max_amplitude.start - self.max_amplitude.end)
-            appear = True
-
+        if self.max_l_to_d_interval.length >= self.max_r.length:
+            if self.max_l_to_d_interval.length > self.max_amplitude.length:
+                self.max_amplitude.start = self.max_l_to_d_interval.start_price            
+                self.max_amplitude.end = self.max_l_to_d_interval.end_price
+                self.max_amplitude.length = abs(self.max_amplitude.start - self.max_amplitude.end)
+                appear = True
+                print(f"max_amplitude => {self.max_amplitude}")
+        else:
+            if self.max_r.length > self.max_amplitude.length:
+                # 当r为最大的幅度时，改变方向
+                self.reverse_direct()
+                self.max_amplitude.direction = self.breakthrough_direction 
+                self.max_amplitude.start = self.max_r.start_price
+                self.max_amplitude.end = self.max_r.end_price
+                self.max_amplitude.length = abs(self.max_amplitude.start - self.max_amplitude.end)
+                appear = True
+                print(f"应该已经到这里 => {self.max_r}")
+                self.on_direction_change(cd)
         if appear:
             # 重置R
             self.max_l_to_d_interval = None
             # 重置r
             self.max_r = None
-            # 重置rrn
-            self.rrn = None
-            # todo 重置d
-            # todo 重置l
         else:
             # 
             if self.is_exceed_max_amplitude_start_price(cd):
@@ -358,10 +398,23 @@ class History:
                 self.max_l_to_d_interval = None
                 # 重置r
                 self.max_r = None
-                # 重置rrn
-                self.rrn = None
-                # 重置d
-                # 重置l    
+                # 改变方向执行的动作
+                self.on_direction_change(cd)
+
+    """
+    方向改变执行的动作
+    重置d
+    重置l
+    重置rrn
+    """
+    def on_direction_change(self, cd):
+        # 重置d
+        self.reset_extremum_d()
+        self.set_extremum_d(cd)
+        # 重置l
+        self.reset_extremum_l()
+        # 重置rrn
+        self.rrn = None
 
     """
     超过最大幅度的起始价就改变方向、重置max_amplitude,R,r,rrn,max_r
@@ -385,7 +438,9 @@ class History:
             if self.is_same_direction(cd):
                 if Logic.is_same_direction_by_two_point(self.last_cd, cd): 
                     if self.last_cd.high == self.last_cd.close and cd.open == cd.low and cd.open >= self.last_cd.close:
+                        # 此处已经测试
                         max_l_to_d_obj = self.amplitude_obj(self.last_cd.low, cd.high)
+                        # print(f"此时跑到这里 {max_l_to_d_obj}")
                     else:  
                         max_l_to_d_obj = self.amplitude_obj(cd.low, cd.high)
                 else:
@@ -470,9 +525,17 @@ class History:
         # 判断是否出现极值d点
         if self.exceed_extremum_d(cd):
             # 设置点D
-            self.set_extremum_d(cd)   
+            self.set_extremum_d(cd)
+            # 重置l数据
+            self.reset_extremum_l() 
+            print(f"跑到这里 => {cd.datetime}")  
         else:
-            self.set_rrn(max_l_to_d_obj.lenth)
+            self.set_rrn(max_l_to_d_obj.length)
+            print(f"跑到这里")
+            # 设置extremum_l
+            self.set_extremum_l(cd)
+            # 设置h_price
+            self.set_h_price(cd)
         self.set_max_l_to_d_interval_obj(max_l_to_d_obj)
 
     """
@@ -552,9 +615,11 @@ class History:
                         max_len = max(abs(cd.high - cd.open), abs(cd.close - cd.low))
                         len = abs(cd.high - cd.open)
                         end_len = abs(cd.close - cd.low)
-                        if len > max_len:
+                        if len > end_len:
                             max_r_obj = self.amplitude_obj(cd.open, cd.high)
+                            print(f"这里 => {max_len} {self.max_r}")
                         else:
+                            print(f"这里11 => {max_len} {cd.datetime}")
                             max_r_obj = self.amplitude_obj(cd.low, cd.close)
                 else:
                     if self.last_cd.close == self.last_cd.high and cd.open < cd.high and cd.open >= self.last_cd.close:
@@ -589,139 +654,11 @@ class History:
                     else:
                         max_len = Logic.max_amplitude_length(cd)
                         max_r_obj = self.amplitude_obj(cd.low, cd.high)
+                        print(f" 跑到这里来了 => {max_r_obj}")
         if max_len != max_r_obj.length: 
-            print(f"出现了异常，要检查,datetime:{cd.datetime}")
+            print(f"max_r对象 => {self.max_r}")
+            print(f"出现了异常，要检查,datetime:{cd.datetime} max_len:{max_len} max_r_obj.length => {max_r_obj.length}")
         self.set_max_r(max_r_obj)    
-
-    """
-    振荡区间处理
-    参考点A不存在就设置当前点为参考点A,A.open为振荡区间的参考价格
-    存在参考点A就判断当前点cd是否超出了振荡区间范围，超出就检测是否满足：出现次数最多的最高点B1和最低点B2形成振荡区间，至少3次以上（通过画直线辅佐）
-    满足振荡条件时就判断是否满足突破条件【cd.high - cd.low > 5 * b1_to_b2_interval】
-    一旦突破就设置突破方向、参考点D、b1_price、最大下降幅度、最大上涨幅度、情况一止损点
-    设置状态为非加速振荡状态，非加速振荡子状态为寻找D2
-    """
-
-    def oscillation(self, cd, temp_file, line):
-        # 检查是否存在振荡区间、存在继续判断、不存在就重置
-        is_oscillating_interval, b1_to_b2_interval, b_list, current_oscillation_number = \
-            Logic.check_oscillating_interval(self.oscillating_interval_list)
-        if is_oscillating_interval and self.last_oscillation_number < current_oscillation_number:
-            self.close_a_position_by_oscillation_number(cd, temp_file, line)
-            # 设置上次振荡次数为
-            #  完成突破
-            self.b1_to_b2_interval = b1_to_b2_interval
-            self.b_list = b_list
-            if Logic.has_break_through(cd, self.b1_to_b2_interval):
-                self.last_oscillation_number = current_oscillation_number
-                # 设置突破方向
-                self.set_b1_price(cd)
-                # 先判断是否存在逆趋势要平仓，然后再重置方向
-                self.set_break_through_direction_and_b1_price(cd)
-                # 设置逆趋势状态
-                self.counter_trend_status = Constants.STATUS_COUNTER_TREND_NO
-                # 设置是否需要检测振荡状态
-                self.need_check_oscillation_status = Constants.NEED_CHECK_OSCILLATION_STATUS_NO
-                # 设置参考点d
-                self.reference_point_d = cd
-                # 设置极限d_price
-                self.extremum_d_price = None
-                self.set_extremum_d(cd)
-                # 设置最大的下降幅度
-                self.max_r = None
-                self.set_max_r(cd, self.is_same_direction(cd))
-                # # 设置最低点为None
-                self.lowest_point_l = None
-                #  设置ln_price = None
-                self.ln_price = None
-                # 设置最大的上涨幅度
-                self.max_l_to_d_interval = None
-                self.set_max_l_to_d_interval_data(cd)
-                # 设置ln_price
-                self.stop_loss_ln_price = cd.close
-                # 设置非加速振荡寻找d2的情况
-                self.set_status(Constants.NON_ACCELERATING_OSCILLATION)
-                self.set_non_accelerating_oscillation_sub_status(Constants.SUB_STATUS_OF_D2)
-                self.write_to_temp(temp_file, line, Constants.INDEX_B1_LINE, 0, 0, self.b1_price,
-                                   len(self.oscillating_interval_list))
-                # 设置情况1的状态为寻找D2
-                self.set_s1_status(Constants.SITUATION_ONE_STATUS_OF_D2)
-            else:
-                self.oscillating_interval_list.append(cd)
-        else:
-            self.oscillating_interval_list.append(cd)
-
-    """
-    当振荡次数超过前面的振荡次数时，如果存在逆趋势、情况一、二没有平仓的，就进行平仓
-    如果情况一跟情况二出现了平仓，将状态设置为平仓关闭状态
-    """
-    def close_a_position_by_oscillation_number(self, cd, temp_file, line):
-        if self.need_check_oscillation_status == Constants.NEED_CHECK_OSCILLATION_STATUS_YES:
-            if self.need_day_close:
-                self.action_close_long_or_short(cd, cd.close, Constants.ACTIONS_INDEX_DEFAULT)
-                self.write_to_temp(temp_file, line, Constants.INDEX_COUNTER_TREND_CLOSE_A_POSITION, 0,
-                                   cd.close, Logic.diff_minutes(cd.datetime, cd.datetime)
-                                   )
-                self.need_day_close = False
-            last_oscillation_cd = cd
-            if self.s1_need_day_close:
-                self.action_close_long_or_short(last_oscillation_cd, last_oscillation_cd.close,
-                                                Constants.ACTIONS_INDEX_ONE)
-                if self.in_a_counter_trend():
-                    self.write_to_temp(
-                        temp_file, line, Constants.REVERSE_STOP_SURPLUS_ONE, 0, last_oscillation_cd.close)
-                else:
-                    self.write_to_temp(temp_file, line, Constants.STOP_SURPLUS_ONE, 0, last_oscillation_cd.close)
-                self.s1_need_day_close = False
-                self.set_s1_status(Constants.SITUATION_ONE_STATUS_OF_CLOSE)
-            if self.s2_need_day_close:
-                self.action_close_long_or_short(last_oscillation_cd, last_oscillation_cd.close,
-                                                Constants.ACTIONS_INDEX_TWO)
-                if self.in_a_counter_trend():
-                    self.write_to_temp(
-                        temp_file, line, Constants.REVERSE_STOP_SURPLUS_TWO, 0, last_oscillation_cd.close)
-                else:
-                    self.write_to_temp(temp_file, line, Constants.STOP_SURPLUS_TWO, 0, last_oscillation_cd.close)
-                self.s2_need_day_close = False
-                self.set_s2_status(Constants.SITUATION_TWO_STATUS_OF_CLOSE)
-
-    """
-    无状态时候，直接为真
-    需要检测逆趋势状态时，当前振荡出现的次数最大值大于上次振荡出现的最大值就为真，否则为假
-    """
-
-    def check_last_last_oscillation_number(self, last_oscillation_number):
-        if self.current_status == Constants.STATUS_NONE:
-            return True
-        if self.counter_trend_status == Constants.STATUS_COUNTER_TREND_YES:
-            if last_oscillation_number > self.last_oscillation_number:
-                return True
-            else:
-                return False
-
-        return False
-
-    """
-    根据b1_price获取偏移量
-    """
-
-    def get_close_a_position_offset_by_b1_price(self):
-        for i in self.oscillating_interval_list:
-            if i.high >= self.b1_price >= i.low:
-                return i
-        return None
-
-    """
-    设置突破方向
-    向上就是开多的过程
-    向下就是开空的过程
-    """
-
-    def set_b1_price(self, cd):
-        if cd.close > cd.open:
-            self.b1_price = max(self.b_list)
-        else:
-            self.b1_price = min(self.b_list)
 
     """
     设置走势方向
@@ -764,39 +701,6 @@ class History:
         if self.max_r == None or self.max_r.length < obj.length:
             self.max_r = obj
 
-    """\
-    非振荡加速
-    """
-
-    def non_accelerating_oscillation(self, cd, temp_file, line):
-        # 判断是否为非加速振荡的逆趋势阶段
-        if self.need_check_oscillation_status == Constants.NEED_CHECK_OSCILLATION_STATUS_YES:
-            self.oscillation(cd, temp_file, line)
-        self.new_work_non_accelerating_oscillation(cd, temp_file, line)
-
-
-    """
-    新版本非加速振荡
-    """
-
-    def new_work_non_accelerating_oscillation(self, cd, temp_file, line):
-        # 刷新最低的低点
-        self.set_lowest_point_l(cd)
-        # 执行情况一的逻辑
-        self.situation1(cd, temp_file, line)
-        # 逆趋势逻辑x
-        self.counter_trend(cd, temp_file, line)
-
-        # 止盈或者止损完成后的重置
-        self.init_after_stop_loss_or_surplus_or_reverse(cd, temp_file, line)
-
-        # 非加速振荡状态，检查是否进入振荡b1范围内，如果没有就进行周期循环
-        if self.current_status == Constants.NON_ACCELERATING_OSCILLATION:
-            if Logic.need_restart(cd, self.breakthrough_direction,
-                                  self.b1_price) and self.non_accelerating_oscillation_sub_status == Constants.SUB_STATUS_OF_D2:
-                self.restart()
-            else:
-                self.refresh_cycle_parameters(cd)
 
     """
     情况一的逻辑
@@ -887,9 +791,10 @@ class History:
 
         # 设置止损点
         if self.exceed_extremum_d(cd):
-            self.set_stop_loss_ln(cd)
+            # self.set_stop_loss_ln(cd)
             # 重置极限值d
             self.set_extremum_d(cd)
+
         else:
             self.set_rrn(cd)
 
@@ -1499,5 +1404,3 @@ class History:
                 self.last_cd = cd
             count += 1
         data_file.close()
-        self.actions.clear()
- 

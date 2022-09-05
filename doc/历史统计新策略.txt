@@ -3,3 +3,9 @@
 3、max_amplitude出现重置R,r，rrn等
 3、max_amplitude出现设置起点价跟结束价
 4、当超出max_amplitude的范围就重置，包括max_amplitude、R、r、rrn、d、l等
+
+
+d跟l的统计
+d跟l跟Rmax、R、r、没有关系
+出现了d之后统计l,
+出现新的Rmax并且改变了方向之后，重置d跟l

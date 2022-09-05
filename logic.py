@@ -1,3 +1,4 @@
+from cgi import print_form
 import sys
 from types import SimpleNamespace
 import os
@@ -211,7 +212,11 @@ class Logic:
 	新的逆趋势判定
 	"""
 	def is_counter_trend1(max_l_to_d, max_r):
-		if max_r >= max_l_to_d:
+		print(f"max_r => {max_r} max_l_to_d => {max_l_to_d}")
+		if max_r is None or max_l_to_d is None:
+			print(f"max_r or max_l_to_d变成了 None => {max_r} => max_l_to_d => {max_l_to_d}")
+			return False
+		if max_r.length >= max_l_to_d.length:
 			return True
 		else:
 			return False
@@ -380,15 +385,28 @@ class Logic:
 	判断是否需要合并数据
 	"""
 	def need_merge(last_cd, cd):
-		if not last_cd.direction == cd.direction:
-			return False
-		
 		if cd.direction == Constants.DIRECTION_UP:
-			if cd.open == cd.low and cd.close == cd.high and last_cd.close == last_cd.high and cd.open >= last_cd.close:
-				return True
-		else:
-			if cd.open == cd.high and cd.close == cd.low and last_cd.close == last_cd.low and cd.open <= last_cd.close:
-				return True		
+			if not cd.open == cd.low or not cd.high == cd.close:
+				return False
+		elif cd.direction == Constants.DIRECTION_DOWN:
+			if not cd.open == cd.high or not cd.low == cd.close:
+				return False
+
+		if cd.direction == Constants.DIRECTION_UP:
+			if last_cd.direction == Constants.DIRECTION_UP:
+				if last_cd.high == last_cd.close and cd.open >= last_cd.close:
+					return True
+			elif last_cd.direction == Constants.DIRECTION_DOWN:
+				if last_cd.close > last_cd.low and cd.open >= last_cd.close:
+					return True
+		elif cd.direction == Constants.DIRECTION_DOWN:
+			if last_cd.direction == Constants.DIRECTION_UP:
+				if last_cd.high > last_cd.close and cd.open <= last_cd.close:
+					return True
+			elif last_cd.direction == Constants.DIRECTION_DOWN:
+				if last_cd.low == last_cd.close and cd.open <= last_cd.close:
+					return True
+
 		return False
 
 	"""
