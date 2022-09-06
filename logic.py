@@ -212,7 +212,6 @@ class Logic:
 	新的逆趋势判定
 	"""
 	def is_counter_trend1(max_l_to_d, max_r):
-		print(f"max_r => {max_r} max_l_to_d => {max_l_to_d}")
 		if max_r is None or max_l_to_d is None:
 			print(f"max_r or max_l_to_d变成了 None => {max_r} => max_l_to_d => {max_l_to_d}")
 			return False
@@ -220,6 +219,52 @@ class Logic:
 			return True
 		else:
 			return False
+
+	"""
+	是否为高点
+	"""
+	def is_high_point(direction, last_cd, cd):
+		if direction == Constants.DIRECTION_UP:
+			if cd.high > cd.open and cd.high > cd.close:
+				# 已经测试
+				return True
+
+			if cd.direction == Constants.DIRECTION_DOWN and cd.open == cd.high:
+				if  last_cd.close < cd.open:
+					# 已测试
+					return True
+				if last_cd.direction == Constants.DIRECTION_DOWN and last_cd.low < last_cd.close and last_cd.close <= cd.open:
+					# 已测试
+					return True
+
+				if last_cd.direction == Constants.DIRECTION_UP and last_cd.high == last_cd.close and last_cd.close <= cd.open:
+					# 已经测试
+					return True
+				
+				if last_cd.open == last_cd.close == last_cd.high > last_cd.low and last_cd.close <= cd.open:
+					# 已经测试
+					return True
+		else:
+			if cd.low < cd.close and cd.low < cd.open:
+				# 已经测试
+				return True
+			if cd.direction == Constants.DIRECTION_UP and cd.open == cd.low:
+				if last_cd.close > cd.open:
+					# 已经测试
+					return True
+				if last_cd.direction == Constants.DIRECTION_DOWN and last_cd.low == last_cd.close and last_cd.close >= cd.open:
+					# 已经测试
+					return True
+				
+				if last_cd.direction == Constants.DIRECTION_UP and last_cd.high > last_cd.close and last_cd.close >= cd.open:
+					# 已经测试
+					return True
+				
+				if last_cd.open == last_cd.close == last_cd.low < last_cd.high and last_cd.close >= cd.open:
+					# 已经测试
+					return True
+
+		return False
 
 	"""
 	判断当前方向是否跟突破后的方向一致
@@ -462,14 +507,14 @@ class Logic:
 	
 	"""
 	将csv数据文件中的一行数据转变成一个时间单位的价格信息object
-	order_book_id,datetime,open,low,total_turnover,close,high,num_trades,volume
-	000001.XSHE,2022-08-19 09:31:00,12.27,12.23,57819078.0,12.29,12.31,1982.0,4713600.0
+	order_book_id,datetime,open,high,low,close
+	SA2301,2022-08-26 21:01:00,2420.0,2424.0,2413.0,2415.0
 	"""
 	def history_price_to_data_object(temp_array, line_count, raw_string):
 		opening_price = float(temp_array[2])
 		closing_price = float(temp_array[5])
-		high = float(temp_array[6])
-		low = float(temp_array[3])
+		high = float(temp_array[3])
+		low = float(temp_array[4])
 
 		current = SimpleNamespace()
 		current.datetime = temp_array[1]

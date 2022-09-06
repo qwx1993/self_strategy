@@ -213,23 +213,29 @@ class History:
                     self.extremum_l = ln
     
     """
+    重置extremum_l的值
+    """
+    def reset_extremum_l(self):
+        self.extremum_l = None
+        self.extremum_l_price = None
+    
+    """
     设置h_price参数
     """
     def set_h_price(self, cd):
-        if self.extremum_d_price is not None:
+        if self.extremum_d_price is not None and Logic.is_high_point(self.breakthrough_direction, self.last_cd, cd):
             if self.breakthrough_direction == Constants.DIRECTION_UP:
                 if (self.h_price is None) or cd.high > self.h_price:
                     self.h_price = cd.high
             elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
                 if (self.h_price is None) or cd.low < self.h_price:
                     self.h_price = cd.low
-        
+
     """
-    重置extremum_l的值
-    """
-    def reset_extremum_l(self):
-        self.extremum_l = None
-        self.extremum_l_price = None
+    重置h_price参数
+    """     
+    def reset_h_price(self):
+        self.h_price = None
 
     """
     将当前行的数据前面加上行数，后面加上状态/动作，写入临时文件
@@ -349,11 +355,9 @@ class History:
             self.last_cd = Logic.merge_multiple_time_units(prices)
         # 处理出现最大的幅度情况
         self.handle_max_amplitude(cd)
-        print(f"最后的方向 => {self.breakthrough_direction}")
         # 逆趋势判断
-        print(f"d_price => {self.extremum_d_price}  l_price => {self.extremum_l_price} rrn => {self.rrn} h_price => {self.h_price}")
         if Logic.is_counter_trend1(self.max_l_to_d_interval, self.max_r):
-            print(f"逆趋势 => R: {self.max_l_to_d_interval} r: {self.max_r} datetime: {cd.datetime}")
+            print(f"出现了逆趋势 cd: {cd.datetime}")
             # self.restart()
             # print(f"出现了逆趋势 => {cd}")
 
@@ -362,7 +366,6 @@ class History:
         # todo 逆趋势判断
     
     def handle_max_amplitude(self, cd):
-        print(f"max_amplitude => {self.max_amplitude.length} {self.max_r.length}  {self.max_l_to_d_interval.length}")
         appear = False
         if self.max_l_to_d_interval.length >= self.max_r.length:
             if self.max_l_to_d_interval.length > self.max_amplitude.length:
@@ -370,8 +373,8 @@ class History:
                 self.max_amplitude.end = self.max_l_to_d_interval.end_price
                 self.max_amplitude.length = abs(self.max_amplitude.start - self.max_amplitude.end)
                 appear = True
-                print(f"max_amplitude => {self.max_amplitude}")
         else:
+            print(f"error => max_r {self.max_r} max_amplitude => {self.max_amplitude} {cd.datetime}")
             if self.max_r.length > self.max_amplitude.length:
                 # 当r为最大的幅度时，改变方向
                 self.reverse_direct()
@@ -380,7 +383,6 @@ class History:
                 self.max_amplitude.end = self.max_r.end_price
                 self.max_amplitude.length = abs(self.max_amplitude.start - self.max_amplitude.end)
                 appear = True
-                print(f"应该已经到这里 => {self.max_r}")
                 self.on_direction_change(cd)
         if appear:
             # 重置R
@@ -390,10 +392,13 @@ class History:
         else:
             # 
             if self.is_exceed_max_amplitude_start_price(cd):
+                print(f"此处 => {cd.datetime}")
                 # 重置方向
                 self.reverse_direct()
                 # 重置max_amplitude
                 self.max_amplitude = None
+
+                self.init_set_max_amplitude(cd)
                 # 重置R
                 self.max_l_to_d_interval = None
                 # 重置r
@@ -528,12 +533,14 @@ class History:
             self.set_extremum_d(cd)
             # 重置l数据
             self.reset_extremum_l() 
-            print(f"跑到这里 => {cd.datetime}")  
+            # todo 重置h_price 参数
+            self.reset_h_price()
         else:
             self.set_rrn(max_l_to_d_obj.length)
-            print(f"跑到这里")
             # 设置extremum_l
+            print(f"应该跑到这里... cd: {cd.datetime}")
             self.set_extremum_l(cd)
+            print(f"l_price => {self.extremum_l_price}")
             # 设置h_price
             self.set_h_price(cd)
         self.set_max_l_to_d_interval_obj(max_l_to_d_obj)
@@ -617,9 +624,7 @@ class History:
                         end_len = abs(cd.close - cd.low)
                         if len > end_len:
                             max_r_obj = self.amplitude_obj(cd.open, cd.high)
-                            print(f"这里 => {max_len} {self.max_r}")
                         else:
-                            print(f"这里11 => {max_len} {cd.datetime}")
                             max_r_obj = self.amplitude_obj(cd.low, cd.close)
                 else:
                     if self.last_cd.close == self.last_cd.high and cd.open < cd.high and cd.open >= self.last_cd.close:
@@ -654,7 +659,6 @@ class History:
                     else:
                         max_len = Logic.max_amplitude_length(cd)
                         max_r_obj = self.amplitude_obj(cd.low, cd.high)
-                        print(f" 跑到这里来了 => {max_r_obj}")
         if max_len != max_r_obj.length: 
             print(f"max_r对象 => {self.max_r}")
             print(f"出现了异常，要检查,datetime:{cd.datetime} max_len:{max_len} max_r_obj.length => {max_r_obj.length}")

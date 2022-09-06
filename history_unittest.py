@@ -51,10 +51,14 @@ class TestHistorys(unittest.TestCase):
 			elif history.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中
 				history.statistic(cd)
 			history.last_cd = cd
-
-			print(f"R:{history.max_l_to_d_interval} r:{history.max_r} rrn:{history.rrn} datetime:{cd.datetime}")
-
-
+		
+		print(f"max_amplitude => {history.max_amplitude}")
+		print(f"方向 => {history.breakthrough_direction}")
+		print(f"R => {history.max_l_to_d_interval}")
+		print(f"max_r => {history.max_r}")
+		print(f"d_price => {history.extremum_d_price}")
+		print(f"l_price => {history.extremum_l_price}")
+		print(f"h_price => {history.h_price}")
 
 if __name__ == '__main__':
 	unittest.main()
