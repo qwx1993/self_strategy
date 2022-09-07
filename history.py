@@ -52,6 +52,7 @@ class History:
     history_status = Constants.HISTORY_STATUS_OF_NONE # 历史状态
     last_cd = None # 上一点
     max_amplitude = None # 最大幅度对象
+    h_price_max = None # h的极值
 
 
     """
@@ -227,9 +228,13 @@ class History:
             if self.breakthrough_direction == Constants.DIRECTION_UP:
                 if (self.h_price is None) or cd.high > self.h_price:
                     self.h_price = cd.high
+                    if (self.h_price_max is None) or self.h_price > self.h_price_max:
+                        self.h_price_max = self.h_price
             elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
                 if (self.h_price is None) or cd.low < self.h_price:
                     self.h_price = cd.low
+                    if (self.h_price_max is None) or self.h_price < self.h_price_max:
+                        self.h_price_max = self.h_price
 
     """
     重置h_price参数
@@ -418,6 +423,9 @@ class History:
         self.set_extremum_d(cd)
         # 重置l
         self.reset_extremum_l()
+        # 重置h
+        self.reset_h_price()
+        self.h_price_max = None
         # 重置rrn
         self.rrn = None
 
@@ -543,6 +551,7 @@ class History:
             print(f"l_price => {self.extremum_l_price}")
             # 设置h_price
             self.set_h_price(cd)
+
         self.set_max_l_to_d_interval_obj(max_l_to_d_obj)
 
     """

@@ -14,10 +14,13 @@ import unittest
 import os
 from history import History
 from logic import Logic
+from tick import Tick
 from types import SimpleNamespace
 import sys
 
-class TestHistorys(unittest.TestCase):
+from tick_logic import TickLogic
+
+class TestTicks(unittest.TestCase):
 
 	def get_data_from_test_csv(self, csv_file):
 		ls1 = deque([])
@@ -30,7 +33,7 @@ class TestHistorys(unittest.TestCase):
 			temp_array = line.split(',')
 			if len(temp_array) > 0:
 				# try:
-				cd = Logic.history_price_to_data_object(temp_array, count, line)
+				cd = TickLogic.tick_price_to_data_object(temp_array, count, line)
 				# except:
 				# 	continue
 				if len(ls1) >= Constants.REFERENCE_AND_SPEEDING_LENGTH:
@@ -43,14 +46,15 @@ class TestHistorys(unittest.TestCase):
 		return ls1
 
 	def test_history_statistic_max_l_to_d(self):
-		ls = self.get_data_from_test_csv('000001.XSHE_1m.csv')
-		history = History()
+		ls = self.get_data_from_test_csv('SA2301_tick.csv')
+		tick = Tick()
 		for cd in ls:
-			if history.history_status == Constants.HISTORY_STATUS_OF_NONE: 
-				history.histoty_status_none(cd)
-			elif history.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中
-				history.statistic(cd)
-			history.last_cd = cd
+			if tick.current_status == Constants.STATUS_NONE:  # 寻找振荡
+				tick.status_none(cd, temp_file, line)
+			elif tick.current_status == Constants.STATUS_FIND_D1:  # 寻找D1
+				tick.find_d(cd, temp_file, line)
+			elif tick.current_status == Constants.NON_ACCELERATING_OSCILLATION:  # 非加速振荡
+				tick.non_accelerating_oscillation(cd, temp_file, line)
 		
 		print(f"max_amplitude => {history.max_amplitude}")
 		print(f"方向 => {history.breakthrough_direction}")

@@ -35,3 +35,17 @@ class Price:
             # 写入1m 
             value_1m = rqdatac.get_price(vt_symbol, start_date=start_date, end_date=end_date, frequency='1m')[["open", "high", "low", "close"]] 
             value_1m.to_csv('C:/Users/Administrator/strategies/data/' + f"{vt_symbol}_1m.csv" )
+
+        """
+        保存十天的tick数据
+        """
+        def save_10_days_tick_prices_csv(self, vt_symbol):
+            d1 = datetime.datetime.now()
+            start_date = Logic.get_date_str(d1, -10)
+            end_date = Logic.get_date_str(d1, -1)
+            # print(f"vt_symbol => {vt_symbol}")
+            # 写入5m 
+            vt_symbol = rqdatac.id_convert(vt_symbol)
+      
+            value_5m = rqdatac.get_price(vt_symbol, start_date=start_date, end_date=end_date, frequency='tick')[["last"]]
+            value_5m.to_csv('C:/Users/Administrator/strategies/data/' + f"{vt_symbol}_tick.csv" )

@@ -27,6 +27,7 @@ class Constants:
 
     # 新的状态集
     STATUS_NONE = -1
+    STATUS_FIND_D1 = 0
     NON_ACCELERATING_OSCILLATION = 1  # 非加速振荡
 
     OSCILLATION_PROCESS_TYPE_TO_L = 0  # d to l
