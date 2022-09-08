@@ -30,9 +30,18 @@ class Constants:
     STATUS_FIND_D1 = 0
     NON_ACCELERATING_OSCILLATION = 1  # 非加速振荡
 
+    TICK_STATUS_NONE = -1
+    TICK_STATUS_FIND_D1 = 0
+    TICK_STATUS_STATISTIC = 1  # 非加速振荡
+    TICK_STATUS_PAUSE = 2 # 停止状态
+    
     OSCILLATION_PROCESS_TYPE_TO_L = 0  # d to l
     OSCILLATION_PROCESS_TYPE_TO_D = 1  # l to d
 
+    DIRECTION_TYPE_OF_D_TO_L = 1  # 以顺趋势为例，从D到L的过程
+    DIRECTION_TYPE_OF_L_TO_D = -1  # 以顺趋势为例，从L到D的过程
+
+    SUB_STATUS_OF_L1 = 300  # 寻找l1
     SUB_STATUS_OF_D2 = 301  # 寻找d2点，根据d2的情况判断是情况一还是情况二，或者重开
     STOP_SURPLUS_OR_LOSS_SITUATION_ONE = 302  # 情况一止盈或止损
     STOP_SURPLUS_OR_LOSS_SITUATION_TWO = 303 # 情况二止盈或止损

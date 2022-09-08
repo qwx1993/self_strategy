@@ -45,25 +45,36 @@ class TestTicks(unittest.TestCase):
 
 		return ls1
 
-	def test_history_statistic_max_l_to_d(self):
+	"""
+	测试tick程序
+	"""
+	def test_tick(self):
 		ls = self.get_data_from_test_csv('SA2301_tick.csv')
 		tick = Tick()
 		for cd in ls:
 			if tick.current_status == Constants.STATUS_NONE:  # 寻找振荡
-				tick.status_none(cd, temp_file, line)
+				tick.status_none(cd)
 			elif tick.current_status == Constants.STATUS_FIND_D1:  # 寻找D1
-				tick.find_d(cd, temp_file, line)
+				tick.find_d(cd)
 			elif tick.current_status == Constants.NON_ACCELERATING_OSCILLATION:  # 非加速振荡
-				tick.non_accelerating_oscillation(cd, temp_file, line)
-		
-		print(f"max_amplitude => {history.max_amplitude}")
-		print(f"方向 => {history.breakthrough_direction}")
-		print(f"R => {history.max_l_to_d_interval}")
-		print(f"max_r => {history.max_r}")
-		print(f"d_price => {history.extremum_d_price}")
-		print(f"l_price => {history.extremum_l_price}")
-		print(f"h_price => {history.h_price}")
-		print(f"h_max_price => {history.h_price_max}")
+				tick.non_accelerating_oscillation(cd)
+			elif tick.current_status == Constants.TICK_STATUS_PAUSE:
+				print(f"跑完 => 开盘价为 {tick.open_price} datetime => {cd.datetime}")
+		print(f"方向 => {tick.breakthrough_direction}")
+		print(f"R => {tick.max_l_to_d_interval}")
+		print(f"max_r => {tick.max_r}")
+		print(f"d_price => {tick.extremum_d.current}")
+		print(f"l_price => {tick.extremum_l.current}")
+		print(f"h_price => {tick.h_price}")
+		# print(f"h_max_price => {history.h_price_max}")
+
+		# print(f"方向 => {history.breakthrough_direction}")
+		# print(f"R => {history.max_l_to_d_interval}")
+		# print(f"max_r => {history.max_r}")
+		# print(f"d_price => {history.extremum_d_price}")
+		# print(f"l_price => {history.extremum_l_price}")
+		# print(f"h_price => {history.h_price}")
+		# print(f"h_max_price => {history.h_price_max}")
 
 if __name__ == '__main__':
 	unittest.main()
