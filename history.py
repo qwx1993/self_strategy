@@ -53,7 +53,7 @@ class History:
     last_cd = None # 上一点
     max_amplitude = None # 最大幅度对象
     h_price_max = None # h的极值
-
+    trade_action = None
 
     """
     初始化
@@ -363,8 +363,6 @@ class History:
         # 逆趋势判断
         if Logic.is_counter_trend1(self.max_l_to_d_interval, self.max_r):
             print(f"出现了逆趋势 cd: {cd.datetime}")
-            # self.restart()
-            # print(f"出现了逆趋势 => {cd}")
 
 
 
@@ -379,7 +377,6 @@ class History:
                 self.max_amplitude.length = abs(self.max_amplitude.start - self.max_amplitude.end)
                 appear = True
         else:
-            print(f"error => max_r {self.max_r} max_amplitude => {self.max_amplitude} {cd.datetime}")
             if self.max_r.length > self.max_amplitude.length:
                 # 当r为最大的幅度时，改变方向
                 self.reverse_direct()
@@ -394,10 +391,14 @@ class History:
             self.max_l_to_d_interval = None
             # 重置r
             self.max_r = None
+            # 监听是否要开仓
+            if self.breakthrough_direction == Constants.DIRECTION_UP:
+                self.trade_action = Constants.ACTION_OPEN_LONG
+            else:
+                self.trade_action = Constants.ACTION_OPEN_SHORT
         else:
             # 
             if self.is_exceed_max_amplitude_start_price(cd):
-                print(f"此处 => {cd.datetime}")
                 # 重置方向
                 self.reverse_direct()
                 # 重置max_amplitude
@@ -546,9 +547,7 @@ class History:
         else:
             self.set_rrn(max_l_to_d_obj.length)
             # 设置extremum_l
-            print(f"应该跑到这里... cd: {cd.datetime}")
             self.set_extremum_l(cd)
-            print(f"l_price => {self.extremum_l_price}")
             # 设置h_price
             self.set_h_price(cd)
 
@@ -1389,13 +1388,26 @@ class History:
             return False
 
     """
+    实时分析    
+    """
+    def realtime_analysis(self, bar):
+        cd = Logic.bar_to_data_object(bar)
+        if self.history_status == Constants.HISTORY_STATUS_OF_NONE: 
+            self.histoty_status_none(cd)
+        elif self.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中
+            self.statistic(cd)
+        # 设置上一分钟
+        self.last_cd = cd
+
+    """
     历史行情数据分析
     """
     def analysis(self, vt_symbol, frequent):
         try:
-           data_file = open('C:/Users/Administrator/strategies/data/' + f"{vt_symbol}_{frequent}m.csv", 'r')
-        except:
-            print(f"无法打开{vt_symbol}_{frequent}m.csv文件")
+           data_file = open(Constants.STRATEGIES_DATA_PATH + f"{vt_symbol}_{frequent}m.csv", 'r')
+        except Exception as e:
+            print(f"无法打开{vt_symbol}_{frequent}m.csv文件", e)
+            data_file.close()
             os._exit(0)
         while True:
             line = data_file.readline()
@@ -1405,15 +1417,13 @@ class History:
             temp_array = line.split(',')
             if len(temp_array) > 0:
                 try:
-                    cd = Logic.raw_to_data_object(
-                        temp_array, count, line)  # 当前时间单位的相关数据
-                except:
+                    cd = Logic.history_price_to_data_object(temp_array, line)  # 当前时间单位的相关数据
+                except Exception as e:
                     continue
                 if self.history_status == Constants.HISTORY_STATUS_OF_NONE: 
                     self.histoty_status_none(cd)
                 elif self.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中
-                    self.statistic(cd, line)
+                    self.statistic(cd)
                 
                 self.last_cd = cd
-            count += 1
         data_file.close()

@@ -7,6 +7,7 @@ history.py的单元测试，该单元测试用到了一系列测试用的csv文�
 * open_fall.csv：包含了开盘下跌的情况，即当天第1分钟是下跌的，并且该分钟的开盘价小于（前一天的最后收盘价 - 前一天收盘前10分钟的平均波动的3倍）
 """
 
+from datetime import datetime
 from types import SimpleNamespace
 from collections import deque
 from constants import Constants
@@ -48,24 +49,25 @@ class TestTicks(unittest.TestCase):
 	"""
 	测试tick程序
 	"""
-	def test_tick(self):
-		ls = self.get_data_from_test_csv('SA2301_tick.csv')
-		tick = Tick()
-		for cd in ls:
-			if tick.current_status == Constants.STATUS_NONE:  # 寻找振荡
-				tick.status_none(cd)
-			elif tick.current_status == Constants.STATUS_FIND_D1:  # 寻找D1
-				tick.find_d(cd)
-			elif tick.current_status == Constants.NON_ACCELERATING_OSCILLATION:  # 非加速振荡
-				tick.non_accelerating_oscillation(cd)
-			elif tick.current_status == Constants.TICK_STATUS_PAUSE:
-				print(f"跑完 => 开盘价为 {tick.open_price} datetime => {cd.datetime}")
-		print(f"方向 => {tick.breakthrough_direction}")
-		print(f"R => {tick.max_l_to_d_interval}")
-		print(f"max_r => {tick.max_r}")
-		print(f"d_price => {tick.extremum_d.current}")
-		print(f"l_price => {tick.extremum_l.current}")
-		print(f"h_price => {tick.h_price}")
+	# def test_tick(self):
+	# 	ls = self.get_data_from_test_csv('SA2301_tick.csv')
+	# 	tick = Tick()
+	# 	for cd in ls:
+	# 		if tick.current_status == Constants.STATUS_NONE:  # 寻找振荡
+	# 			tick.status_none(cd)
+	# 		elif tick.current_status == Constants.STATUS_FIND_D1:  # 寻找D1
+	# 			tick.find_d(cd)
+	# 		elif tick.current_status == Constants.NON_ACCELERATING_OSCILLATION:  # 非加速振荡
+	# 			tick.non_accelerating_oscillation(cd)
+	# 		elif tick.current_status == Constants.TICK_STATUS_PAUSE:
+	# 			print(f"跑完 => 开盘价为 {tick.open_price} datetime => {cd.datetime}")
+	# 	print(f"方向 => {tick.breakthrough_direction}")
+	# 	print(f"R => {tick.max_l_to_d_interval}")
+	# 	print(f"max_r => {tick.max_r}")
+	# 	print(f"d_price => {tick.extremum_d.current}")
+	# 	print(f"l_price => {tick.extremum_l.current}")
+	# 	print(f"h_price => {tick.h_price}")
+
 		# print(f"h_max_price => {history.h_price_max}")
 
 		# print(f"方向 => {history.breakthrough_direction}")
@@ -75,6 +77,14 @@ class TestTicks(unittest.TestCase):
 		# print(f"l_price => {history.extremum_l_price}")
 		# print(f"h_price => {history.h_price}")
 		# print(f"h_max_price => {history.h_price_max}")
+
+	"""
+	测试合成tick数据
+	"""
+	def test_merge_ticks_to_m1(self):
+		ls = self.get_data_from_test_csv('SA2301_tick.csv')
+		merge = TickLogic.merge_ticks_to_m1(ls)
+		print(f"合成的结果 => {merge}")
 
 if __name__ == '__main__':
 	unittest.main()

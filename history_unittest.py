@@ -42,16 +42,32 @@ class TestHistorys(unittest.TestCase):
 
 		return ls1
 
-	def test_history_statistic_max_l_to_d(self):
-		ls = self.get_data_from_test_csv('000001.XSHE_1m.csv')
-		history = History()
-		for cd in ls:
-			if history.history_status == Constants.HISTORY_STATUS_OF_NONE: 
-				history.histoty_status_none(cd)
-			elif history.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中
-				history.statistic(cd)
-			history.last_cd = cd
+	# def test_history_statistic_max_l_to_d(self):
+	# 	ls = self.get_data_from_test_csv('000001.XSHE_1m.csv')
+	# 	history = History()
+	# 	for cd in ls:
+	# 		if history.history_status == Constants.HISTORY_STATUS_OF_NONE: 
+	# 			history.histoty_status_none(cd)
+	# 		elif history.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中
+	# 			history.statistic(cd)
+	# 		history.last_cd = cd
 		
+	# 	print(f"max_amplitude => {history.max_amplitude}")
+	# 	print(f"方向 => {history.breakthrough_direction}")
+	# 	print(f"R => {history.max_l_to_d_interval}")
+	# 	print(f"max_r => {history.max_r}")
+	# 	print(f"d_price => {history.extremum_d_price}")
+	# 	print(f"l_price => {history.extremum_l_price}")
+	# 	print(f"h_price => {history.h_price}")
+	# 	print(f"h_max_price => {history.h_price_max}")
+	
+	"""
+	测试analysis
+	"""
+	def test_analysis(self):
+		vt_symbol = 'SA301.CZCE'
+		history = History()
+		history.analysis(vt_symbol, 1)
 		print(f"max_amplitude => {history.max_amplitude}")
 		print(f"方向 => {history.breakthrough_direction}")
 		print(f"R => {history.max_l_to_d_interval}")

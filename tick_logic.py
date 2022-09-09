@@ -94,3 +94,37 @@ class TickLogic:
             return True
         else:
             return False
+    
+    """
+	将tick数据合成分钟数据
+	"""
+    def merge_ticks_to_m1(ticks):
+        l = len(ticks)
+        if l < 2:
+            return None
+        merged = SimpleNamespace()
+        merged.open = ticks[0].current
+        merged.close = ticks[l-1].current
+        merged.high = ticks[0].current
+        merged.low = ticks[0].current
+        merged.flunc = abs(ticks[0].current - ticks[l-1].current)
+        for i in range(len(ticks)):
+            if ticks[i].current > merged.high:
+                merged.high = ticks[i].current
+            if ticks[i].current < merged.low:
+                merged.low = ticks[i].current
+        merged.direction = TickLogic.get_direction_value(merged.open, merged.close)
+        merged.datetime = datetime.strptime(ticks[0].datetime, "%Y-%m-%d %H:%M:%S").strftime("%Y-%m-%d %H:%M:00")
+
+        return merged
+    
+    """
+    定方向
+    """ 
+    def get_direction_value(opening_price, closing_price):
+        if closing_price > opening_price:
+            return Constants.DIRECTION_UP
+        elif closing_price < opening_price:
+            return Constants.DIRECTION_DOWN
+        else:
+            return Constants.DIRECTION_NONE

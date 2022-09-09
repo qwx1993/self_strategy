@@ -510,7 +510,7 @@ class Logic:
 	order_book_id,datetime,open,high,low,close
 	SA2301,2022-08-26 21:01:00,2420.0,2424.0,2413.0,2415.0
 	"""
-	def history_price_to_data_object(temp_array, line_count, raw_string):
+	def history_price_to_data_object(temp_array, raw_string):
 		opening_price = float(temp_array[2])
 		closing_price = float(temp_array[5])
 		high = float(temp_array[3])
@@ -523,7 +523,6 @@ class Logic:
 		current.close = closing_price
 		current.high = high
 		current.low = low
-		current.line = line_count
 		current.direction = Logic.get_direction_value(opening_price, closing_price)
 
 		current.raw_string = raw_string
