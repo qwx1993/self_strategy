@@ -557,7 +557,8 @@ class Logic:
 		current.close = closing_price
 		current.high = high
 		current.low = low
-
+		current.direction = Logic.get_direction_value(opening_price, closing_price)
+		
 		return current
 	
 	"""

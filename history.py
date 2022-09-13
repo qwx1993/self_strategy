@@ -12,6 +12,7 @@ from types import SimpleNamespace
 class History:
     reference_point_d = None  # 振荡的参考点D
     direction = None  # 突破的方向 -1 开空 1 开多
+    breakthrough_direction = None # 突破的方向 -1 开空 1开多
     non_accelerating_oscillation_sub_status = None  # 非加速振荡子状态
 
     # 情况一的参数
@@ -1398,11 +1399,22 @@ class History:
             self.statistic(cd)
         # 设置上一分钟
         self.last_cd = cd
+    
+    """
+    实时分析    
+    """
+    def realtime_analysis1(self, cd):
+        if self.history_status == Constants.HISTORY_STATUS_OF_NONE: 
+            self.histoty_status_none(cd)
+        elif self.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中
+            self.statistic(cd)
+        # 设置上一分钟
+        self.last_cd = cd
 
     """
     历史行情数据分析
     """
-    def analysis(self, vt_symbol, frequent):
+    def analysis(self, vt_symbol, frequent=1):
         try:
            data_file = open(Constants.STRATEGIES_DATA_PATH + f"{vt_symbol}_{frequent}m.csv", 'r')
         except Exception as e:

@@ -3,7 +3,7 @@ from doctest import FAIL_FAST
 from types import SimpleNamespace
 from datetime import datetime
 
-from constants import Constants
+from self_strategy.constants import Constants
 
 class TickLogic:
 
