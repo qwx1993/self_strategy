@@ -114,7 +114,7 @@ class TickLogic:
             if ticks[i].current < merged.low:
                 merged.low = ticks[i].current
         merged.direction = TickLogic.get_direction_value(merged.open, merged.close)
-        merged.datetime = datetime.strptime(ticks[0].datetime, "%Y-%m-%d %H:%M:%S").strftime("%Y-%m-%d %H:%M:00")
+        merged.datetime = ticks[0].datetime.strftime("%Y-%m-%d %H:%M:00")
 
         return merged
     

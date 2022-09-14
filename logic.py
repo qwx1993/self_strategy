@@ -473,6 +473,30 @@ class Logic:
 			if datetime_obj.hour == 15 and datetime_obj.minute == 0:
 				return True
 		return False
+	
+	"""
+	判断当前时间是否为当天开盘前的第一分钟
+	"""
+	def is_realtime_start_minute(datetime_str):
+		datetime_obj = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
+		if datetime_obj.hour == 9 and datetime_obj.minute == 0:
+			return True
+		
+		if datetime_obj.hour == 21 and datetime_obj.minute == 0:
+			return True
+		return False
+
+	"""
+	判断当前时间是否为当天开盘前的第一分钟
+	"""
+	def is_start_minute(datetime_str):
+		datetime_obj = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
+		if datetime_obj.hour == 9 and datetime_obj.minute == 1:
+			return True
+		
+		if datetime_obj.hour == 21 and datetime_obj.minute == 1:
+			return True
+		return False
 
 	"""
 	判断是否为实盘时间，如果是就重置

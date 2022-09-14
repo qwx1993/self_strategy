@@ -8,7 +8,7 @@ import sys
 from self_strategy.constants import Constants
 from self_strategy.logic import Logic
 from types import SimpleNamespace
-# 
+
 class History:
     reference_point_d = None  # 振荡的参考点D
     direction = None  # 突破的方向 -1 开空 1 开多
@@ -377,7 +377,7 @@ class History:
                 self.max_amplitude.end = self.max_l_to_d_interval.end_price
                 self.max_amplitude.length = abs(self.max_amplitude.start - self.max_amplitude.end)
                 appear = True
-                print(f"相同方向设置最大的max_amplitude => {cd.datetime} => {self.max_amplitude}")
+                print(f"相同方向设置最大的max_amplitude => {cd} => {self.max_amplitude}")
         else:
             if self.max_r.length > self.max_amplitude.length:
                 # 当r为最大的幅度时，改变方向
@@ -388,7 +388,7 @@ class History:
                 self.max_amplitude.length = abs(self.max_amplitude.start - self.max_amplitude.end)
                 appear = True
                 self.on_direction_change(cd)
-                print(f"不同方向设置最大的max_amplitude => {cd.datetime} => {self.max_amplitude}")
+                print(f"不同方向设置最大的max_amplitude => {cd} => {self.max_amplitude}")
         if appear:
             # 重置R
             self.max_l_to_d_interval = None
@@ -399,22 +399,22 @@ class History:
                 self.trade_action = Constants.ACTION_OPEN_LONG
             else:
                 self.trade_action = Constants.ACTION_OPEN_SHORT
-        # else:
-        #     # 
-        #     if self.is_exceed_max_amplitude_start_price(cd):
-        #         # 重置方向
-        #         self.reverse_direct()
-        #         # 重置max_amplitude
-        #         print(f"超过了Rmax的起始价格 => {cd} => {self.max_amplitude}")
-        #         self.max_amplitude = None
+        else:
+            # 
+            if self.is_exceed_max_amplitude_start_price(cd):
+                # 重置方向
+                self.reverse_direct()
+                # 重置max_amplitude
+                print(f"超过了Rmax的起始价格 => {cd} => {self.max_amplitude}")
+                self.max_amplitude = None
 
-        #         self.init_set_max_amplitude(cd)
-        #         # 重置R
-        #         self.max_l_to_d_interval = None
-        #         # 重置r
-        #         self.max_r = None
-        #         # 改变方向执行的动作
-        #         self.on_direction_change(cd)
+                self.init_set_max_amplitude(cd)
+                # 重置R
+                self.max_l_to_d_interval = None
+                # 重置r
+                self.max_r = None
+                # 改变方向执行的动作
+                self.on_direction_change(cd)
 
     """
     方向改变执行的动作
@@ -692,7 +692,6 @@ class History:
         else:
             current.start = cd.high
             current.end = cd.low
-        print(f"max_amplitude => {cd.datetime}")
         self.max_amplitude = current
 
     """
@@ -1397,11 +1396,6 @@ class History:
     """
     def realtime_analysis(self, bar):
         cd = Logic.bar_to_data_object(bar)
-        if bar.datetime.minute == 0:
-            print(f"起始的第一分钟 {cd}")
-        if Logic.is_realtime_start_minute(cd.datetime):
-            print(f"过滤掉第一分钟")
-            return
         if self.history_status == Constants.HISTORY_STATUS_OF_NONE: 
             self.histoty_status_none(cd)
         elif self.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中
@@ -1413,9 +1407,6 @@ class History:
     实时分析    
     """
     def realtime_analysis1(self, cd):
-        if Logic.is_start_minute(cd.datetime):
-            print(f"过滤掉第一分钟")
-            return
         if self.history_status == Constants.HISTORY_STATUS_OF_NONE: 
             self.histoty_status_none(cd)
         elif self.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中

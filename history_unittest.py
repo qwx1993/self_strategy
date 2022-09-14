@@ -43,11 +43,10 @@ class TestHistorys(unittest.TestCase):
 		return ls1
 
 	def test_history_statistic_max_l_to_d(self):
-		ls = self.get_data_from_test_csv('sc2210.INE_1m.csv')
+		ls = self.get_data_from_test_csv('sc2211.INE_1m.csv')
 		history = History()
 		for cd in ls:
 			history.realtime_analysis1(cd)
-			print(f"R => {history.max_l_to_d_interval}")
 		
 		print(f"max_amplitude => {history.max_amplitude}")
 		print(f"方向 => {history.breakthrough_direction}")
