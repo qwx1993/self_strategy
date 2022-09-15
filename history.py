@@ -394,11 +394,11 @@ class History:
             self.max_l_to_d_interval = None
             # 重置r
             self.max_r = None
-            # 监听是否要开仓
-            if self.breakthrough_direction == Constants.DIRECTION_UP:
-                self.trade_action = Constants.ACTION_OPEN_LONG
-            else:
-                self.trade_action = Constants.ACTION_OPEN_SHORT
+            # todo 必须写到策略文件中。。。。监听是否要开仓 
+            # if self.breakthrough_direction == Constants.DIRECTION_UP:
+            #     self.trade_action = Constants.ACTION_OPEN_LONG
+            # else:
+            #     self.trade_action = Constants.ACTION_OPEN_SHORT
         # else:
         #     # 
         #     if self.is_exceed_max_amplitude_start_price(cd):
@@ -1393,14 +1393,17 @@ class History:
             return False
 
     """
-    实时分析    
+    bar数据实时分析    
     """
     def realtime_analysis(self, bar):
         cd = Logic.bar_to_data_object(bar)
-        if bar.datetime.minute == 0:
-            print(f"起始的第一分钟 {cd}")
+        self.realtime_analysis_for_cd(cd)
+
+    """
+    用cd数据格式进行分析
+    """   
+    def realtime_analysis_for_cd(self, cd):
         if Logic.is_realtime_start_minute(cd.datetime):
-            print(f"过滤掉第一分钟")
             return
         if self.history_status == Constants.HISTORY_STATUS_OF_NONE: 
             self.histoty_status_none(cd)
@@ -1414,7 +1417,6 @@ class History:
     """
     def realtime_analysis1(self, cd):
         if Logic.is_start_minute(cd.datetime):
-            print(f"过滤掉第一分钟")
             return
         if self.history_status == Constants.HISTORY_STATUS_OF_NONE: 
             self.histoty_status_none(cd)

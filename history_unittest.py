@@ -57,9 +57,9 @@ class TestHistorys(unittest.TestCase):
 		print(f"h_price => {history.h_price}")
 		print(f"h_max_price => {history.h_price_max}")
 	
-	"""
-	测试analysis
-	"""
+	# """
+	# 测试analysis
+	# """
 	# def test_analysis(self):
 	# 	vt_symbol = 'sc2210.INE'
 	# 	history = History()
