@@ -267,6 +267,12 @@ class Logic:
 		return False
 
 	"""
+	是否为高点 待完成
+	"""
+	def is_high_point(direction, last_cd, cd):
+		print(f"最低点")
+
+	"""
 	判断当前方向是否跟突破后的方向一致
 	在开多情况下，如果当前点是上涨就为True
 	在开空情况下，如果当前点是下跌就为True
