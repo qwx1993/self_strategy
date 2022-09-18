@@ -267,10 +267,50 @@ class Logic:
 		return False
 
 	"""
-	是否为高点 待完成
+	是否为低点 待完成
 	"""
-	def is_high_point(direction, last_cd, cd):
-		print(f"最低点")
+	def is_low_point(direction, last_cd, cd):
+		if direction == Constants.DIRECTION_UP:
+			if cd.low < cd.open and cd.low > cd.close:
+				# 已经测试
+				return True
+
+			if cd.direction == Constants.DIRECTION_UP and cd.open == cd.low:
+				if  last_cd.close > cd.open:
+					# 已测试
+					return True
+				if last_cd.direction == Constants.DIRECTION_UP and last_cd.high > last_cd.close and last_cd.close >= cd.open:
+					# 已测试
+					return True
+
+				if last_cd.direction == Constants.DIRECTION_DOWN and last_cd.low == last_cd.close and last_cd.close >= cd.open:
+					# 已经测试
+					return True
+				
+				if last_cd.open == last_cd.close == last_cd.low > last_cd.high and last_cd.close >= cd.open:
+					# 已经测试
+					return True
+		else:
+			if cd.high > cd.close and cd.high > cd.open:
+				# 已经测试
+				return True
+			if cd.direction == Constants.DIRECTION_DOWN and cd.open == cd.high:
+				if last_cd.close < cd.open:
+					# 已经测试
+					return True
+				if last_cd.direction == Constants.DIRECTION_UP and last_cd.high == last_cd.close and last_cd.close <= cd.open:
+					# 已经测试
+					return True
+				
+				if last_cd.direction == Constants.DIRECTION_DOWN and last_cd.low < last_cd.close and last_cd.close <= cd.open:
+					# 已经测试
+					return True
+				
+				if last_cd.open == last_cd.close == last_cd.high > last_cd.low and last_cd.close >= cd.open:
+					# 已经测试
+					return True
+
+		return False
 
 	"""
 	判断当前方向是否跟突破后的方向一致
