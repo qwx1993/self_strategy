@@ -4,6 +4,7 @@ main.py
 """
 from asyncio import constants
 import os
+from re import L
 import sys
 from self_strategy.constants import Constants
 from self_strategy.constants_s3 import ConstantsS3 as S3_Cons
@@ -16,6 +17,7 @@ class HistoryS3:
     stop_loss_ln_price = None  # 情况三的止损点价位 L - 2*unit
 
     max_l_to_d_interval = None  # 最大上涨的间隔,即R
+    current_max_l_to_d_interval = None # 当前的上涨间隔
     max_r = None  # 表示从dn-ln的最大值，d1点开始
     rrn = None  # 逆趋势止盈使用的参数  todo 暂时不使用
 
@@ -42,6 +44,7 @@ class HistoryS3:
     trade_action = None
     ml = None # 出现小级别逆趋势后的低点，需比L的值大
     ml_interval = None # 出现lm后第一个上涨的幅度
+    ml_1_price  = None # 用于止盈
     m_max_r = None  # 小级别r
     M_MAX_R = None  # 小级别R
 
@@ -132,7 +135,8 @@ class HistoryS3:
                 if (self.extremum_l_price is None) or ln.low < self.extremum_l_price:
                     self.extremum_l_price = ln.low
                     self.extremum_l = ln
-                    self.after_set_extremum_l()
+                    self.after_set_extremum_l(ln)
+                    print(f"出现新的l => {ln.datetime}")
                 else:
                     # 如果是L状态，就设置为逆趋势状态
                     if self.sub_status == S3_Cons.SUB_STATUS_OF_L:
@@ -141,7 +145,8 @@ class HistoryS3:
                 if (self.extremum_l_price is None) or ln.high > self.extremum_l_price:
                     self.extremum_l_price = ln.high
                     self.extremum_l = ln
-                    self.after_set_extremum_l()
+                    self.after_set_extremum_l(ln)
+                    print(f"出现新的l => {ln.datetime}")
                 else:
                     if self.sub_status == S3_Cons.SUB_STATUS_OF_L:
                         self.set_sub_status(S3_Cons.SUB_STATUS_OF_TREND_COUNTER)
@@ -150,11 +155,11 @@ class HistoryS3:
     设置极值L后的动作，设置状态为L
     将策略三相关的参数设置为None
     """
-    def after_set_extremum_l(self):
+    def after_set_extremum_l(self, cd):
         # 设置L为最新的状态
         self.set_sub_status(S3_Cons.SUB_STATUS_OF_L)
         self.m_max_r = None
-        self.M_MAX_R = None 
+        self.M_MAX_R = self.first_l_to_d(cd) 
         self.ml = None
 
     """
@@ -188,11 +193,43 @@ class HistoryS3:
             if self.breakthrough_direction == Constants.DIRECTION_UP:
                 if (self.ml is None) or cd.low < self.ml:
                     self.ml = cd.low
-                    self.set_sub_status(S3_Cons.SUB_STATUS_OF_ML_ONE)
+                    print(f"设置ml => {self.ml} {cd.datetime}")
+                elif self.ml is not None:
+                    self.handle_open_a_price(cd)
             elif self.breakthrough_direction == Constants.DIRECTION_UP:
                 if (self.ml is None) or cd.high > self.ml:
                     self.ml = cd.high
-                    self.set_sub_status(S3_Cons.SUB_STATUS_OF_ML_ONE)
+                    print(f"设置ml => {self.ml} {cd.datetime}")
+                elif self.ml is not None:
+                    self.handle_open_a_price(cd)
+    
+    """
+    开仓位出现后设置ml_1_price
+    """
+    def set_ml_1_price(self, cd):
+        if Logic.is_low_point(self.breakthrough_direction, self.last_cd, cd):
+            if (self.ml_1_price is None) or cd.low > self.ml_1_price:
+                self.ml_1_price = cd.low
+        elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
+            if (self.ml_1_price is None) or cd.high < self.ml_1_price:
+                self.ml_1_price = cd.high
+
+    """
+    出现ml1就开仓，否则不开仓
+    """ 
+    def handle_open_a_price(self, cd):
+        if self.find_ml_1(cd):
+            self.set_sub_status(S3_Cons.SUB_STATUS_OF_OPEN_A_PRICE)
+            print(f"进入ml1开仓 {cd.datetime}---------------------------------------------------------------------------------------")
+            print(f"l => {self.extremum_l_price}")   
+            print(f"ml => {self.ml}")
+            print(f"开仓方向 => {self.breakthrough_direction}")
+            print(f"M_MAX_R => {self.M_MAX_R}")   
+            print(f"m_max_r => {self.m_max_r} -------------------------------------------------------------------------------------")   
+            # 出现当前R大于M_MAX_R就重新开始统计逆趋势
+        elif self.restart_by_M_MAX_R():
+            self.set_sub_status(S3_Cons.SUB_STATUS_OF_TREND_COUNTER)
+            print(f"进入M_MAX_R开仓 => {cd.datetime}")
 
     """
     出现ml1
@@ -206,9 +243,14 @@ class HistoryS3:
                 if cd.high < self.ml:
                     return True
         return False
-    
-    def open_a_price_by_M_MAX_R(self):
-        if self.M_MAX_R > self.m_max_r:
+
+    """
+    如果当前的R比M_MAX_R 还大就结束统计，重新开始统计逆趋势
+    """ 
+    def restart_by_M_MAX_R(self):
+        if self.M_MAX_R is None or self.current_max_l_to_d_interval is None:
+            return False
+        if self.M_MAX_R.length < self.current_max_l_to_d_interval.length:
             return True
         return False
 
@@ -302,18 +344,11 @@ class HistoryS3:
         self.handle_max_amplitude(cd)
         # 逆趋势判断
         if Logic.is_counter_trend1(self.M_MAX_R, self.m_max_r) and self.sub_status == S3_Cons.SUB_STATUS_OF_TREND_COUNTER:
-            
-            self.set_sub_status(S3_Cons.SUB_STATUS_OF_LM)
-        if self.sub_status == S3_Cons.SUB_STATUS_OF_LM:
+            print(f"出现逆趋势 => {cd.datetime}")
+            self.set_sub_status(S3_Cons.SUB_STATUS_OF_ML)
+        if self.sub_status == S3_Cons.SUB_STATUS_OF_ML:
             # 设置ml
             self.set_ml_price(cd)
-        elif self.sub_status == S3_Cons.SUB_STATUS_OF_ML_ONE:
-            if self.find_ml_1(cd):
-                self.set_sub_status(S3_Cons.SUB_STATUS_OF_OPEN_A_PRICE)   
-                # 出现就开仓
-            elif 
-
-        # todo 逆趋势判断
     
     def handle_max_amplitude(self, cd):
         appear = False
@@ -342,7 +377,6 @@ class HistoryS3:
             self.max_r = None
         else:
             if self.is_exceed_max_amplitude_start_price(cd):
-                print(f"超过Rmax的起点改变方向")
                 self.reverse_direct_by_max_amplitude()
         #         # 重置方向
         #         self.reverse_direct()
@@ -497,11 +531,31 @@ class HistoryS3:
             # 设置h_price
             self.set_h_price(cd)
 
+        # 记录下当前的max_l_to_d
+        self.current_max_l_to_d_interval = max_l_to_d_obj
+        # 记录最大的max_l_to_d
         self.set_max_l_to_d_interval_obj(max_l_to_d_obj)
 
         # 当子状态为L时就设置M_MAX_R 
-        if self.sub_status == S3_Cons.SUB_STATUS_OF_L:
+        if self.sub_status == S3_Cons.SUB_STATUS_OF_TREND_COUNTER:
             self.set_M_MAX_R_obj(max_l_to_d_obj)
+
+    """
+    开始点设置R
+    """ 
+    def first_l_to_d(self, cd):
+        obj = None
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
+            if cd.direction == Constants.DIRECTION_UP:
+                obj = self.amplitude_obj(cd.low, cd.high)
+            else:
+                obj = self.amplitude_obj(cd.low, cd.close)
+        else:
+            if cd.direction == Constants.DIRECTION_UP:
+                obj = self.amplitude_obj(cd.high, cd.close)
+            else:
+                obj = self.amplitude_obj(cd.high, cd.low)
+        return obj
 
     """
     设置长度跟开始点价格、结束点价格
@@ -622,7 +676,7 @@ class HistoryS3:
             print(f"出现了异常，要检查,datetime:{cd.datetime} max_len:{max_len} max_r_obj.length => {max_r_obj.length}")
         self.set_max_r(max_r_obj) 
                 # 当子状态为L时就设置M_MAX_R 
-        if self.sub_status == S3_Cons.SUB_STATUS_OF_L:
+        if self.sub_status == S3_Cons.SUB_STATUS_OF_TREND_COUNTER:
             self.set_m_max_r(max_r_obj)   
 
     """

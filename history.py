@@ -204,7 +204,7 @@ class History:
     设置l1的相关值
     """
     def set_extremum_l(self, ln):
-        if self.extremum_d_price is not None:
+        if self.extremum_d_price is not None and Logic.is_low_point(self.breakthrough_direction, self.last_cd, ln):
             if self.breakthrough_direction == Constants.DIRECTION_UP:
                 if (self.extremum_l_price is None) or ln.low < self.extremum_l_price:
                     self.extremum_l_price = ln.low

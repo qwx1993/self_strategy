@@ -1,18 +1,9 @@
-"""
-history_unittest.py
-history.py的单元测试，该单元测试用到了一系列测试用的csv文件，在test_csv文件中，包括：
-* not_enough_data.csv：数据不足的csv
-* speeding_falls_length_3.csv: 包含了10个参考波动的时间单位和一个周期的加速下跌（3次宽幅下跌），加速下跌的时间单位长度为3
-* 1_speeding_fall.csv：包含了10个参考波动的时间单位和1个宽幅下跌
-* open_fall.csv：包含了开盘下跌的情况，即当天第1分钟是下跌的，并且该分钟的开盘价小于（前一天的最后收盘价 - 前一天收盘前10分钟的平均波动的3倍）
-"""
-
 from types import SimpleNamespace
 from collections import deque
 from constants import Constants
 import unittest
 import os
-from history import History
+from history_s3 import HistoryS3
 from logic import Logic
 from types import SimpleNamespace
 import sys
@@ -44,7 +35,7 @@ class TestHistorys(unittest.TestCase):
 
 	def test_history_statistic_max_l_to_d(self):
 		ls = self.get_data_from_test_csv('sc2211.INE_1m.csv')
-		history = History()
+		history = HistoryS3()
 		for cd in ls:
 			history.realtime_analysis1(cd)
 		
@@ -56,7 +47,29 @@ class TestHistorys(unittest.TestCase):
 		print(f"l_price => {history.extremum_l_price}")
 		print(f"h_price => {history.h_price}")
 		print(f"h_max_price => {history.h_price_max}")
-	
+
+	# def test_set_ml_price(self):
+	# 	history = HistoryS3()
+	# 	history.direction = Constants.DIRECTION_UP
+	# 	cd = SimpleNamespace()
+	# 	cd.open = 500
+	# 	cd.high = 500
+	# 	cd.low = 410
+	# 	cd.close = 440
+	# 	cd.direction = Constants.DIRECTION_DOWN
+	# 	cd.datetime = '2022-09-13 21:18:00'
+
+	# 	last_cd = SimpleNamespace()
+	# 	last_cd.open = 450
+	# 	last_cd.low = 440
+	# 	last_cd.high =510
+	# 	last_cd.close = 500
+	# 	last_cd.direction = Constants.DIRECTION_UP
+	# 	last_cd.datetime = '2022-09-13 21:17:00'
+	# 	history.extremum_l_price = 55370
+	# 	history.last_cd = last_cd
+	# 	history.set_ml_price(cd)
+
 	# """
 	# 测试analysis
 	# """

@@ -213,9 +213,8 @@ class Logic:
 	"""
 	def is_counter_trend1(max_l_to_d, max_r):
 		if max_r is None or max_l_to_d is None:
-			print(f"max_r or max_l_to_d变成了 None => {max_r} => max_l_to_d => {max_l_to_d}")
 			return False
-		if max_r.length >= max_l_to_d.length:
+		if max_r.length > max_l_to_d.length:
 			return True
 		else:
 			return False
@@ -271,7 +270,7 @@ class Logic:
 	"""
 	def is_low_point(direction, last_cd, cd):
 		if direction == Constants.DIRECTION_UP:
-			if cd.low < cd.open and cd.low > cd.close:
+			if cd.low < cd.open and cd.low < cd.close:
 				# 已经测试
 				return True
 
@@ -306,7 +305,7 @@ class Logic:
 					# 已经测试
 					return True
 				
-				if last_cd.open == last_cd.close == last_cd.high > last_cd.low and last_cd.close >= cd.open:
+				if last_cd.open == last_cd.close == last_cd.high > last_cd.low and last_cd.close <= cd.open:
 					# 已经测试
 					return True
 

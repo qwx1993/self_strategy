@@ -132,96 +132,96 @@ class TestLogics(unittest.TestCase):
 		test_csv.close()
 		return ls1
 	
-	def test_is_firm_offer_start_minute(self):
-		datetime_str = "2022-08-29 21:00:00"
-		self.assertTrue(Logic.is_firm_offer_start_minute(datetime_str))
+	# def test_is_firm_offer_start_minute(self):
+	# 	datetime_str = "2022-08-29 21:00:00"
+	# 	self.assertTrue(Logic.is_firm_offer_start_minute(datetime_str))
 
 	
-	def test_is_high_point(self):
-		direction = Constants.DIRECTION_UP
-		last_cd = SimpleNamespace()
-		cd = SimpleNamespace()
-		# 情况一
-		cd.open = 100
-		cd.low = 98 
-		cd.high = 105
-		cd.close = 102
-		cd.direction = Constants.DIRECTION_UP
-		self.assertTrue(Logic.is_high_point(direction, last_cd, cd))
-		# 情况二
-		# if cd.direction == Constants.DIRECTION_DOWN and cd.open == cd.high:
-		cd.direction = Constants.DIRECTION_DOWN
-		cd.open = 100
-		cd.low = 98
-		cd.high = 100
-		cd.close = 98
+	# def test_is_high_point(self):
+	# 	direction = Constants.DIRECTION_UP
+	# 	last_cd = SimpleNamespace()
+	# 	cd = SimpleNamespace()
+	# 	# 情况一
+	# 	cd.open = 100
+	# 	cd.low = 98 
+	# 	cd.high = 105
+	# 	cd.close = 102
+	# 	cd.direction = Constants.DIRECTION_UP
+	# 	self.assertTrue(Logic.is_high_point(direction, last_cd, cd))
+	# 	# 情况二
+	# 	# if cd.direction == Constants.DIRECTION_DOWN and cd.open == cd.high:
+	# 	cd.direction = Constants.DIRECTION_DOWN
+	# 	cd.open = 100
+	# 	cd.low = 98
+	# 	cd.high = 100
+	# 	cd.close = 98
 
-		last_cd.open = 90
-		last_cd.low = 85 
-		last_cd.high = 100
-		last_cd.close = 100
-		last_cd.direction = Constants.DIRECTION_UP
-		self.assertTrue(Logic.is_high_point(direction, last_cd, cd))
+	# 	last_cd.open = 90
+	# 	last_cd.low = 85 
+	# 	last_cd.high = 100
+	# 	last_cd.close = 100
+	# 	last_cd.direction = Constants.DIRECTION_UP
+	# 	self.assertTrue(Logic.is_high_point(direction, last_cd, cd))
 
-		# 情况三
-		# last_cd.close < cd.open:
-		last_cd.close = 98
-		self.assertTrue(Logic.is_high_point(direction, last_cd, cd))
+	# 	# 情况三
+	# 	# last_cd.close < cd.open:
+	# 	last_cd.close = 98
+	# 	self.assertTrue(Logic.is_high_point(direction, last_cd, cd))
 
-		# 情况四
-		# last_cd.direction == Constants.DIRECTION_UP and last_cd.high == last_cd.close and last_cd.close <= cd.open
-		last_cd.direction = Constants.DIRECTION_UP
-		last_cd.open = 90
-		last_cd.low = 85
-		last_cd.close = 95
-		last_cd.high = 95
-		self.assertTrue(Logic.is_high_point(direction, last_cd, cd))
+	# 	# 情况四
+	# 	# last_cd.direction == Constants.DIRECTION_UP and last_cd.high == last_cd.close and last_cd.close <= cd.open
+	# 	last_cd.direction = Constants.DIRECTION_UP
+	# 	last_cd.open = 90
+	# 	last_cd.low = 85
+	# 	last_cd.close = 95
+	# 	last_cd.high = 95
+	# 	self.assertTrue(Logic.is_high_point(direction, last_cd, cd))
 
-		# if last_cd.open == last_cd.close == last_cd.high > last_cd.low and last_cd.close <= cd.open:
-		last_cd.open = 95
-		last_cd.close = last_cd.close = last_cd.high = 95
-		last_cd.low = 90
-		self.assertTrue(Logic.is_high_point(direction, last_cd, cd))
-		# 情况五
-		# cd.low < cd.close and cd.low < cd.open
-		direction = Constants.DIRECTION_DOWN
-		cd.open = 100
-		cd.high = 105
-		cd.low = 90
-		cd.close = 95
-		cd.direction = Constants.DIRECTION_DOWN
-		self.assertTrue(Logic.is_high_point(direction, last_cd, cd))
+	# 	# if last_cd.open == last_cd.close == last_cd.high > last_cd.low and last_cd.close <= cd.open:
+	# 	last_cd.open = 95
+	# 	last_cd.close = last_cd.close = last_cd.high = 95
+	# 	last_cd.low = 90
+	# 	self.assertTrue(Logic.is_high_point(direction, last_cd, cd))
+	# 	# 情况五
+	# 	# cd.low < cd.close and cd.low < cd.open
+	# 	direction = Constants.DIRECTION_DOWN
+	# 	cd.open = 100
+	# 	cd.high = 105
+	# 	cd.low = 90
+	# 	cd.close = 95
+	# 	cd.direction = Constants.DIRECTION_DOWN
+	# 	self.assertTrue(Logic.is_high_point(direction, last_cd, cd))
 
-		# 情况六
-		# cd.direction == Constants.DIRECTION_UP and cd.open == cd.low:
-		cd.direction = Constants.DIRECTION_UP
-		cd.open = 100
-		cd.low = 100
-		cd.high = 105
-		cd.close = 102
-		# last_cd.close > cd.open
-		last_cd.close = 105
-		self.assertTrue(Logic.is_high_point(direction, last_cd, cd))
-		# 情况七
-		# last_cd.direction == Constants.DIRECTION_DOWN and last_cd.low == last_cd.close and last_cd.close >= cd.open
-		last_cd.direction = Constants.DIRECTION_DOWN
-		last_cd.low = last_cd.close = 105
-		self.assertTrue(Logic.is_high_point(direction, last_cd, cd))
-		# 情况八
-		# last_cd.direction == Constants.DIRECTION_UP and last_cd.high > last_cd.close and last_cd.close >= cd.open
-		last_cd.direction = Constants.DIRECTION_UP
-		last_cd.open = 90
-		last_cd.low = 85
-		last_cd.high = 105
-		last_cd.close = 100
-		self.assertTrue(Logic.is_high_point(direction, last_cd, cd))
-		# 情况九
-		# last_cd.open == last_cd.close == last_cd.low < last_cd.high and last_cd.close >= cd.open
-		last_cd.open = 101
-		last_cd.high = 105
-		last_cd.low = 101
-		last_cd.close = 101
-		self.assertTrue(Logic.is_high_point(direction,last_cd, cd))
+	# 	# 情况六
+	# 	# cd.direction == Constants.DIRECTION_UP and cd.open == cd.low:
+	# 	cd.direction = Constants.DIRECTION_UP
+	# 	cd.open = 100
+	# 	cd.low = 100
+	# 	cd.high = 105
+	# 	cd.close = 102
+	# 	# last_cd.close > cd.open
+	# 	last_cd.close = 105
+	# 	self.assertTrue(Logic.is_high_point(direction, last_cd, cd))
+	# 	# 情况七
+	# 	# last_cd.direction == Constants.DIRECTION_DOWN and last_cd.low == last_cd.close and last_cd.close >= cd.open
+	# 	last_cd.direction = Constants.DIRECTION_DOWN
+	# 	last_cd.low = last_cd.close = 105
+	# 	self.assertTrue(Logic.is_high_point(direction, last_cd, cd))
+	# 	# 情况八
+	# 	# last_cd.direction == Constants.DIRECTION_UP and last_cd.high > last_cd.close and last_cd.close >= cd.open
+	# 	last_cd.direction = Constants.DIRECTION_UP
+	# 	last_cd.open = 90
+	# 	last_cd.low = 85
+	# 	last_cd.high = 105
+	# 	last_cd.close = 100
+	# 	self.assertTrue(Logic.is_high_point(direction, last_cd, cd))
+	# 	# 情况九
+	# 	# last_cd.open == last_cd.close == last_cd.low < last_cd.high and last_cd.close >= cd.open
+	# 	last_cd.open = 101
+	# 	last_cd.high = 105
+	# 	last_cd.low = 101
+	# 	last_cd.close = 101
+	# 	self.assertTrue(Logic.is_high_point(direction,last_cd, cd))
 
 	"""
 	振荡区间
@@ -598,6 +598,25 @@ class TestLogics(unittest.TestCase):
 	# def test_calculate_flunc_avg(self):
 	# 	ls = self.get_data_from_test_csv("simple_test.csv")
 	# 	self.assertEqual(Logic.calculate_flunc_avg(ls, 0), 3.0)
+
+	def test_is_low_point(self):
+		cd = SimpleNamespace()
+		cd.open = 500
+		cd.high = 500
+		cd.low = 410
+		cd.close = 440
+		cd.direction = Constants.DIRECTION_DOWN
+		cd.datetime = '2022-09-13 21:18:00'
+
+		last_cd = SimpleNamespace()
+		last_cd.open = 450
+		last_cd.low = 440
+		last_cd.high =510
+		last_cd.close = 500
+		last_cd.direction = Constants.DIRECTION_UP
+		last_cd.datetime = '2022-09-13 21:17:00'
+		self.assertTrue(Logic.is_low_point(Constants.DIRECTION_UP, last_cd, cd))
+
 
 if __name__ == '__main__':
 	unittest.main()
