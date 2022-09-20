@@ -10,7 +10,7 @@ from self_strategy.constants_s3 import ConstantsS3 as S3_Cons
 from self_strategy.logic import Logic
 from types import SimpleNamespace
 # 
-class HistoryS3:
+class HistoryS4:
     breakthrough_direction = None # 突破的方向 -1 开空 1开多
 
     stop_loss_ln_price = None  # 情况三的止损点价位 L - 2*unit
@@ -42,6 +42,7 @@ class HistoryS3:
     h_price_max = None # h的极值
     trade_action = None
     ml = None # 出现小级别逆趋势后的低点，需比L的值大
+    ml_high_price = None # 出现ml点当前分钟的高点价
     ml_interval = None # 出现lm后第一个上涨的幅度
     ml_1_price  = None # 用于止盈
     m_max_r = None  # 小级别r
@@ -180,13 +181,20 @@ class HistoryS3:
             if self.breakthrough_direction == Constants.DIRECTION_UP:
                 if (self.ml is None) or cd.low < self.ml:
                     self.ml = cd.low
+                    # 设置ml的高价
+                    self.ml_high_price = cd.high
                     print(f"设置ml => {self.ml} {cd.datetime}")
+                    # 重新设置ml_1_price
+                    self.reset_ml_1_price()
                 elif self.ml is not None:
                     self.handle_open_a_price(cd)
             elif self.breakthrough_direction == Constants.DIRECTION_UP:
                 if (self.ml is None) or cd.high > self.ml:
                     self.ml = cd.high
+                    self.ml_high_price = cd.low
                     print(f"设置ml => {self.ml} {cd.datetime}")
+                    # 重新设置ml_1_price
+                    self.reset_ml_1_price()
                 elif self.ml is not None:
                     self.handle_open_a_price(cd)
     
@@ -211,7 +219,9 @@ class HistoryS3:
     出现ml1就开仓，否则不开仓
     """ 
     def handle_open_a_price(self, cd):
-        if self.find_ml_1(cd):
+        # 设置ml_1_price
+        self.set_ml_1_price()
+        if self.find_open_a_price(cd):
             self.set_open_trade_action()
             self.set_sub_status(S3_Cons.SUB_STATUS_OF_ML_ONE)
             print(f"进入ml1开仓 {cd.datetime}---------------------------------------------------------------------------------------")
@@ -220,10 +230,6 @@ class HistoryS3:
             print(f"开仓方向 => {self.breakthrough_direction}")
             print(f"M_MAX_R => {self.M_MAX_R}")   
             print(f"m_max_r => {self.m_max_r} -------------------------------------------------------------------------------------")   
-            # 出现当前R大于M_MAX_R就重新开始统计逆趋势
-        elif self.restart_by_M_MAX_R():
-            self.set_sub_status(S3_Cons.SUB_STATUS_OF_TREND_COUNTER)
-            print(f"进入到M_MAX_R平仓 => {cd.datetime}")
 
     """
     设置开仓状态
@@ -237,13 +243,13 @@ class HistoryS3:
     """
     出现ml1
     """
-    def find_ml_1(self, cd):
-        if self.ml is not None and Logic.is_low_point(self.breakthrough_direction, self.last_cd, cd):
+    def find_open_a_price(self, cd):
+        if self.ml is not None:
             if self.breakthrough_direction == Constants.DIRECTION_UP:
-                if cd.low > self.ml:
+                if cd.high > self.ml_high_price:
                     return True
             elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
-                if cd.high < self.ml:
+                if cd.low < self.ml_high_price:
                     return True
         return False
 
@@ -358,6 +364,8 @@ class HistoryS3:
             self.set_ml_1_price(cd)
             if self.ml_1_price is not None:
                 self.close_a_price_by_ml_1_price(cd)
+            elif self.ml is not None:
+                print()
 
     """
     判断当前价是否超过止盈价位，如果超过就平仓
@@ -378,11 +386,29 @@ class HistoryS3:
                 if self.sub_status == S3_Cons.SUB_STATUS_OF_ML_ONE:
                     self.reset_params_by_close_a_price()
     
+        """
+    判断当前价是否超过止盈价位，如果超过就平仓
+    """
+    def close_a_price_by_ml(self, cd):
+        if self.trade_action == Constants.ACTION_OPEN_LONG:
+            if self.ml > cd.low:
+                self.trade_action = Constants.ACTION_CLOSE_LONG
+                print(f"平仓 => {cd.datetime} 平仓价格 => {self.ml_1_price}")
+                if self.sub_status == S3_Cons.SUB_STATUS_OF_ML_ONE:
+                    self.reset_params_by_close_a_price()
+        elif self.trade_action == Constants.ACTION_OPEN_SHORT:
+            if self.ml < cd.high:
+                print(f"平仓 => {cd.datetime} 平仓价格 => {self.ml_1_price}")
+                self.trade_action = Constants.ACTION_CLOSE_SHORT
+                if self.sub_status == S3_Cons.SUB_STATUS_OF_ML_ONE:
+                    self.reset_params_by_close_a_price()
+    
     """
     平仓之后重新设置参数
     """ 
     def reset_params_by_close_a_price(self):
         self.set_sub_status(S3_Cons.SUB_STATUS_OF_TREND_COUNTER)
+        self.reset_ml_1_price()
         self.M_MAX_R = None
         self.m_max_r = None
         self.ml = None
