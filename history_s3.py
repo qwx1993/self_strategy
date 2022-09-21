@@ -336,13 +336,6 @@ class HistoryS3:
 
         # 统计r
         self.history_statistic_max_r(cd)
-
-        # 判断是否需要合并,当当前分钟为直线时考虑
-        if Logic.need_merge(self.last_cd, cd):
-            prices = []
-            prices.append(self.last_cd)
-            prices.append(cd)
-            self.last_cd = Logic.merge_multiple_time_units(prices)
         # 处理出现最大的幅度情况
         self.handle_max_amplitude(cd)
         # 逆趋势判断
@@ -927,8 +920,8 @@ class HistoryS3:
             self.histoty_status_none(cd)
         elif self.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中
             self.statistic(cd)
-        # 设置上一分钟
-        self.last_cd = cd
+        # 判断是否需要合并,当当前分钟为直线时考虑
+        self.last_cd = Logic.handle_last_cd(self.last_cd, cd)
     
     """
     实时分析    
@@ -940,8 +933,8 @@ class HistoryS3:
             self.histoty_status_none(cd)
         elif self.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中
             self.statistic(cd)
-        # 设置上一分钟
-        self.last_cd = cd
+        # 判断是否需要合并,当当前分钟为直线时考虑
+        self.last_cd = Logic.handle_last_cd(self.last_cd, cd)
 
     """
     历史行情数据分析

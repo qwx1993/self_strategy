@@ -470,7 +470,30 @@ class Logic:
 				merged.low = prices[i].low
 		merged.direction = Logic.get_direction_value(merged.open, merged.close)
 		return merged
-	
+
+	        #     if Logic.need_merge(self.last_cd, cd):
+            #     print(f"合并数据 => {cd}")
+            #     prices = []
+            #     prices.append(self.last_cd)
+            #     prices.append(cd)
+            #     self.last_cd = Logic.merge_multiple_time_units(prices)
+            # else:
+            #     self.last_cd = cd
+
+	"""
+	处理最后的一分钟，如果需要合并，就合并处理
+	"""
+	def handle_last_cd(last_cd, cd):
+		if Logic.need_merge(last_cd, cd):
+			prices = []
+			prices.append(last_cd)
+			prices.append(cd)
+			last_cd = Logic.merge_multiple_time_units(prices)
+			# print(f"合并数据 => {cd} {last_cd}")
+		else:
+			last_cd = cd
+		return last_cd
+
 	"""
 	判断是否需要合并数据
 	"""

@@ -42,7 +42,6 @@ class HistoryS4:
     h_price_max = None # h的极值
     trade_action = None
     ml = None # 出现小级别逆趋势后的低点，需比L的值大
-    ml_high_price = None # 出现ml点当前分钟的高点价
     ml_interval = None # 出现lm后第一个上涨的幅度
     ml_1_price  = None # 用于止盈
     m_max_r = None  # 小级别r
@@ -177,26 +176,21 @@ class HistoryS4:
     设置ml的price
     """   
     def set_ml_price(self, cd):
+        refresh_ml = False
         if self.extremum_l_price is not None and Logic.is_low_point(self.breakthrough_direction, self.last_cd, cd):
             if self.breakthrough_direction == Constants.DIRECTION_UP:
                 if (self.ml is None) or cd.low < self.ml:
                     self.ml = cd.low
-                    # 设置ml的高价
-                    self.ml_high_price = cd.high
-                    print(f"设置ml => {self.ml} {cd.datetime}")
-                    # 重新设置ml_1_price
-                    self.reset_ml_1_price()
-                elif self.ml is not None:
-                    self.handle_open_a_price(cd)
-            elif self.breakthrough_direction == Constants.DIRECTION_UP:
+                    print(f"设置ml1 => {self.ml} {cd.datetime}")
+                    refresh_ml = True
+            elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
                 if (self.ml is None) or cd.high > self.ml:
                     self.ml = cd.high
-                    self.ml_high_price = cd.low
-                    print(f"设置ml => {self.ml} {cd.datetime}")
-                    # 重新设置ml_1_price
-                    self.reset_ml_1_price()
-                elif self.ml is not None:
-                    self.handle_open_a_price(cd)
+                    print(f"设置ml-1 => {self.ml} {cd.datetime}")
+                    refresh_ml = True
+        # 存在ml就判断是否可以开仓
+        if self.ml is not None and not refresh_ml:
+            self.handle_open_a_price(cd)
     
     """
     开仓位出现后设置ml_1_price
@@ -219,12 +213,10 @@ class HistoryS4:
     出现ml1就开仓，否则不开仓
     """ 
     def handle_open_a_price(self, cd):
-        # 设置ml_1_price
-        self.set_ml_1_price()
         if self.find_open_a_price(cd):
             self.set_open_trade_action()
             self.set_sub_status(S3_Cons.SUB_STATUS_OF_ML_ONE)
-            print(f"进入ml1开仓 {cd.datetime}---------------------------------------------------------------------------------------")
+            print(f"进入ml1开仓 {cd.datetime} 开仓价{self.last_cd} ---------------------------------------------------------------------------------------")
             print(f"l => {self.extremum_l_price}")   
             print(f"ml => {self.ml}")
             print(f"开仓方向 => {self.breakthrough_direction}")
@@ -246,10 +238,10 @@ class HistoryS4:
     def find_open_a_price(self, cd):
         if self.ml is not None:
             if self.breakthrough_direction == Constants.DIRECTION_UP:
-                if cd.high > self.ml_high_price:
+                if cd.high > self.last_cd.high:
                     return True
             elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
-                if cd.low < self.ml_high_price:
+                if cd.low < self.last_cd.low:
                     return True
         return False
 
@@ -342,13 +334,6 @@ class HistoryS4:
 
         # 统计r
         self.history_statistic_max_r(cd)
-
-        # 判断是否需要合并,当当前分钟为直线时考虑
-        if Logic.need_merge(self.last_cd, cd):
-            prices = []
-            prices.append(self.last_cd)
-            prices.append(cd)
-            self.last_cd = Logic.merge_multiple_time_units(prices)
         # 处理出现最大的幅度情况
         self.handle_max_amplitude(cd)
         # 逆趋势判断
@@ -359,13 +344,26 @@ class HistoryS4:
             # 设置ml
             self.set_ml_price(cd)
 
-        # 设置m1_l_price
+        # 开仓状态管理
         if self.trade_action in [Constants.ACTION_OPEN_LONG, Constants.ACTION_OPEN_SHORT]:
-            self.set_ml_1_price(cd)
-            if self.ml_1_price is not None:
-                self.close_a_price_by_ml_1_price(cd)
-            elif self.ml is not None:
-                print()
+            self.close_a_price_by_last_cd_low_price(cd)
+
+    """
+    平仓通过上一分钟的最低价
+    """
+    def close_a_price_by_last_cd_low_price(self, cd):
+        if self.trade_action == Constants.ACTION_OPEN_LONG:
+            if self.last_cd.low > cd.low:
+                self.trade_action = Constants.ACTION_CLOSE_LONG
+                print(f"平仓1 => {cd.datetime} {self.last_cd}")
+                if self.sub_status == S3_Cons.SUB_STATUS_OF_ML_ONE:
+                    self.reset_params_by_close_a_price()
+        elif self.trade_action == Constants.ACTION_OPEN_SHORT:
+            if self.last_cd.high < cd.high:
+                print(f"平仓2 => {cd.datetime} 平仓价格 => {self.last_cd}")
+                self.trade_action = Constants.ACTION_CLOSE_SHORT
+                if self.sub_status == S3_Cons.SUB_STATUS_OF_ML_ONE:
+                    self.reset_params_by_close_a_price()
 
     """
     判断当前价是否超过止盈价位，如果超过就平仓
@@ -407,11 +405,7 @@ class HistoryS4:
     平仓之后重新设置参数
     """ 
     def reset_params_by_close_a_price(self):
-        self.set_sub_status(S3_Cons.SUB_STATUS_OF_TREND_COUNTER)
-        self.reset_ml_1_price()
-        self.M_MAX_R = None
-        self.m_max_r = None
-        self.ml = None
+        self.set_sub_status(S3_Cons.SUB_STATUS_OF_ML)
 
     """
     处理最大的幅度区间Rmax
@@ -618,7 +612,6 @@ class HistoryS4:
         self.current_max_l_to_d_interval = max_l_to_d_obj
         # 记录最大的max_l_to_d
         self.set_max_l_to_d_interval_obj(max_l_to_d_obj)
-
         # 当子状态为L时就设置M_MAX_R 
         if self.sub_status == S3_Cons.SUB_STATUS_OF_TREND_COUNTER:
             self.set_M_MAX_R_obj(max_l_to_d_obj)
@@ -953,8 +946,8 @@ class HistoryS4:
             self.histoty_status_none(cd)
         elif self.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中
             self.statistic(cd)
-        # 设置上一分钟
-        self.last_cd = cd
+        # 判断是否需要合并,当当前分钟为直线时考虑
+        self.last_cd = Logic.handle_last_cd(self.last_cd, cd)
     
     """
     实时分析    
@@ -966,8 +959,8 @@ class HistoryS4:
             self.histoty_status_none(cd)
         elif self.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中
             self.statistic(cd)
-        # 设置上一分钟
-        self.last_cd = cd
+        # 判断是否需要合并,当当前分钟为直线时考虑
+        self.last_cd = Logic.handle_last_cd(self.last_cd, cd)
 
     """
     历史行情数据分析
@@ -994,6 +987,6 @@ class HistoryS4:
                     self.histoty_status_none(cd)
                 elif self.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中
                     self.statistic(cd)
-                
-                self.last_cd = cd
+            # 判断是否需要合并,当当前分钟为直线时考虑
+            self.last_cd = Logic.handle_last_cd(self.last_cd, cd)
         data_file.close()

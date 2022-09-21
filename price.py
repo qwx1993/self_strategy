@@ -19,7 +19,7 @@ class Price:
         """
         def save_prices_csv(self, vt_symbol, days):
             d1 = datetime.datetime.now()
-            start_date = Logic.get_date_str(d1, days)
+            start_date = Logic.get_date_str(d1, -days)
             end_date = Logic.get_date_str(d1, -1)
             # print(f"vt_symbol => {vt_symbol}")
             # 写入5m 
@@ -42,7 +42,7 @@ class Price:
         """
         def save_tick_prices_csv(self, vt_symbol, days):
             d1 = datetime.datetime.now()
-            start_date = Logic.get_date_str(d1, days)
+            start_date = Logic.get_date_str(d1, -days)
             end_date = Logic.get_date_str(d1, -1)
             # print(f"vt_symbol => {vt_symbol}")
             # 写入tick

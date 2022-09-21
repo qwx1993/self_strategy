@@ -59,37 +59,25 @@ class TestLogics(unittest.TestCase):
 	检测是否需要合并
 	"""
 	def test_need_merge(self):
+# NI2301,2022-09-16 21:36:00,184310.0,184310.0,183800.0,183990.0
+# NI2301,2022-09-16 21:37:00,183990.0,184080.0,183990.0,184080.0
+# NI2301,2022-09-16 21:38:00,184080.0,184200.0,183860.0,183860.0
 		last_cd = SimpleNamespace()
 		# 方向向上
-		last_cd.open = 100
-		last_cd.low = 99
-		last_cd.high = 105
-		last_cd.close = 105
-		last_cd.direction = Constants.DIRECTION_UP
+		last_cd.open = 184310.0
+		last_cd.low = 183800.0
+		last_cd.high = 184310.0
+		last_cd.close = 183990.0
+		last_cd.direction = Constants.DIRECTION_DOWN
 
 		cd = SimpleNamespace()
-		cd.open = 105
-		cd.low = 105
-		cd.high = 108
-		cd.close = 108
+		cd.open =  183990.0
+		cd.low = 183990.0
+		cd.high = 184080.0
+		cd.close = 184080.0
 		cd.direction = Constants.DIRECTION_UP
 
 		self.assertTrue(Logic.need_merge(last_cd, cd))
-		cd.close = 106
-		# 方向向下
-		last_cd.open = 100
-		last_cd.high = 105
-		last_cd.low = 95
-		last_cd.close = 95
-		last_cd.direction = Constants.DIRECTION_DOWN
-
-		cd.open = 95
-		cd.high = 95
-		cd.low = 90
-		cd.close = 90
-		cd.direction = Constants.DIRECTION_DOWN
-		self.assertTrue(Logic.need_merge(last_cd, cd))
-
 		prices = []
 		prices.append(last_cd)
 		prices.append(cd)
@@ -97,6 +85,10 @@ class TestLogics(unittest.TestCase):
 
 		print(merge)
 
+
+	"""
+	测试是否为最后一分钟
+	"""
 	def test_is_last_minute(self):
 		date_str1 = '2014-08-23 12:33:00'
 		self.assertFalse(Logic.is_last_minute(date_str1))
