@@ -484,7 +484,7 @@ class Logic:
 	处理最后的一分钟，如果需要合并，就合并处理
 	"""
 	def handle_last_cd(last_cd, cd):
-		if Logic.need_merge(last_cd, cd):
+		if last_cd is not None and Logic.need_merge(last_cd, cd):
 			prices = []
 			prices.append(last_cd)
 			prices.append(cd)

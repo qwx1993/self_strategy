@@ -35,6 +35,7 @@ class TestTicks(unittest.TestCase):
 			if len(temp_array) > 0:
 				# try:
 				cd = TickLogic.tick_price_to_data_object(temp_array, count, line)
+				cd.datetime = datetime.strptime(cd.datetime, '%Y-%m-%d %H:%M:%S.%f')
 				# except:
 				# 	continue
 				if len(ls1) >= Constants.REFERENCE_AND_SPEEDING_LENGTH:
@@ -82,9 +83,12 @@ class TestTicks(unittest.TestCase):
 	测试合成tick数据
 	"""
 	def test_merge_ticks_to_m1(self):
-		ls = self.get_data_from_test_csv('SA2301_tick.csv')
-		merge = TickLogic.merge_ticks_to_m1(ls)
-		print(f"合成的结果 => {merge}")
+		s_l = []
+		ls = self.get_data_from_test_csv('test_combine.csv')
+		for tick_obj in ls:
+			s_l.append(tick_obj)
+			merge = TickLogic.merge_ticks_to_m1(s_l)
+			print(f"合成的结果 => {merge}")
 
 if __name__ == '__main__':
 	unittest.main()
