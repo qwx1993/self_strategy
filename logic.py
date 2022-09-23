@@ -469,6 +469,7 @@ class Logic:
 			if prices[i].low < merged.low:
 				merged.low = prices[i].low
 		merged.direction = Logic.get_direction_value(merged.open, merged.close)
+		merged.datetime = prices[i].datetime
 		return merged
 
 	        #     if Logic.need_merge(self.last_cd, cd):

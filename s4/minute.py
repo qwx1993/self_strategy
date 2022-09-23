@@ -25,7 +25,7 @@ class Minute:
     sub_status = S3_Cons.SUB_STATUS_OF_NONE # 策略三的子状态
 
     actions = []  # 记录所有的动作，包括开空，开多，逆开空，逆开多，注意：逆趋势下是两倍仓位
-    stop_surplus_price = 0  # 设置止盈价
+    test_need_statistic = False # 测试是否需要统计   
     extremum_d_price = None  # 极致d的price
     extremum_d = None  # 极值点D
     extremum_l_price = None # 极值点l的price
@@ -33,26 +33,55 @@ class Minute:
 
     h_price = None # h点，表示比仅次于d点第二高点
 
-    counter_trend_action_record = None
-
     history_status = Constants.HISTORY_STATUS_OF_NONE # 历史状态
     last_cd = None # 上一点
     max_amplitude = None # 最大幅度对象
     h_price_max = None # h的极值
     trade_action = None
     ml = None # 出现小级别逆趋势后的低点，需比L的值大
-    ml_interval = None # 出现lm后第一个上涨的幅度
     ml_1_price  = None # 用于止盈
     m_max_r = None  # 小级别r
     M_MAX_R = None  # 小级别R
 
+    """
+    初始化
+    """
+
+    def __init__(self):
+        # 所有的list跟dict需要重置
+        self.max_l_to_d_interval = None
+        self.max_r = None
+        self.actions = []
+        self.max_amplitude = None
+        self.m_max_r = None  # 小级别r
+        self.M_MAX_R = None  # 小级别R
+
+
+    """
+    添加对应的动作，目前包括开空、平空、开多、平多
+    """
+
+    def add_action(self, cd, action, price, actions_index=Constants.ACTIONS_INDEX_DEFAULT):
+        record = {
+            "price": price,
+            "action": action,
+            "datetime": cd.datetime
+        }
+
+        if actions_index == Constants.ACTIONS_INDEX_DEFAULT:
+            self.actions.append(record)
+        return record
+
+
+    """
+    重置状态
+    """
     def reset_status(self):
         self.current_status = Constants.STATUS_NONE
 
     """
     将当前状态设置成某状态
     """
-
     def set_status(self, status):
         self.current_status = status
     
@@ -215,6 +244,13 @@ class Minute:
         if self.find_open_a_price(cd):
             self.set_open_trade_action()
             self.set_sub_status(S3_Cons.SUB_STATUS_OF_ML_ONE)
+
+            if self.test_need_statistic:
+                if self.trade_action == Constants.ACTION_OPEN_LONG:
+                    open_a_price = self.last_cd.high
+                elif self.trade_action == Constants.ACTION_OPEN_SHORT:
+                    open_a_price = self.last_cd.low
+                self.add_action(cd, self.trade_action, open_a_price)
             # print(f"进入ml1开仓 {cd.datetime} 开仓价{self.last_cd} ---------------------------------------------------------------------------------------")
             # print(f"l => {self.extremum_l_price}")   
             # print(f"ml => {self.ml}")
@@ -354,6 +390,9 @@ class Minute:
         if self.trade_action == Constants.ACTION_OPEN_LONG:
             if self.last_cd.low > cd.low:
                 self.trade_action = Constants.ACTION_CLOSE_LONG
+                # 临时使用
+                if self.test_need_statistic:
+                    self.add_action(cd, self.trade_action, self.last_cd.low)
                 # print(f"平仓1 => {cd.datetime} {self.last_cd}")
                 if self.sub_status == S3_Cons.SUB_STATUS_OF_ML_ONE:
                     self.reset_params_by_close_a_price()
@@ -361,6 +400,9 @@ class Minute:
             if self.last_cd.high < cd.high:
                 # print(f"平仓2 => {cd.datetime} 平仓价格 => {self.last_cd}")
                 self.trade_action = Constants.ACTION_CLOSE_SHORT
+                # 临时使用
+                if self.test_need_statistic:
+                    self.add_action(cd, self.trade_action, self.last_cd.high)
                 if self.sub_status == S3_Cons.SUB_STATUS_OF_ML_ONE:
                     self.reset_params_by_close_a_price()
 
