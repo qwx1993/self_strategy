@@ -478,10 +478,10 @@ class Minute:
             # 重置r
             self.max_r = None
         else:
-            if self.is_exceed_max_amplitude_start_price(cd):
+            if Logic.is_exceed_max_amplitude_start_price(cd):
                 self.reverse_direct_by_max_amplitude()
                 print(f"突破max_amplitude的起始价格@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ => {cd.datetime}")
-            elif self.is_exceed_max_amplitude_end_price(cd):
+            elif Logic.is_exceed_max_amplitude_end_price(cd):
                 self.set_direction_by_max_amplitude()
         #         # 重置方向
         #         self.reverse_direct()
@@ -514,32 +514,6 @@ class Minute:
         self.h_price_max = None
         # 重置rrn
         self.rrn = None
-
-    """
-    超过最大幅度的起始价就改变方向、重置max_amplitude,R,r,rrn,max_r
-    """
-    def is_exceed_max_amplitude_start_price(self, cd):
-        if self.breakthrough_direction == self.max_amplitude.direction:
-            if self.breakthrough_direction == Constants.DIRECTION_UP:
-                if cd.low < self.max_amplitude.start:
-                    return True
-            elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
-                if cd.high > self.max_amplitude.start:
-                    return True
-            return False
-
-    """
-    超过最大幅度的起始价格改变方向后，又重新回落到最大幅度的结束价格后改变方向
-    """ 
-    def is_exceed_max_amplitude_end_price(self, cd):
-        if not self.breakthrough_direction == self.max_amplitude.direction:
-            if self.breakthrough_direction == Constants.DIRECTION_UP:
-                if cd.low < self.max_amplitude.end:
-                    return True
-            elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
-                if cd.high > self.max_amplitude.end:
-                    return True
-        return False
     
     """
     趋势分析

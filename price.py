@@ -33,6 +33,7 @@ class Price:
             # value_3m.to_csv('C:/Users/Administrator/strategies/data/' + f"{vt_symbol}_3m.csv" )
 
             # 写入1m 
+            print(vt_symbol_id)
             value_1m = rqdatac.get_price(vt_symbol_id, start_date=start_date, end_date=end_date, frequency='1m')[["open", "high", "low", "close"]] 
             value_1m.to_csv('C:/Users/Administrator/strategies/data/' + f"{vt_symbol}_1m.csv" )
             

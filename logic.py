@@ -798,57 +798,33 @@ class Logic:
 		return False
 
 	"""
-	判断是否加速下跌完成，即发生了3次宽幅下跌
-	ls是一个包含价格信息的数组，其中第1次宽幅下跌的时间单位已经用`open_short_for_1st_fall`标记出来了
+	超过最大幅度的起始价就改变方向、重置max_amplitude,R,r,rrn,max_r
 	"""
-	def validate_fall_speeding(ls):
-		l = len(ls)
-		if l < Constants.REFERENCE_AND_SPEEDING_LENGTH:
-			return False, -1
-
-		os_index = -1 # 开空/第1次宽幅下跌的数组下标
-		for i in range(len(ls)):
-			if hasattr(ls[i], "open_short_for_1st_fall"):
-				if ls[i].open_short_for_1st_fall:
-					os_index = i
-		if os_index == -1:
-			return False, -1
-
-		# 除去前面10分钟的参考波动时间以外，加速下跌的过程有可能是3分钟、4分钟或者5分钟
-		# 首先检查加速下跌是3分钟的情况，也就是3分钟连续跌
-		if (os_index+Constants.POSSIBLE_SPEEDING_1-1) > (l-1):
-			return False, -1
-		t1, t2, t3 = [ls[i] for i in (os_index, os_index + 1, os_index + 2)]
-		validated = Logic.speed_fall_finished(ls, t1, t2, t3, t3)
-		if validated:
-			return True, Constants.POSSIBLE_SPEEDING_1
-
-		# 然后检查加速下跌是4分钟的情况，也就是跌、(涨、跌)、跌，或者跌、(跌、涨)、跌
-		if (os_index+Constants.POSSIBLE_SPEEDING_2-1) > (l-1):
-			return False, -1
-		t1, t2, t3, t_last = [ls[i] for i in (os_index, os_index + 1, os_index + 2, os_index + 3)]
-		t2 = Logic.merge_multiple_time_units([t2, t3])
-		t3 = t_last
-		validated = Logic.speed_fall_finished(ls, t1, t2, t3, t_last)
-		if validated:
-			return True, Constants.POSSIBLE_SPEEDING_2
-
-		# 最后检查加速下跌是5分钟的情况，也就是跌、(涨、跌)/(跌、涨)、(涨、跌)
-		if (os_index+Constants.POSSIBLE_SPEEDING_3-1) > (l-1):
-			return False, -1
-		t1, t2, t3, t4, t_last = [ls[i] for i in (os_index, os_index + 1, os_index + 2, os_index + 3,  os_index + 4)]
-		t2 = Logic.merge_multiple_time_units([t2, t3])
-		t3 = Logic.merge_multiple_time_units([t4, t_last])
-		validated = Logic.speed_fall_finished(ls, t1, t2, t3, t_last)
-		if validated:
-			return True, Constants.POSSIBLE_SPEEDING_3
-
-		return False, -1
-	
-
+	def is_exceed_max_amplitude_start_price(direction, max_amplitude, cd):
+		if direction == max_amplitude.direction:
+			if direction == Constants.DIRECTION_UP:
+				if cd.low < max_amplitude.start:
+					return True
+			elif direction == Constants.DIRECTION_DOWN:
+				if cd.high > max_amplitude.start:
+					return True
+			return False	
 
 	"""
-	计算胜率和赔率]】
+	超过最大幅度的起始价格改变方向后，又重新回落到最大幅度的结束价格后改变方向
+	""" 
+	def is_exceed_max_amplitude_end_price(direction, max_amplitude, cd):
+		if not direction == max_amplitude.direction:
+			if direction == Constants.DIRECTION_UP:
+				if cd.low < max_amplitude.end:
+					return True
+			elif direction == Constants.DIRECTION_DOWN:
+				if cd.high > max_amplitude.end:
+					return True
+		return False
+
+	"""
+	计算胜率和赔率
 	"""
 	def calculate_rate(actions_list, filename):
 		num_trade = 0

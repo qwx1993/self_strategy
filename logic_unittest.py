@@ -69,6 +69,7 @@ class TestLogics(unittest.TestCase):
 		last_cd.high = 184310.0
 		last_cd.close = 183990.0
 		last_cd.direction = Constants.DIRECTION_DOWN
+		last_cd.datetime = '2022-09-11 00:00:00'
 
 		cd = SimpleNamespace()
 		cd.open =  183990.0
@@ -76,6 +77,7 @@ class TestLogics(unittest.TestCase):
 		cd.high = 184080.0
 		cd.close = 184080.0
 		cd.direction = Constants.DIRECTION_UP
+		cd.datetime = '2022-09-11 00:01:00'
 
 		self.assertTrue(Logic.need_merge(last_cd, cd))
 		prices = []
@@ -124,6 +126,43 @@ class TestLogics(unittest.TestCase):
 		test_csv.close()
 		return ls1
 	
+	"""
+	测试当方向跟max_amplitude方向不同时，是否超过了max_amplitude的终点价
+	"""
+	def test_is_exceed_max_amplitude_end_price(self):
+		direction = Constants.DIRECTION_DOWN
+		max_amplitude = SimpleNamespace()
+		max_amplitude.start = 100
+		max_amplitude.end = 200
+		max_amplitude.direction = Constants.DIRECTION_UP
+
+		cd = SimpleNamespace()
+		cd.open = 180
+		cd.low = 170
+		cd.high = 210
+		cd.close = 201
+		cd.direction = Constants.DIRECTION_UP
+		self.assertTrue(Logic.is_exceed_max_amplitude_end_price(direction, max_amplitude, cd))
+
+		
+	"""
+	测试当方向跟max_amplitude方向相同时，是否超过了max_amplitude的起点价
+	"""
+	def test_is_exceed_max_amplitude_start_price(self):
+		direction = Constants.DIRECTION_UP
+		max_amplitude = SimpleNamespace()
+		max_amplitude.start = 100
+		max_amplitude.end = 200
+		max_amplitude.direction = Constants.DIRECTION_UP
+
+		cd = SimpleNamespace()
+		cd.open = 180
+		cd.low = 85
+		cd.high = 180
+		cd.close = 105
+		cd.direction = Constants.DIRECTION_DOWN
+		self.assertTrue(Logic.is_exceed_max_amplitude_start_price(direction, max_amplitude, cd))
+
 	# def test_is_firm_offer_start_minute(self):
 	# 	datetime_str = "2022-08-29 21:00:00"
 	# 	self.assertTrue(Logic.is_firm_offer_start_minute(datetime_str))
