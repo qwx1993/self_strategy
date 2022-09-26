@@ -442,19 +442,6 @@ class HistoryS4:
                 print(f"突破max_amplitude的起始价格@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ => {cd.datetime}")
             elif self.is_exceed_max_amplitude_end_price(cd):
                 self.set_direction_by_max_amplitude()
-        #         # 重置方向
-        #         self.reverse_direct()
-        #         # 重置max_amplitude
-        #         print(f"超过了Rmax的起始价格 => {cd} => {self.max_amplitude}")
-        #         self.max_amplitude = None
-
-        #         self.init_set_max_amplitude(cd)
-        #         # 重置R
-        #         self.max_l_to_d_interval = None
-        #         # 重置r
-        #         self.max_r = None
-        #         # 改变方向执行的动作
-        #         self.on_direction_change(cd)
 
     """
     方向改变执行的动作

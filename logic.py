@@ -316,7 +316,7 @@ class Logic:
 	在开多情况下，如果当前点是上涨就为True
 	在开空情况下，如果当前点是下跌就为True
 	"""
-	def is_same_direction(cd, breakthrough_direction):
+	def is_same_direction(breakthrough_direction, cd):
 		if cd.close > cd.open and breakthrough_direction == Constants.DIRECTION_UP:
 			return True
 		elif cd.close < cd.open and breakthrough_direction == Constants.DIRECTION_DOWN:
@@ -821,6 +821,16 @@ class Logic:
 			elif direction == Constants.DIRECTION_DOWN:
 				if cd.high > max_amplitude.end:
 					return True
+		return False
+	
+	"""
+	判断当前方向是否跟突破后的方向一致
+	在开多情况下，如果当前点是上涨就为True
+	在开空情况下，如果当前点是下跌就为True
+	"""
+	def is_same_breakthrough_direction(cd, breakthrough_direction):
+		if cd.direction == breakthrough_direction:
+			return True
 		return False
 
 	"""
