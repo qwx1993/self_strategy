@@ -19,12 +19,12 @@ class Tick:
     """
     通过tick进行平仓
     """
-    def close_a_price(trade_action, last_cd, tick):
+    def close_a_price(trade_action, close_price, tick):
 
         if trade_action == Constants.ACTION_CLOSE_LONG:
-            if tick.current < last_cd.low:
+            if tick.current < close_price:
                 return True
         elif trade_action == Constants.ACTION_CLOSE_SHORT:
-            if tick.current > last_cd.high:
+            if tick.current > close_price:
                 return True
         return False

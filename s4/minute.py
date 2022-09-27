@@ -459,6 +459,7 @@ class Minute:
                 self.max_amplitude.start = self.max_l_to_d_interval.start_price            
                 self.max_amplitude.end = self.max_l_to_d_interval.end_price
                 self.max_amplitude.length = abs(self.max_amplitude.start - self.max_amplitude.end)
+                self.max_amplitude.datetime = cd.datetime
                 appear = True
                 # print(f"相同方向设置最大的max_amplitude00000000000000000000000000000000000000 => {cd.datetime} => {self.max_amplitude} 方向 => {self.breakthrough_direction}")
         else:
@@ -469,6 +470,7 @@ class Minute:
                 self.max_amplitude.start = self.max_r.start_price
                 self.max_amplitude.end = self.max_r.end_price
                 self.max_amplitude.length = abs(self.max_amplitude.start - self.max_amplitude.end)
+                self.max_amplitude.datetime = cd.datetime
                 appear = True
                 self.on_direction_change(cd)
                 # print(f"不同方向设置最大的max_amplitudeooooooooooooooooooooooooooooooooooooooo => {cd.datetime} => {self.max_amplitude} 方向 => {self.breakthrough_direction}")
@@ -478,25 +480,14 @@ class Minute:
             # 重置r
             self.max_r = None
         else:
-            if Logic.is_exceed_max_amplitude_start_price(cd):
+            if Logic.is_exceed_max_amplitude_start_price(self.breakthrough_direction, self.max_amplitude, cd):
                 self.reverse_direct_by_max_amplitude()
+                self.on_direction_change(cd)
                 print(f"突破max_amplitude的起始价格@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ => {cd.datetime}")
-            elif Logic.is_exceed_max_amplitude_end_price(cd):
+            elif Logic.is_exceed_max_amplitude_end_price(self.breakthrough_direction, self.max_amplitude, cd):
                 self.set_direction_by_max_amplitude()
-        #         # 重置方向
-        #         self.reverse_direct()
-        #         # 重置max_amplitude
-        #         print(f"超过了Rmax的起始价格 => {cd} => {self.max_amplitude}")
-        #         self.max_amplitude = None
-
-        #         self.init_set_max_amplitude(cd)
-        #         # 重置R
-        #         self.max_l_to_d_interval = None
-        #         # 重置r
-        #         self.max_r = None
-        #         # 改变方向执行的动作
-        #         self.on_direction_change(cd)
-
+                self.on_direction_change(cd)
+                
     """
     方向改变执行的动作
     重置d
@@ -780,6 +771,7 @@ class Minute:
         current = SimpleNamespace()
         current.length = Logic.max_amplitude_length(cd)
         current.direction = cd.direction
+        current.datetime = cd.datetime
         if cd.direction == Constants.DIRECTION_UP:
             current.start = cd.low
             current.end = cd.high

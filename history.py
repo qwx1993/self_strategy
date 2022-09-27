@@ -266,7 +266,7 @@ class History:
             # 重置r
             self.max_r = None
         else:
-            if Logic.is_exceed_max_amplitude_start_price(cd):
+            if Logic.is_exceed_max_amplitude_start_price(self.breakthrough_direction, self.max_amplitude, cd):
                 self.reverse_direct_by_max_amplitude()
                 print(f"突破max_amplitude的起始价格@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ => {cd.datetime}")
             elif Logic.is_exceed_max_amplitude_end_price(self.breakthrough_direction, self.max_amplitude, cd):
