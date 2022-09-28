@@ -3,13 +3,14 @@ from collections import deque
 from constants import Constants
 import unittest
 import os
-from history_s4 import HistoryS4
+from s4.minute import Minute as HistoryS4
 from logic import Logic
 from types import SimpleNamespace
-import sys
 
 class TestHistoryS4s(unittest.TestCase):
 
+	"""
+	"""
 	def get_data_from_test_csv(self, csv_file):
 		ls1 = deque([])
 		test_csv = open("test_csv/" + csv_file, "r")
@@ -48,7 +49,11 @@ class TestHistoryS4s(unittest.TestCase):
 		print(f"l_price => {history.extremum_l_price}")
 		print(f"h_price => {history.h_price}")
 		print(f"h_max_price => {history.h_price_max}")
-
+		print(f"ml => {history.ml}")
+		print(f"sub_status => {history.sub_status}")
+		print(f"M_MAX_R => {history.M_MAX_R}")
+		print(f"m_max_r => {history.m_max_r}")
+		print(f"breakthrough => {history.breakthrough_direction}")
 	# def test_set_ml_price(self):
 	# 	history = HistoryS3()
 	# 	history.direction = Constants.DIRECTION_UP
