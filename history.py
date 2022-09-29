@@ -248,7 +248,7 @@ class History:
                 self.max_amplitude.length = abs(self.max_amplitude.start - self.max_amplitude.end)
                 self.max_amplitude.datetime = cd.datetime
                 appear = True
-                print(f"相同方向设置最大的max_amplitude => {cd.datetime} => {self.max_amplitude}")
+                # print(f"相同方向设置最大的max_amplitude => {cd.datetime} => {self.max_amplitude}")
         else:
             if self.max_r.length > self.max_amplitude.length:
                 # 当r为最大的幅度时，改变方向
@@ -260,7 +260,7 @@ class History:
                 self.max_amplitude.datetime = cd.datetime
                 appear = True
                 self.on_direction_change(cd)
-                print(f"不同方向设置最大的max_amplitude => {cd.datetime} => {self.max_amplitude}")
+                # print(f"不同方向设置最大的max_amplitude => {cd.datetime} => {self.max_amplitude}")
         if appear:
             # 重置R
             self.max_l_to_d_interval = None
@@ -269,7 +269,7 @@ class History:
         else:
             if Logic.is_exceed_max_amplitude_start_price(self.breakthrough_direction, self.max_amplitude, cd):
                 self.reverse_direct_by_max_amplitude()
-                print(f"突破max_amplitude的起始价格@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ => {cd.datetime}")
+                # print(f"突破max_amplitude的起始价格@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ => {cd.datetime}")
             elif Logic.is_exceed_max_amplitude_end_price(self.breakthrough_direction, self.max_amplitude, cd):
                 self.set_direction_by_max_amplitude()
 
