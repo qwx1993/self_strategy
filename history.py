@@ -46,8 +46,9 @@ class History:
         self.max_amplitude = None
 
     """
-    添加对应的动作，目前包括开空、平空、开多、平多、
+    添加对应的动作，目前包括开空、平空、开多、平多
     """
+
     def add_action(self, cd, action, price, actions_index=Constants.ACTIONS_INDEX_DEFAULT):
         record = {
             "price": price,
@@ -55,10 +56,8 @@ class History:
             "datetime": cd.datetime
         }
 
-        # 写交易记录
         if actions_index == Constants.ACTIONS_INDEX_DEFAULT:
             self.actions.append(record)
-
         return record
 
     """
@@ -247,6 +246,7 @@ class History:
                 self.max_amplitude.start = self.max_l_to_d_interval.start_price            
                 self.max_amplitude.end = self.max_l_to_d_interval.end_price
                 self.max_amplitude.length = abs(self.max_amplitude.start - self.max_amplitude.end)
+                self.max_amplitude.datetime = cd.datetime
                 appear = True
                 print(f"相同方向设置最大的max_amplitude => {cd.datetime} => {self.max_amplitude}")
         else:
@@ -257,6 +257,7 @@ class History:
                 self.max_amplitude.start = self.max_r.start_price
                 self.max_amplitude.end = self.max_r.end_price
                 self.max_amplitude.length = abs(self.max_amplitude.start - self.max_amplitude.end)
+                self.max_amplitude.datetime = cd.datetime
                 appear = True
                 self.on_direction_change(cd)
                 print(f"不同方向设置最大的max_amplitude => {cd.datetime} => {self.max_amplitude}")
@@ -529,6 +530,7 @@ class History:
         current = SimpleNamespace()
         current.length = Logic.max_amplitude_length(cd)
         current.direction = cd.direction
+        current.datetime = cd.datetime
         if cd.direction == Constants.DIRECTION_UP:
             current.start = cd.low
             current.end = cd.high
@@ -624,8 +626,8 @@ class History:
     实时分析    
     """
     def realtime_analysis1(self, cd):
-        if Logic.is_start_minute(cd.datetime):
-            return
+        # if Logic.is_start_minute(cd.datetime):
+        #     return
         if self.history_status == Constants.HISTORY_STATUS_OF_NONE: 
             self.histoty_status_none(cd)
         elif self.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中

@@ -42,6 +42,8 @@ class Minute:
     ml_1_price  = None # 用于止盈
     m_max_r = None  # 小级别r
     M_MAX_R = None  # 小级别R
+    agreement_close_price = None # 预估平仓价
+    close_price = None # 平仓价
 
     """
     初始化
@@ -248,8 +250,10 @@ class Minute:
             if self.test_need_statistic:
                 if self.trade_action == Constants.ACTION_OPEN_LONG:
                     open_a_price = self.last_cd.high
+                    self.close_price = self.last_cd.low
                 elif self.trade_action == Constants.ACTION_OPEN_SHORT:
                     open_a_price = self.last_cd.low
+                    self.close_price = self.last_cd.high
                 self.add_action(cd, self.trade_action, open_a_price)
             print(f"Rmax => {self.max_amplitude}")
             print(f"进入ml1开仓 {cd.datetime} 开仓价{self.last_cd} ---------------------------------------------------------------------------------------")
@@ -382,30 +386,90 @@ class Minute:
 
         # 开仓状态管理
         if self.trade_action in [Constants.ACTION_OPEN_LONG, Constants.ACTION_OPEN_SHORT]:
-            self.close_a_price_by_last_cd_low_price(cd)
+            if self.close_a_price(cd):
+                self.close_a_price_by_last_cd_low_price(cd)
+            elif self.is_exceed_last_cd_high(cd):
+                self.set_agreement_close_price(cd)
+            elif self.is_exceed_last_cd_low(cd):
+                self.set_close_price_by_agreement()
 
     """
     平仓通过上一分钟的最低价
     """
     def close_a_price_by_last_cd_low_price(self, cd):
         if self.trade_action == Constants.ACTION_OPEN_LONG:
-            if self.last_cd.low > cd.low:
+            if self.close_price > cd.low:
                 self.trade_action = Constants.ACTION_CLOSE_LONG
                 # 临时使用
                 if self.test_need_statistic:
-                    self.add_action(cd, self.trade_action, self.last_cd.low)
-                # print(f"平仓1 => {cd.datetime} {self.last_cd}")
+                    self.add_action(cd, self.trade_action, self.close_price - 10)
+                print(f"平仓1 => {cd.datetime} {self.close_price - 10}")
                 if self.sub_status == S3_Cons.SUB_STATUS_OF_ML_ONE:
                     self.reset_params_by_close_a_price()
         elif self.trade_action == Constants.ACTION_OPEN_SHORT:
-            if self.last_cd.high < cd.high:
-                # print(f"平仓2 => {cd.datetime} 平仓价格 => {self.last_cd}")
+            if self.close_price < cd.high:
+                print(f"平仓2 => {cd.datetime} 平仓价格 => {self.close_price + 10}")
                 self.trade_action = Constants.ACTION_CLOSE_SHORT
                 # 临时使用
                 if self.test_need_statistic:
-                    self.add_action(cd, self.trade_action, self.last_cd.high)
+                    self.add_action(cd, self.trade_action, self.close_price + 10)
                 if self.sub_status == S3_Cons.SUB_STATUS_OF_ML_ONE:
                     self.reset_params_by_close_a_price()
+    
+    """
+    开多情况，如果比上一分钟的低点低为真
+    开空情况，如果比上一分钟的高点高为真
+    """
+    def is_exceed_last_cd_high(self,cd):
+        if self.trade_action == Constants.ACTION_OPEN_LONG:
+            if cd.low < self.last_cd.low:
+                return True
+        elif self.trade_action == Constants.ACTION_OPEN_SHORT: 
+            if cd.high > self.last_cd.high:
+                return True
+        return False
+    
+        """
+    开多情况，如果比上一分钟的高点高为真
+    开空情况，如果比上一分钟的低点低为真
+    """
+    def is_exceed_last_cd_low(self, cd):
+        if self.trade_action == Constants.ACTION_OPEN_LONG:
+            if cd.high > self.last_cd.high:
+                return True
+        elif self.trade_action == Constants.ACTION_OPEN_SHORT: 
+            if cd.low < self.last_cd.low:
+                return True
+        return False
+    
+    """
+    设置开仓协定价格
+    """
+    def set_close_price_by_agreement(self):
+        if self.agreement_close_price is not None:
+            self.close_price = self.agreement_close_price
+            self.agreement_close_price = None
+
+    def set_agreement_close_price(self, cd):
+        if self.trade_action == Constants.ACTION_OPEN_LONG:
+            if self.agreement_close_price is None or cd.low < self.agreement_close_price:
+                self.agreement_close_price = cd.low
+        elif self.trade_action == Constants.ACTION_OPEN_SHORT:
+            if self.agreement_close_price is None or cd.high > self.agreement_close_price:
+                self.agreement_close_price = cd.high
+
+
+    """
+    平仓
+    """
+    def close_a_price(self, cd):
+        if self.trade_action == Constants.ACTION_OPEN_LONG:
+            if cd.low < self.close_price:
+                return True
+        elif self.trade_action == Constants.ACTION_OPEN_SHORT:
+            if cd.high > self.close_price:
+                return True
+        return False
 
     """
     判断当前价是否超过止盈价位，如果超过就平仓
@@ -961,8 +1025,8 @@ class Minute:
     实时分析    
     """
     def realtime_analysis1(self, cd):
-        if Logic.is_start_minute(cd.datetime):
-            return
+        # if Logic.is_start_minute(cd.datetime):
+        #     return
         if self.history_status == Constants.HISTORY_STATUS_OF_NONE: 
             self.histoty_status_none(cd)
         elif self.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中
