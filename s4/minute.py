@@ -251,6 +251,7 @@ class Minute:
                 elif self.trade_action == Constants.ACTION_OPEN_SHORT:
                     open_a_price = self.last_cd.low
                 self.add_action(cd, self.trade_action, open_a_price)
+            print(f"Rmax => {self.max_amplitude}")
             print(f"进入ml1开仓 {cd.datetime} 开仓价{self.last_cd} ---------------------------------------------------------------------------------------")
             print(f"l => {self.extremum_l_price}")   
             print(f"ml => {self.ml}")
