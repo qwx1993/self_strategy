@@ -247,14 +247,15 @@ class Minute:
             self.set_open_trade_action()
             self.set_sub_status(S3_Cons.SUB_STATUS_OF_ML_ONE)
 
-            if self.test_need_statistic:
-                if self.trade_action == Constants.ACTION_OPEN_LONG:
-                    open_a_price = self.last_cd.high
-                    self.close_price = self.last_cd.low
-                elif self.trade_action == Constants.ACTION_OPEN_SHORT:
-                    open_a_price = self.last_cd.low
-                    self.close_price = self.last_cd.high
-                self.add_action(cd, self.trade_action, open_a_price)
+            # 分钟测试时才需要的代码
+            if self.trade_action == Constants.ACTION_OPEN_LONG:
+                open_a_price = self.last_cd.high
+                self.close_price = self.last_cd.low
+            elif self.trade_action == Constants.ACTION_OPEN_SHORT:
+                open_a_price = self.last_cd.low
+                self.close_price = self.last_cd.high
+            self.add_action(cd, self.trade_action, open_a_price)
+            
             print(f"Rmax => {self.max_amplitude}")
             print(f"进入ml1开仓 {cd.datetime} 开仓价{self.last_cd} ---------------------------------------------------------------------------------------")
             print(f"l => {self.extremum_l_price}")   
