@@ -13,6 +13,7 @@ class History:
     breakthrough_direction = None # 突破的方向 -1 开空 1开多
 
     max_l_to_d_interval = None  # 最大上涨的间隔,即R
+    current_max_l_to_d_interval = None # 当前的R
     max_r = None  # 表示从dn-ln的最大值，d1点开始
     rrn = None  # 逆趋势止盈使用的参数  todo 暂时不使用
 
@@ -34,6 +35,7 @@ class History:
     max_amplitude = None # 最大幅度对象
     h_price_max = None # h的极值
     trade_action = None
+    s2_has_open = False
 
     """
     初始化
@@ -247,6 +249,7 @@ class History:
                 self.max_amplitude.end = self.max_l_to_d_interval.end_price
                 self.max_amplitude.length = abs(self.max_amplitude.start - self.max_amplitude.end)
                 self.max_amplitude.datetime = cd.datetime
+                self.max_amplitude.refresh_times += 1
                 appear = True
                 # print(f"相同方向设置最大的max_amplitude => {cd.datetime} => {self.max_amplitude}")
         else:
@@ -258,6 +261,7 @@ class History:
                 self.max_amplitude.end = self.max_r.end_price
                 self.max_amplitude.length = abs(self.max_amplitude.start - self.max_amplitude.end)
                 self.max_amplitude.datetime = cd.datetime
+                self.max_amplitude.refresh_times += 1
                 appear = True
                 self.on_direction_change(cd)
                 # print(f"不同方向设置最大的max_amplitude => {cd.datetime} => {self.max_amplitude}")
@@ -269,9 +273,17 @@ class History:
         else:
             if Logic.is_exceed_max_amplitude_start_price(self.breakthrough_direction, self.max_amplitude, cd):
                 self.reverse_direct_by_max_amplitude()
+                # 改变方向刷新次数
+                self.add_refresh_times_by_reverse_direct()
                 # print(f"突破max_amplitude的起始价格@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ => {cd.datetime}")
             elif Logic.is_exceed_max_amplitude_end_price(self.breakthrough_direction, self.max_amplitude, cd):
                 self.set_direction_by_max_amplitude()
+    
+    """
+    Rmax改变方向增加刷新次数
+    """
+    def add_refresh_times_by_reverse_direct(self):
+        self.max_amplitude.refresh_times += 1
 
     """
     方向改变执行的动作
@@ -400,6 +412,7 @@ class History:
             self.set_h_price(cd)
 
         self.set_max_l_to_d_interval_obj(max_l_to_d_obj)
+        self.current_max_l_to_d_interval = max_l_to_d_obj
 
     """
     设置长度跟开始点价格、结束点价格
@@ -537,6 +550,8 @@ class History:
         else:
             current.start = cd.high
             current.end = cd.low
+        # 新增一个刷新次数的属性
+        current.refresh_times = 1
         self.max_amplitude = current
 
     """
@@ -613,8 +628,8 @@ class History:
     用cd数据格式进行分析
     """   
     def realtime_analysis_for_cd(self, cd):
-        if Logic.is_realtime_start_minute(cd.datetime):
-            return
+        # if Logic.is_realtime_start_minute(cd.datetime):
+        #     return
         if self.history_status == Constants.HISTORY_STATUS_OF_NONE: 
             self.histoty_status_none(cd)
         elif self.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中

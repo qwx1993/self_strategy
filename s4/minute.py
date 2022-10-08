@@ -44,6 +44,7 @@ class Minute:
     M_MAX_R = None  # 小级别R
     agreement_close_price = None # 预估平仓价
     close_price = None # 平仓价
+    unit_value = 0 # 单位值
 
     """
     初始化
@@ -403,17 +404,17 @@ class Minute:
                 self.trade_action = Constants.ACTION_CLOSE_LONG
                 # 临时使用
                 if self.test_need_statistic:
-                    self.add_action(cd, self.trade_action, self.close_price - 10)
-                print(f"平仓1 => {cd.datetime} {self.close_price - 10}")
+                    self.add_action(cd, self.trade_action, self.close_price - self.unit_value)
+                print(f"平仓1 => {cd.datetime} {self.close_price - self.unit_value}")
                 if self.sub_status == S3_Cons.SUB_STATUS_OF_ML_ONE:
                     self.reset_params_by_close_a_price()
         elif self.trade_action == Constants.ACTION_OPEN_SHORT:
             if self.close_price < cd.high:
-                print(f"平仓2 => {cd.datetime} 平仓价格 => {self.close_price + 10}")
+                print(f"平仓2 => {cd.datetime} 平仓价格 => {self.close_price + self.unit_value}")
                 self.trade_action = Constants.ACTION_CLOSE_SHORT
                 # 临时使用
                 if self.test_need_statistic:
-                    self.add_action(cd, self.trade_action, self.close_price + 10)
+                    self.add_action(cd, self.trade_action, self.close_price + self.unit_value)
                 if self.sub_status == S3_Cons.SUB_STATUS_OF_ML_ONE:
                     self.reset_params_by_close_a_price()
     
