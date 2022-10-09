@@ -117,6 +117,8 @@ class Constants:
     HISTORY_STATUS_OF_NONE = 0 # 初始状态
     HISTORY_STATUS_OF_TREND = 1 # 趋势中状态
 
+    OPEN_A_POSITION_ONE = 1 # 情况一开仓
+    OPEN_A_POSITION_TWO = 2 # 情况二开仓
 
     STR_ACTIONS_AND_STATES = {
         OPEN_A_POSITION_ONE_LONG: {

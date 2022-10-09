@@ -284,6 +284,8 @@ class History:
     """
     def add_refresh_times_by_reverse_direct(self):
         self.max_amplitude.refresh_times += 1
+        # 情况二不再开仓
+        self.s2_has_open = True
 
     """
     方向改变执行的动作
