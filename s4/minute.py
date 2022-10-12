@@ -596,7 +596,7 @@ class Minute:
 
             else:
                 if Logic.is_same_direction_by_two_point(self.last_cd, cd):
-                    if self.last_cd.close > self.last_cd.low and cd.high > cd.open and cd.open >= self.last_cd.close:
+                    if self.last_cd.close >= self.last_cd.low and cd.high >= cd.open and cd.open >= self.last_cd.close:
                         len = abs(cd.high - self.last_cd.low)
                         end_len = abs(cd.close - cd.low)
                         if len > end_len:
@@ -635,7 +635,7 @@ class Minute:
                         max_l_to_d_obj = self.amplitude_obj(cd.high, cd.low)
             else:
                 if Logic.is_same_direction_by_two_point(self.last_cd, cd):
-                    if self.last_cd.close < self.last_cd.high and cd.open > cd.low and cd.open <= self.last_cd.close:
+                    if self.last_cd.close <= self.last_cd.high and cd.open >= cd.low and cd.open <= self.last_cd.close:
                         len = abs(self.last_cd.high - cd.low)
                         end_len = abs(cd.high - cd.close)
                         if len > end_len:
@@ -723,7 +723,7 @@ class Minute:
         if self.breakthrough_direction == Constants.DIRECTION_UP:
             if self.is_same_direction(cd):
                 if Logic.is_same_direction_by_two_point(self.last_cd, cd):
-                    if  self.last_cd.close < self.last_cd.high and cd.open > cd.low and self.last_cd.close >= cd.open:
+                    if  self.last_cd.close <= self.last_cd.high and cd.open >= cd.low and self.last_cd.close >= cd.open:
                         len = abs(self.last_cd.high - cd.low)
                         end_len = abs(cd.high - cd.close)
                         if len > end_len:
@@ -776,7 +776,7 @@ class Minute:
         else:
             if self.is_same_direction(cd):
                 if Logic.is_same_direction_by_two_point(self.last_cd, cd):
-                    if self.last_cd.close > self.last_cd.low and cd.open < cd.high and cd.open >= self.last_cd.close:
+                    if self.last_cd.close >= self.last_cd.low and cd.open <= cd.high and cd.open >= self.last_cd.close:
                         max_len = abs(cd.high - self.last_cd.low)
                         max_r_obj = self.amplitude_obj(self.last_cd.low, cd.high)
                     else:
