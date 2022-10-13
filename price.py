@@ -1,3 +1,4 @@
+import string
 import sys
 from types import SimpleNamespace
 import os
@@ -95,3 +96,12 @@ class Price:
                 ls.append(current)
             
             return ls
+
+        """
+        获取最近一分钟的数据
+        """   
+        def current_minute(self, vt_symbol:string):
+            vt_symbol = vt_symbol.upper()
+            vt_symbol = rqdatac.id_convert(vt_symbol)
+            current_minute = rqdatac.current_minute(vt_symbol)
+            print(f"current_minute => {current_minute.ix[0]}")
