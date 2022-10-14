@@ -42,6 +42,8 @@ def need_close_position(vt_symbol):
         'TA301.CZCE',
         'V2301.DCE',
         'Y2301.DCE',
+        'EB2212.DCE',     
+        'PG2211.DCE',
     ]
     # 01 点平仓
     one_list = [
