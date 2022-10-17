@@ -1010,7 +1010,7 @@ class Minute:
         cd = Logic.bar_to_data_object(bar)
         self.realtime_analysis_for_cd(cd)
 
-    """
+    """  
     用cd数据格式进行分析
     """   
     def realtime_analysis_for_cd(self, cd):
