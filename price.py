@@ -63,6 +63,17 @@ class Price:
             print(f"参数 => underlying_symbols:{underlying_symbols} => start_date:{start_date} => end_date:{end_date}")
             value_1m = rqdatac.futures.get_dominant_price(underlying_symbols, start_date=start_date, end_date=end_date, frequency='1m')[["open", "high", "low", "close"]] 
             value_1m.to_csv('C:/Users/Administrator/strategies/data/' + f"{underlying_symbols}_dominant_{days}_1m.csv" )
+        
+        """
+        保存主力合约tick数据
+        """
+        def  save_dominant_tick_price(self, underlying_symbols, days):
+            d1 = datetime.datetime.now()
+            start_date = Logic.get_date_str(d1, -days)
+            end_date = Logic.get_date_str(d1, -1)
+            print(f"参数 => underlying_symbols:{underlying_symbols} => start_date:{start_date} => end_date:{end_date}")
+            value_1m = rqdatac.futures.get_dominant_price(underlying_symbols, start_date=start_date, end_date=end_date, frequency='tick')[["last"]] 
+            value_1m.to_csv('C:/Users/Administrator/strategies/data/' + f"{underlying_symbols}_dominant_{days}_tick.csv" )
 
         """
         保存当天合约数据保存到csv中

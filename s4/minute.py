@@ -45,6 +45,8 @@ class Minute:
     agreement_close_price = None # 预估平仓价
     close_price = None # 平仓价
     unit_value = 0 # 单位值
+    max_limit = 10000 # 满足开仓条件后
+    has_open_a_position_times = 0 # 已开仓次数
 
     """
     初始化
@@ -186,6 +188,8 @@ class Minute:
     def reset_extremum_l(self):
         self.extremum_l = None
         self.extremum_l_price = None
+        # 重置开盘次数
+        self.has_open_a_position_times = 0
     
     """
     设置h_price参数

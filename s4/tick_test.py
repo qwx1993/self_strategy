@@ -89,14 +89,16 @@ class TickTest():
             if self.trade_action is None and trade.can_open_a_position(self.vt_symbol):
                 # 出现ml并且当前一分钟没有刷新l
                 if self.history.ml is not None and self.history.extremum_l_price == instance.extremum_l_price:
-                    if S4Tick.open_a_price(instance.breakthrough_direction, self.history.last_cd, tick_obj):
+                    if S4Tick.open_a_price(instance.breakthrough_direction, self.history.last_cd, tick_obj) and self.can_open_a_position_by_max_limit():
                         if instance.breakthrough_direction == Cons.DIRECTION_UP:
                             # result = self.buy(tick.current, self.hand_number)
                             self.add_action(tick, Cons.ACTION_OPEN_LONG, tick.current + self.unit_value)
                             logging.info(f"vt_symbol:{self.vt_symbol} => direction:long => max_amplitude:{self.history.max_amplitude} =>  ml:{self.history.ml} => l: {self.history.extremum_l} => l_price:{self.history.extremum_l_price} => last_cd:{self.history.last_cd} => history_dirction:{self.history.breakthrough_direction}")
                             self.trade_action = Cons.ACTION_CLOSE_LONG 
                             # 设置一个平仓价格
-                            self.close_price = self.history.last_cd.low  
+                            self.close_price = self.history.last_cd.low
+                            # 增加开仓统计次数
+                            self.add_open_a_position_times()  
                         elif instance.breakthrough_direction == Cons.DIRECTION_DOWN:
                             # result = self.short(tick.current, self.hand_number)
                             self.add_action(tick, Cons.ACTION_OPEN_SHORT, tick.current - self.unit_value)
@@ -104,6 +106,8 @@ class TickTest():
                             self.trade_action = Cons.ACTION_CLOSE_SHORT
                             # 设置一个平仓价格
                             self.close_price = self.history.last_cd.high
+                            # 增加开仓统计次数
+                            self.add_open_a_position_times() 
             elif self.trade_action == Cons.ACTION_CLOSE_LONG: # 止损
                 if S4Tick.close_a_price(self.trade_action, self.close_price, tick_obj) or trade.need_close_position(self.vt_symbol):
                     
@@ -115,9 +119,9 @@ class TickTest():
                 elif self.is_exceed_last_cd_high(tick):
                     self.set_agreement_close_price_by_long(tick)
                     logging.info(f"vt_symbol:{self.vt_symbol} => set_agreement_close_price_by_long => tick_last_price:{tick.current} => close_price => {self.close_price} => agreement_close_price:{self.agreement_close_price} => last_cd:{self.history.last_cd}")
-                elif self.is_exceed_last_cd_low(tick):
-                    self.set_close_price_by_agreement()
-                    logging.info(f"vt_symbol:{self.vt_symbol} => set_close_price_by_agreement => tick_last_price:{tick.current} => close_price => {self.close_price} => agreement_close_price:{self.agreement_close_price} => last_cd:{self.history.last_cd}")
+                # elif self.is_exceed_last_cd_low(tick):
+                #     self.set_close_price_by_agreement()
+                #     logging.info(f"vt_symbol:{self.vt_symbol} => set_close_price_by_agreement => tick_last_price:{tick.current} => close_price => {self.close_price} => agreement_close_price:{self.agreement_close_price} => last_cd:{self.history.last_cd}")
             elif self.trade_action == Cons.ACTION_CLOSE_SHORT:
                 if S4Tick.close_a_price(self.trade_action, self.close_price, tick_obj) or trade.need_close_position(self.vt_symbol):
                     
@@ -129,9 +133,6 @@ class TickTest():
                 elif self.is_exceed_last_cd_high(tick):
                     self.set_agreement_close_price_by_short(tick)
                     logging.info(f"vt_symbol:{self.vt_symbol} => set_agreement_close_price_by_short => tick_last_price:{tick.current} => close_price => {self.close_price} => agreement_close_price:{self.agreement_close_price} => last_cd:{self.history.last_cd}")
-                elif self.is_exceed_last_cd_low(tick):
-                    self.set_close_price_by_agreement()
-                    logging.info(f"vt_symbol:{self.vt_symbol} => set_close_price_by_agreement => tick_last_price:{tick.current} => close_price => {self.close_price} => agreement_close_price:{self.agreement_close_price} => last_cd:{self.history.last_cd}")
 
             # 删除实例
             self.del_history_instance(instance)
@@ -169,6 +170,8 @@ class TickTest():
                 self.last_tick_list = self.tick_list
                 self.tick_list = []
                 self.tick_list.append(cd)
+                # 新的一分钟刷新平仓价
+                self.set_close_price_by_agreement()
             else:
                 self.is_new_minute = False
                 self.tick_list.append(cd)
@@ -224,8 +227,15 @@ class TickTest():
     """
     def set_close_price_by_agreement(self):
         if self.agreement_close_price is not None:
-            self.close_price = self.agreement_close_price
-            self.agreement_close_price = None
+            if self.trade_action == Cons.ACTION_CLOSE_LONG:
+                if self.agreement_close_price > self.close_price:
+                    self.close_price = self.agreement_close_price
+                    self.agreement_close_price = None
+            elif self.trade_action == Cons.ACTION_CLOSE_SHORT:
+                if self.agreement_close_price < self.close_price:
+                    self.close_price = self.agreement_close_price
+                    self.agreement_close_price = None
+                
 
     """
     开空设置协定平仓价
@@ -252,3 +262,18 @@ class TickTest():
         }
 
         self.actions.append(record)
+    
+    """
+    每次开仓记录开仓次数
+    """
+    def add_open_a_position_times(self):
+        self.history.has_open_a_position_times += 1
+    
+    """
+    判断是否超过最大允许开仓次数
+    """
+    def can_open_a_position_by_max_limit(self):
+        if self.history.has_open_a_position_times < self.history.max_limit:
+            return True
+        else:
+            return False
