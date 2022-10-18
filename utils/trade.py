@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 from datetime import timedelta
+import sys
 
 
 
@@ -62,19 +63,20 @@ def need_close_position(vt_symbol):
     half_past_two_list = [
         'AG2212.SHFE',
         'SC2211.INE',
+        'SC_DOMINANT_90_TICK'
     ]
         # 两点之后平仓
-    if hour == 14 and minute >= 55:
+    if hour == 14 and minute >= 58:
         return True
 
     if vt_symbol in twenty_three_list:
-        if hour == 22 and minute >= 55:
+        if hour == 22 and minute >= 58:
             return True 
     elif vt_symbol in one_list:
-        if hour == 0 and minute >= 55:
+        if hour == 0 and minute >= 58:
             return True
     elif vt_symbol in half_past_two_list:
-        if hour == 1 and minute >= 25:
+        if hour == 2 and minute >= 28:
             return True
     return False
 

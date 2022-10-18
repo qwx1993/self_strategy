@@ -45,7 +45,7 @@ class Minute:
     agreement_close_price = None # 预估平仓价
     close_price = None # 平仓价
     unit_value = 0 # 单位值
-    max_limit = 10000 # 满足开仓条件后
+    max_limit = 2 # 满足开仓条件后
     has_open_a_position_times = 0 # 已开仓次数
 
     """
@@ -181,6 +181,8 @@ class Minute:
         self.m_max_r = None
         self.M_MAX_R = self.first_l_to_d(cd) 
         self.ml = None
+        # 出现新的l刷新开仓次数
+        self.has_open_a_position_times = 0
 
     """
     重置extremum_l的值
