@@ -85,7 +85,7 @@ class TickTest():
         if minute_cd is not None:
             instance = self.get_history_instance()
             instance.realtime_analysis_for_cd(minute_cd)
-            if self.trade_action is None and trade.can_open_a_position(self.vt_symbol):
+            if self.trade_action is None and trade.simulation_can_open_a_position(tick):
                 # 出现ml并且当前一分钟没有刷新l
                 if self.history.ml is not None and self.history.extremum_l_price is not None and self.history.extremum_l_price == instance.extremum_l_price:
                     if S4Tick.open_a_price(instance.breakthrough_direction, self.history.last_cd, tick_obj) and self.can_open_a_position_by_max_limit():
@@ -95,9 +95,9 @@ class TickTest():
                             logging.info(f"vt_symbol:{self.vt_symbol} => direction:long => max_amplitude:{self.history.max_amplitude} =>  ml:{self.history.ml} => l: {self.history.extremum_l} => l_price:{self.history.extremum_l_price} => last_cd:{self.history.last_cd} => history_dirction:{self.history.breakthrough_direction}")
                             self.trade_action = Cons.ACTION_CLOSE_LONG 
                             # 设置一个平仓价格
-                            # self.close_price = self.history.last_cd.low
+                            self.close_price = self.history.last_cd.low
                             # 使用l_price作为平仓价  
-                            self.close_price = self.history.extremum_l_price
+                            # self.close_price = self.history.extremum_l_price
                             # 增加开仓统计次数
                             self.add_open_a_position_times()  
                         elif instance.breakthrough_direction == Cons.DIRECTION_DOWN:
@@ -106,14 +106,16 @@ class TickTest():
                             logging.info(f"vt_symbol:{self.vt_symbol} => direction:short => max_amplitude:{self.history.max_amplitude} =>  ml:{self.history.ml} => l: {self.history.extremum_l} => l_price:{self.history.extremum_l_price} => last_cd:{self.history.last_cd} => history_dirction:{self.history.breakthrough_direction}")
                             self.trade_action = Cons.ACTION_CLOSE_SHORT
                             # 设置一个平仓价格
-                            # self.close_price = self.history.last_cd.high
+                            self.close_price = self.history.last_cd.high
                             # 使用l_price作为平仓价
-                            self.close_price = self.history.extremum_l_price
+                            # self.close_price = self.history.extremum_l_price
                             # 增加开仓统计次数
                             self.add_open_a_position_times() 
             elif self.trade_action == Cons.ACTION_CLOSE_LONG: # 止损
-                if S4Tick.close_a_price(self.trade_action, self.close_price, tick_obj) or trade.need_close_position(self.vt_symbol):
-                    
+                if S4Tick.close_a_price(self.trade_action, self.close_price, tick_obj) or trade.simulation_need_close_position(self.vt_symbol, tick):
+                    if trade.simulation_need_close_position(self.vt_symbol, tick):
+                        print(f"到点平仓 => {tick}")
+                        sys.exit(1)
                     # result = self.sell(tick.current, self.hand_number)
                     self.add_action(tick, Cons.ACTION_CLOSE_LONG, tick.current - self.unit_value)
                     logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:long => close_price:{self.close_price} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price}")
@@ -126,7 +128,7 @@ class TickTest():
                     self.set_close_price_by_agreement()
                     logging.info(f"vt_symbol:{self.vt_symbol} => set_close_price_by_agreement => tick_last_price:{tick.current} => close_price => {self.close_price} => agreement_close_price:{self.agreement_close_price} => last_cd:{self.history.last_cd}")
             elif self.trade_action == Cons.ACTION_CLOSE_SHORT:
-                if S4Tick.close_a_price(self.trade_action, self.close_price, tick_obj) or trade.need_close_position(self.vt_symbol):
+                if S4Tick.close_a_price(self.trade_action, self.close_price, tick_obj) or trade.simulation_need_close_position(self.vt_symbol, tick):
                     
                     # result = self.cover(tick.current, self.hand_number)
                     self.add_action(tick, Cons.ACTION_CLOSE_SHORT, tick.current + self.unit_value)
