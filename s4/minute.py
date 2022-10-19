@@ -256,10 +256,10 @@ class Minute:
 
             # 分钟测试时才需要的代码
             if self.trade_action == Constants.ACTION_OPEN_LONG:
-                open_a_price = self.last_cd.high
+                open_a_price = self.last_cd.high + self.unit_value
                 self.close_price = self.last_cd.low
             elif self.trade_action == Constants.ACTION_OPEN_SHORT:
-                open_a_price = self.last_cd.low
+                open_a_price = self.last_cd.low - self.unit_value
                 self.close_price = self.last_cd.high
             self.add_action(cd, self.trade_action, open_a_price)
             
@@ -1033,8 +1033,8 @@ class Minute:
     实时分析    
     """
     def realtime_analysis1(self, cd):
-        # if Logic.is_start_minute(cd.datetime):
-        #     return
+        if Logic.is_start_minute(cd.datetime):
+            return
         if self.history_status == Constants.HISTORY_STATUS_OF_NONE: 
             self.histoty_status_none(cd)
         elif self.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中

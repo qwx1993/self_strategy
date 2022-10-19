@@ -104,6 +104,7 @@ def simulation_need_close_position(vt_symbol, tick):
     half_past_two_list = [
         'SC_DOMINANT_90_TICK',
         'SC2211_TICK',
+        'SC_DOMINANT_180_TICK'
     ]
         # 两点之后平仓
     if hour == 14 and minute >= 58:

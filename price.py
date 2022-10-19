@@ -72,7 +72,7 @@ class Price:
             start_date = Logic.get_date_str(d1, -days)
             end_date = Logic.get_date_str(d1, -1)
             print(f"参数 => underlying_symbols:{underlying_symbols} => start_date:{start_date} => end_date:{end_date}")
-            value_1m = rqdatac.futures.get_dominant_price(underlying_symbols, start_date=start_date, end_date=end_date, frequency='tick')[["last"]] 
+            value_1m = rqdatac.futures.get_dominant_price(underlying_symbols, start_date=start_date, end_date=end_date, frequency='tick', adjust_type='none')[["last"]] 
             value_1m.to_csv('C:/Users/Administrator/strategies/data_tick/' + f"{underlying_symbols}_dominant_{days}_tick.csv" )
 
         """
