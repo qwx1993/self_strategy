@@ -51,7 +51,7 @@ class Price:
             vt_symbol = rqdatac.id_convert(vt_symbol)
       
             value_tick = rqdatac.get_price(vt_symbol, start_date=start_date, end_date=end_date, frequency='tick')[["last"]]
-            value_tick.to_csv('C:/Users/Administrator/strategies/data/' + f"{vt_symbol}_tick.csv" )
+            value_tick.to_csv('C:/Users/Administrator/strategies/data_tick/' + f"{vt_symbol}_tick.csv" )
 
         """
         保存主力合约的数据
@@ -73,7 +73,7 @@ class Price:
             end_date = Logic.get_date_str(d1, -1)
             print(f"参数 => underlying_symbols:{underlying_symbols} => start_date:{start_date} => end_date:{end_date}")
             value_1m = rqdatac.futures.get_dominant_price(underlying_symbols, start_date=start_date, end_date=end_date, frequency='tick')[["last"]] 
-            value_1m.to_csv('C:/Users/Administrator/strategies/data/' + f"{underlying_symbols}_dominant_{days}_tick.csv" )
+            value_1m.to_csv('C:/Users/Administrator/strategies/data_tick/' + f"{underlying_symbols}_dominant_{days}_tick.csv" )
 
         """
         保存当天合约数据保存到csv中

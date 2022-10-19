@@ -45,7 +45,7 @@ class Minute:
     agreement_close_price = None # 预估平仓价
     close_price = None # 平仓价
     unit_value = 0 # 单位值
-    max_limit = 2 # 满足开仓条件后
+    max_limit = 1 # 满足开仓条件后
     has_open_a_position_times = 0 # 已开仓次数
 
     """
@@ -182,7 +182,7 @@ class Minute:
         self.M_MAX_R = self.first_l_to_d(cd) 
         self.ml = None
         # 出现新的l刷新开仓次数
-        self.has_open_a_position_times = 0
+        # self.has_open_a_position_times = 0
 
     """
     重置extremum_l的值
@@ -263,13 +263,13 @@ class Minute:
                 self.close_price = self.last_cd.high
             self.add_action(cd, self.trade_action, open_a_price)
             
-            print(f"Rmax => {self.max_amplitude}")
-            print(f"进入ml1开仓 {cd.datetime} 开仓价{self.last_cd} ---------------------------------------------------------------------------------------")
-            print(f"l => {self.extremum_l_price}")   
-            print(f"ml => {self.ml}")
-            print(f"开仓方向 => {self.breakthrough_direction}")
-            print(f"M_MAX_R => {self.M_MAX_R}")   
-            print(f"m_max_r => {self.m_max_r} -------------------------------------------------------------------------------------")   
+            # print(f"Rmax => {self.max_amplitude}")
+            # print(f"进入ml1开仓 {cd.datetime} 开仓价{self.last_cd} ---------------------------------------------------------------------------------------")
+            # print(f"l => {self.extremum_l_price}")   
+            # print(f"ml => {self.ml}")
+            # print(f"开仓方向 => {self.breakthrough_direction}")
+            # print(f"M_MAX_R => {self.M_MAX_R}")   
+            # print(f"m_max_r => {self.m_max_r} -------------------------------------------------------------------------------------")   
 
     """
     设置开仓状态
@@ -411,12 +411,12 @@ class Minute:
                 # 临时使用
                 if self.test_need_statistic:
                     self.add_action(cd, self.trade_action, self.close_price - self.unit_value)
-                print(f"平仓1 => {cd.datetime} {self.close_price - self.unit_value}")
+                # print(f"平仓1 => {cd.datetime} {self.close_price - self.unit_value}")
                 if self.sub_status == S3_Cons.SUB_STATUS_OF_ML_ONE:
                     self.reset_params_by_close_a_price()
         elif self.trade_action == Constants.ACTION_OPEN_SHORT:
             if self.close_price < cd.high:
-                print(f"平仓2 => {cd.datetime} 平仓价格 => {self.close_price + self.unit_value}")
+                # print(f"平仓2 => {cd.datetime} 平仓价格 => {self.close_price + self.unit_value}")
                 self.trade_action = Constants.ACTION_CLOSE_SHORT
                 # 临时使用
                 if self.test_need_statistic:
@@ -556,7 +556,7 @@ class Minute:
             if Logic.is_exceed_max_amplitude_start_price(self.breakthrough_direction, self.max_amplitude, cd):
                 self.reverse_direct_by_max_amplitude()
                 self.on_direction_change(cd)
-                print(f"突破max_amplitude的起始价格@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ => {cd.datetime}")
+                # print(f"突破max_amplitude的起始价格@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ => {cd.datetime}")
             elif Logic.is_exceed_max_amplitude_end_price(self.breakthrough_direction, self.max_amplitude, cd):
                 self.set_direction_by_max_amplitude()
                 self.on_direction_change(cd)
@@ -827,10 +827,10 @@ class Minute:
                         max_len = Logic.max_amplitude_length(cd)
                         max_r_obj = self.amplitude_obj(cd.low, cd.high)
         if max_len != max_r_obj.length: 
-            print(f"max_r对象 => {self.max_r}")
+            # print(f"max_r对象 => {self.max_r}")
             print(f"出现了异常，要检查,datetime:{cd.datetime} max_len:{max_len} max_r_obj.length => {max_r_obj.length}")
         self.set_max_r(max_r_obj) 
-                # 当子状态为L时就设置M_MAX_R 
+        # 当子状态为L时就设置M_MAX_R 
         if self.sub_status == S3_Cons.SUB_STATUS_OF_TREND_COUNTER:
             self.set_m_max_r(max_r_obj)   
 

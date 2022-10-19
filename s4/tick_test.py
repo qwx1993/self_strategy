@@ -81,14 +81,13 @@ class TickTest():
         minute_cd = TickLogic.merge_ticks_to_m1(self.tick_list)
         last_minute_cd = TickLogic.merge_ticks_to_m1(self.last_tick_list)
         if self.is_new_minute and last_minute_cd is not None:
-            # print(f"last_minute_cd => {last_minute_cd}")
             self.on_bar(last_minute_cd)
         if minute_cd is not None:
             instance = self.get_history_instance()
             instance.realtime_analysis_for_cd(minute_cd)
             if self.trade_action is None and trade.can_open_a_position(self.vt_symbol):
                 # 出现ml并且当前一分钟没有刷新l
-                if self.history.ml is not None and self.history.extremum_l_price == instance.extremum_l_price:
+                if self.history.ml is not None and self.history.extremum_l_price is not None and self.history.extremum_l_price == instance.extremum_l_price:
                     if S4Tick.open_a_price(instance.breakthrough_direction, self.history.last_cd, tick_obj) and self.can_open_a_position_by_max_limit():
                         if instance.breakthrough_direction == Cons.DIRECTION_UP:
                             # result = self.buy(tick.current, self.hand_number)
@@ -96,7 +95,9 @@ class TickTest():
                             logging.info(f"vt_symbol:{self.vt_symbol} => direction:long => max_amplitude:{self.history.max_amplitude} =>  ml:{self.history.ml} => l: {self.history.extremum_l} => l_price:{self.history.extremum_l_price} => last_cd:{self.history.last_cd} => history_dirction:{self.history.breakthrough_direction}")
                             self.trade_action = Cons.ACTION_CLOSE_LONG 
                             # 设置一个平仓价格
-                            self.close_price = self.history.last_cd.low  
+                            # self.close_price = self.history.last_cd.low
+                            # 使用l_price作为平仓价  
+                            self.close_price = self.history.extremum_l_price
                             # 增加开仓统计次数
                             self.add_open_a_position_times()  
                         elif instance.breakthrough_direction == Cons.DIRECTION_DOWN:
@@ -105,7 +106,9 @@ class TickTest():
                             logging.info(f"vt_symbol:{self.vt_symbol} => direction:short => max_amplitude:{self.history.max_amplitude} =>  ml:{self.history.ml} => l: {self.history.extremum_l} => l_price:{self.history.extremum_l_price} => last_cd:{self.history.last_cd} => history_dirction:{self.history.breakthrough_direction}")
                             self.trade_action = Cons.ACTION_CLOSE_SHORT
                             # 设置一个平仓价格
-                            self.close_price = self.history.last_cd.high
+                            # self.close_price = self.history.last_cd.high
+                            # 使用l_price作为平仓价
+                            self.close_price = self.history.extremum_l_price
                             # 增加开仓统计次数
                             self.add_open_a_position_times() 
             elif self.trade_action == Cons.ACTION_CLOSE_LONG: # 止损
