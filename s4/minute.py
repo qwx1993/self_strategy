@@ -8,6 +8,8 @@ from self_strategy.constants import Constants
 from self_strategy.constants_s3 import ConstantsS3 as S3_Cons
 from self_strategy.logic import Logic
 from types import SimpleNamespace
+
+from datetime import datetime
 # 
 class Minute:
     breakthrough_direction = None # 突破的方向 -1 开空 1开多
@@ -47,6 +49,8 @@ class Minute:
     unit_value = 0 # 单位值
     max_limit = 1 # 满足开仓条件后
     has_open_a_position_times = 0 # 已开仓次数
+    open_a_position_start_cd = None # 开仓起点
+    interval_minutes = 5
 
     """
     初始化
@@ -112,12 +116,28 @@ class Minute:
             self.max_l_to_d_interval = obj
 
     """
-    设置小级别的M_MAX_R
+    设置开仓的点位
     """
-    def set_M_MAX_R_obj(self, obj):
-        if (self.M_MAX_R is None) or (obj.length > self.M_MAX_R.length):
-            self.M_MAX_R = obj
+    def set_open_a_position_start_cd(self, cd):
+       if self.open_a_position_start_cd is None:
+            if self.is_same_direction(cd) and self.can_set_start_cd(cd):
+                self.open_a_position_start_cd = cd
+                self.set_sub_status(S3_Cons.SUB_STATUS_OF_ML)
 
+    """
+    在向上的趋势下，如果当前分钟的方向向上，并且最低点比L高，就为真
+    在向下的趋势下，如果当前分钟的方向向下，并且最低点比L低，就为真
+    """
+    def can_set_start_cd(self, cd):
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
+            if cd.low > self.extremum_l_price:
+                return True
+        elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
+            if cd.high < self.extremum_l_price:
+                return True
+        return False
+    
+    
     """
     rrn 表示的是寻找Dn过程中，出现比Dn小的Hn过程的最大值
     """
@@ -155,8 +175,7 @@ class Minute:
                 if (self.extremum_l_price is None) or ln.low < self.extremum_l_price:
                     self.extremum_l_price = ln.low
                     self.extremum_l = ln
-                    self.after_set_extremum_l(ln)
-                    # print(f"出现新的l => {ln.datetime} extremum_d_price => {self.extremum_d_price}")
+                    self.after_set_extremum_l()
                 else:
                     # 如果是L状态，就设置为逆趋势状态
                     if self.sub_status == S3_Cons.SUB_STATUS_OF_L:
@@ -165,8 +184,7 @@ class Minute:
                 if (self.extremum_l_price is None) or ln.high > self.extremum_l_price:
                     self.extremum_l_price = ln.high
                     self.extremum_l = ln
-                    self.after_set_extremum_l(ln)
-                    # print(f"出现新的l => {ln.datetime} extremum_d_price => {self.extremum_d_price}")
+                    self.after_set_extremum_l()
                 else:
                     if self.sub_status == S3_Cons.SUB_STATUS_OF_L:
                         self.set_sub_status(S3_Cons.SUB_STATUS_OF_TREND_COUNTER)
@@ -175,11 +193,10 @@ class Minute:
     设置极值L后的动作，设置状态为L
     将策略三相关的参数设置为None
     """
-    def after_set_extremum_l(self, cd):
+    def after_set_extremum_l(self):
         # 设置L为最新的状态
         self.set_sub_status(S3_Cons.SUB_STATUS_OF_L)
-        self.m_max_r = None
-        self.M_MAX_R = self.first_l_to_d(cd) 
+        self.open_a_position_start_cd = None
         self.ml = None
         # 出现新的l刷新开仓次数
         # self.has_open_a_position_times = 0
@@ -190,6 +207,9 @@ class Minute:
     def reset_extremum_l(self):
         self.extremum_l = None
         self.extremum_l_price = None
+        self.open_a_position_start_cd = None
+        self.ml = None
+        self.sub_status = S3_Cons.SUB_STATUS_OF_NONE
         # 重置开盘次数
         self.has_open_a_position_times = 0
     
@@ -213,32 +233,15 @@ class Minute:
     设置ml的price
     """   
     def set_ml_price(self, cd):
-        refresh_ml = False
-        if self.extremum_l_price is not None and Logic.is_low_point(self.breakthrough_direction, self.last_cd, cd):
+        if self.extremum_l_price is not None and self.open_a_position_start_cd is not None:
             if self.breakthrough_direction == Constants.DIRECTION_UP:
-                if (self.ml is None) or cd.low < self.ml:
-                    self.ml = cd.low
-                    # print(f"设置ml1 => {self.ml} {cd.datetime}")
-                    refresh_ml = True
+                if self.open_a_position_start_cd.low >= cd.low >= self.extremum_l_price: 
+                    if (self.ml is None) or cd.low < self.ml:
+                        self.ml = cd.low
             elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
-                if (self.ml is None) or cd.high > self.ml:
-                    self.ml = cd.high
-                    # print(f"设置ml-1 => {self.ml} {cd.datetime}")
-                    refresh_ml = True
-        # 存在ml就判断是否可以开仓
-        if self.ml is not None and not refresh_ml:
-            self.handle_open_a_price(cd)
-    
-    """
-    开仓位出现后设置ml_1_price
-    """
-    def set_ml_1_price(self, cd):
-        if Logic.is_low_point(self.breakthrough_direction, self.last_cd, cd):
-            if (self.ml_1_price is None) or cd.low > self.ml_1_price:
-                self.ml_1_price = cd.low
-        elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
-            if (self.ml_1_price is None) or cd.high < self.ml_1_price:
-                self.ml_1_price = cd.high
+                if self.open_a_position_start_cd.high <= cd.high <= self.extremum_l_price:
+                    if (self.ml is None) or cd.high > self.ml:
+                        self.ml = cd.high
 
     """
     重新设置ml_1_price为None
@@ -385,21 +388,25 @@ class Minute:
         # 处理出现最大的幅度情况
         self.handle_max_amplitude(cd)
         # 逆趋势判断
-        if Logic.is_counter_trend1(self.M_MAX_R, self.m_max_r) and self.sub_status == S3_Cons.SUB_STATUS_OF_TREND_COUNTER:
-            # print(f"出现逆趋势 => {cd.datetime}")
-            self.set_sub_status(S3_Cons.SUB_STATUS_OF_ML)
-        if self.sub_status == S3_Cons.SUB_STATUS_OF_ML:
+        if self.sub_status == S3_Cons.SUB_STATUS_OF_TREND_COUNTER:
+            if self.extremum_l_price is not None and self.over_interval_minutes(cd):
+                self.set_open_a_position_start_cd(cd)
+        elif self.sub_status == S3_Cons.SUB_STATUS_OF_ML:
             # 设置ml
             self.set_ml_price(cd)
+    
+    """
+    超过限定时间，设置ml
+    """
+    def over_interval_minutes(self, cd):
+        current_date = datetime.strptime(cd.datetime, "%Y-%m-%d %H:%M:%S")
+        l_date = datetime.strptime(self.extremum_l.datetime, "%Y-%m-%d %H:%M:%S")
 
-        # 开仓状态管理
-        if self.trade_action in [Constants.ACTION_OPEN_LONG, Constants.ACTION_OPEN_SHORT]:
-            if self.close_a_price(cd):
-                self.close_a_price_by_last_cd_low_price(cd)
-            elif self.is_exceed_last_cd_high(cd):
-                self.set_agreement_close_price(cd)
-            elif self.is_exceed_last_cd_low(cd):
-                self.set_close_price_by_agreement()
+        if (current_date - l_date).seconds >= self.interval_minutes * 60:
+            return True
+        else:
+            return False
+
 
     """
     平仓通过上一分钟的最低价
@@ -437,7 +444,7 @@ class Minute:
                 return True
         return False
     
-        """
+    """
     开多情况，如果比上一分钟的高点高为真
     开空情况，如果比上一分钟的低点低为真
     """
@@ -691,9 +698,7 @@ class Minute:
         self.current_max_l_to_d_interval = max_l_to_d_obj
         # 记录最大的max_l_to_d
         self.set_max_l_to_d_interval_obj(max_l_to_d_obj)
-        # 当子状态为L时就设置M_MAX_R 
-        if self.sub_status == S3_Cons.SUB_STATUS_OF_TREND_COUNTER:
-            self.set_M_MAX_R_obj(max_l_to_d_obj)
+
 
     """
     开始点设置R
@@ -830,9 +835,6 @@ class Minute:
             # print(f"max_r对象 => {self.max_r}")
             print(f"出现了异常，要检查,datetime:{cd.datetime} max_len:{max_len} max_r_obj.length => {max_r_obj.length}")
         self.set_max_r(max_r_obj) 
-        # 当子状态为L时就设置M_MAX_R 
-        if self.sub_status == S3_Cons.SUB_STATUS_OF_TREND_COUNTER:
-            self.set_m_max_r(max_r_obj)   
 
     """
     设置走势方向

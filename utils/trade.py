@@ -104,7 +104,9 @@ def simulation_need_close_position(vt_symbol, tick):
     half_past_two_list = [
         'SC_DOMINANT_90_TICK',
         'SC2211_TICK',
-        'SC_DOMINANT_180_TICK'
+        'SC_DOMINANT_180_TICK',
+        'SC2212_TICK',
+        'SC_DOMINANT_5_TICK'
     ]
         # 两点之后平仓
     if hour == 14 and minute >= 58:
@@ -130,13 +132,14 @@ def can_open_a_position(vt_symbol):
 """
 模拟开仓时间
 """
-def simulation_can_open_a_position(tick):
-    hour = tick.datetime.hour
-    minute = tick.datetime.minute
+def simulation_can_open_a_position(vt_symbol, tick):
+    # hour = tick.datetime.hour
+    # minute = tick.datetime.minute
 
-    if hour == 9 and minute < 30:
-        return True
-    elif hour == 21:
-        return True
-    return False
+    # if hour == 9 and minute < 30:
+    #     return True
+    # elif hour == 21:
+    #     return True
+    # return False
+    return not simulation_need_close_position(vt_symbol, tick)
 
