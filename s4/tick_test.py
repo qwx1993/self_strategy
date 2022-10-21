@@ -44,6 +44,7 @@ class TickTest():
     last_tick_list = []
     actions = [] # 交易动作
     unit_value = None
+    # distance = None # 盈利间隔
 
     # 添加参数和变量名到对应的列表
     def __init__(self, vt_symbol, unit_value):
@@ -123,15 +124,22 @@ class TickTest():
                             # 增加开仓统计次数
                             self.add_open_a_position_times() 
             elif self.trade_action == Cons.ACTION_CLOSE_LONG: # 止损
-                if self.close_by_same_minute(tick):
-                    if S4Tick.close_a_price(self.trade_action, self.close_price_by_l, tick_obj):
-                        self.add_action(tick, Cons.ACTION_CLOSE_LONG, tick.current - self.unit_value)
-                        logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:long_l => close_price_by_l:{self.close_price_by_l} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price}")
-                        self.trade_action = None
-                        self.reset_price()
-                        # 重新设置ml
-                        self.reset_history_ml()
-                elif S4Tick.close_a_price(self.trade_action, self.history.last_cd.low, tick_obj) or trade.simulation_need_close_position(self.vt_symbol, tick):
+                # if self.close_by_same_minute(tick):
+                #     if S4Tick.close_a_price(self.trade_action, self.close_price_by_l, tick_obj):
+                #         self.add_action(tick, Cons.ACTION_CLOSE_LONG, tick.current - self.unit_value)
+                #         logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:long_l => close_price_by_l:{self.close_price_by_l} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price}")
+                #         self.trade_action = None
+                #         self.reset_price()
+                #         # 重新设置ml
+                #         self.reset_history_ml()
+                if self.quick_stop_win(tick):
+                    self.add_action(tick, Cons.ACTION_CLOSE_LONG, tick.current - self.unit_value)
+                    logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:long_win => close_price:{self.close_price} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price}")
+                    self.trade_action = None
+                    self.reset_price()
+                    # 重新设置ml
+                    self.reset_history_ml()
+                elif S4Tick.close_a_price(self.trade_action, self.close_price_by_l, tick_obj) or trade.simulation_need_close_position(self.vt_symbol, tick):
                     # result = self.sell(tick.current, self.hand_number)
                     self.add_action(tick, Cons.ACTION_CLOSE_LONG, tick.current - self.unit_value)
                     logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:long => close_price:{self.close_price} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price}")
@@ -146,15 +154,22 @@ class TickTest():
                     self.set_close_price_by_agreement()
                     # logging.info(f"vt_symbol:{self.vt_symbol} => set_close_price_by_agreement => tick_last_price:{tick.current} => close_price => {self.close_price} => agreement_close_price:{self.agreement_close_price} => last_cd:{self.history.last_cd}")
             elif self.trade_action == Cons.ACTION_CLOSE_SHORT:
-                if self.close_by_same_minute(tick):
-                    if S4Tick.close_a_price(self.trade_action, self.close_price_by_l, tick_obj):
-                        self.add_action(tick, Cons.ACTION_CLOSE_SHORT, tick.current + self.unit_value)
-                        logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:short_l => close_price_by_l:{self.close_price_by_l} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price}")
-                        self.trade_action = None
-                        self.reset_price()
-                        # 重新设置ml
-                        self.reset_history_ml()
-                elif S4Tick.close_a_price(self.trade_action, self.history.last_cd.high, tick_obj) or trade.simulation_need_close_position(self.vt_symbol, tick):
+                # if self.close_by_same_minute(tick):
+                #     if S4Tick.close_a_price(self.trade_action, self.close_price_by_l, tick_obj):
+                #         self.add_action(tick, Cons.ACTION_CLOSE_SHORT, tick.current + self.unit_value)
+                #         logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:short_l => close_price_by_l:{self.close_price_by_l} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price}")
+                #         self.trade_action = None
+                #         self.reset_price()
+                #         # 重新设置ml
+                #         self.reset_history_ml()
+                if self.quick_stop_win(tick):
+                    self.add_action(tick, Cons.ACTION_CLOSE_SHORT, tick.current + self.unit_value)
+                    logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:short_win => close_price:{self.close_price} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price}")
+                    self.trade_action = None
+                    self.reset_price()
+                    # 重新设置ml
+                    self.reset_history_ml()
+                elif S4Tick.close_a_price(self.trade_action, self.close_price_by_l, tick_obj) or trade.simulation_need_close_position(self.vt_symbol, tick):
                     
                     # result = self.cover(tick.current, self.hand_number)
                     self.add_action(tick, Cons.ACTION_CLOSE_SHORT, tick.current + self.unit_value)
@@ -358,4 +373,17 @@ class TickTest():
             if abs(extremum_d_price - extremum_l_price) > 30 * self.unit_value:
                 return True
         
+        return False
+    
+    """
+    快速止盈
+    """
+    def quick_stop_win(self, tick):
+        distance = abs(self.open_price - self.close_price_by_l)
+        if self.trade_action == Cons.ACTION_CLOSE_LONG:
+            if tick.current - self.open_price > distance + self.unit_value:
+                return True
+        elif self.trade_action == Cons.ACTION_CLOSE_SHORT:
+            if self.open_price - tick.current > distance + self.unit_value:
+                return True
         return False
