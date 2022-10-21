@@ -91,8 +91,9 @@ class TickTest():
             if self.trade_action is None and trade.simulation_can_open_a_position(self.vt_symbol, tick):
                 # 出现ml并且当前一分钟没有刷新l
                 if self.history.ml is not None and self.history.extremum_l_price is not None and self.history.extremum_l_price == instance.extremum_l_price:
-                    # if S4Tick.open_a_price(instance.breakthrough_direction, self.history.last_cd, tick_obj) and self.can_open_a_position_by_max_limit():
-                    if S4Tick.open_a_price(instance.breakthrough_direction, self.history.last_cd, tick_obj):
+                    # if S4Tick.open_a_price(instance.breakthrough_direction, self.history.last_cd, tick_obj) and self.can_open_a_position_by_max_limit() and self.open_by_beyond_max_unit_value():
+                    if S4Tick.open_a_price(instance.breakthrough_direction, self.history.last_cd, tick_obj) and self.open_by_beyond_max_unit_value():
+                    # if S4Tick.open_a_price(instance.breakthrough_direction, self.history.last_cd, tick_obj):
                         if instance.breakthrough_direction == Cons.DIRECTION_UP:
                             # result = self.buy(tick.current, self.hand_number)
                             self.add_action(tick, Cons.ACTION_OPEN_LONG, tick.current + self.unit_value)
@@ -130,7 +131,7 @@ class TickTest():
                         self.reset_price()
                         # 重新设置ml
                         self.reset_history_ml()
-                elif S4Tick.close_a_price(self.trade_action, self.close_price, tick_obj) or trade.simulation_need_close_position(self.vt_symbol, tick):
+                elif S4Tick.close_a_price(self.trade_action, self.history.last_cd.low, tick_obj) or trade.simulation_need_close_position(self.vt_symbol, tick):
                     # result = self.sell(tick.current, self.hand_number)
                     self.add_action(tick, Cons.ACTION_CLOSE_LONG, tick.current - self.unit_value)
                     logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:long => close_price:{self.close_price} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price}")
@@ -140,10 +141,10 @@ class TickTest():
                     self.reset_history_ml()
                 elif self.is_exceed_last_cd_high(tick):
                     self.set_agreement_close_price_by_long(tick)
-                    logging.info(f"vt_symbol:{self.vt_symbol} => set_agreement_close_price_by_long => tick_last_price:{tick.current} => close_price => {self.close_price} => agreement_close_price:{self.agreement_close_price} => last_cd:{self.history.last_cd}")
+                    # logging.info(f"vt_symbol:{self.vt_symbol} => set_agreement_close_price_by_long => tick_last_price:{tick.current} => close_price => {self.close_price} => agreement_close_price:{self.agreement_close_price} => last_cd:{self.history.last_cd}")
                 elif self.is_exceed_last_cd_low(tick):
                     self.set_close_price_by_agreement()
-                    logging.info(f"vt_symbol:{self.vt_symbol} => set_close_price_by_agreement => tick_last_price:{tick.current} => close_price => {self.close_price} => agreement_close_price:{self.agreement_close_price} => last_cd:{self.history.last_cd}")
+                    # logging.info(f"vt_symbol:{self.vt_symbol} => set_close_price_by_agreement => tick_last_price:{tick.current} => close_price => {self.close_price} => agreement_close_price:{self.agreement_close_price} => last_cd:{self.history.last_cd}")
             elif self.trade_action == Cons.ACTION_CLOSE_SHORT:
                 if self.close_by_same_minute(tick):
                     if S4Tick.close_a_price(self.trade_action, self.close_price_by_l, tick_obj):
@@ -153,7 +154,7 @@ class TickTest():
                         self.reset_price()
                         # 重新设置ml
                         self.reset_history_ml()
-                elif S4Tick.close_a_price(self.trade_action, self.close_price, tick_obj) or trade.simulation_need_close_position(self.vt_symbol, tick):
+                elif S4Tick.close_a_price(self.trade_action, self.history.last_cd.high, tick_obj) or trade.simulation_need_close_position(self.vt_symbol, tick):
                     
                     # result = self.cover(tick.current, self.hand_number)
                     self.add_action(tick, Cons.ACTION_CLOSE_SHORT, tick.current + self.unit_value)
@@ -346,3 +347,15 @@ class TickTest():
             return self.close_price
         else:
             return self.close_price_by_l
+    
+    """
+    d跟l的间距要超过限定个数单位才能开仓
+    """
+    def open_by_beyond_max_unit_value(self):
+        extremum_d_price = self.history.extremum_d_price
+        extremum_l_price = self.history.extremum_l_price
+        if extremum_d_price is not None and extremum_l_price is not None:
+            if abs(extremum_d_price - extremum_l_price) > 30 * self.unit_value:
+                return True
+        
+        return False

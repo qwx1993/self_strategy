@@ -130,10 +130,10 @@ class Minute:
     """
     def can_set_start_cd(self, cd):
         if self.breakthrough_direction == Constants.DIRECTION_UP:
-            if cd.low > self.extremum_l_price:
+            if cd.low >= self.extremum_l_price:
                 return True
         elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
-            if cd.high < self.extremum_l_price:
+            if cd.high <= self.extremum_l_price:
                 return True
         return False
     
@@ -389,11 +389,12 @@ class Minute:
         self.handle_max_amplitude(cd)
         # 逆趋势判断
         if self.sub_status == S3_Cons.SUB_STATUS_OF_TREND_COUNTER:
-            if self.extremum_l_price is not None and self.over_interval_minutes(cd):
+            if self.extremum_l_price is not None:
                 self.set_open_a_position_start_cd(cd)
         elif self.sub_status == S3_Cons.SUB_STATUS_OF_ML:
             # 设置ml
-            self.set_ml_price(cd)
+            if self.over_interval_minutes(cd):
+                self.set_ml_price(cd)
     
     """
     超过限定时间，设置ml
@@ -505,7 +506,7 @@ class Minute:
                 if self.sub_status == S3_Cons.SUB_STATUS_OF_ML_ONE:
                     self.reset_params_by_close_a_price()
     
-        """
+    """
     判断当前价是否超过止盈价位，如果超过就平仓
     """
     def close_a_price_by_ml(self, cd):
