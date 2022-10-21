@@ -33,6 +33,9 @@ class Minute:
     extremum_l_price = None # 极值点l的price
     extremum_l = None # 极值点l
 
+    agreement_extremum_l_price = None # 协定极值点l的price
+    agreement_extremum_l = None # 协定极值点l
+
     h_price = None # h点，表示比仅次于d点第二高点
 
     history_status = Constants.HISTORY_STATUS_OF_NONE # 历史状态
@@ -172,22 +175,56 @@ class Minute:
     def set_extremum_l(self, ln):
         if self.extremum_d_price is not None:
             if self.breakthrough_direction == Constants.DIRECTION_UP:
-                if (self.extremum_l_price is None) or ln.low < self.extremum_l_price:
-                    self.extremum_l_price = ln.low
-                    self.extremum_l = ln
-                    self.after_set_extremum_l()
-                else:
-                    # 如果是L状态，就设置为逆趋势状态
-                    if self.sub_status == S3_Cons.SUB_STATUS_OF_L:
-                        self.set_sub_status(S3_Cons.SUB_STATUS_OF_TREND_COUNTER)
+                # 没有L就设置L,或者在五分钟以内
+                if self.extremum_l_price is None or not self.over_interval_minutes(ln):
+                    if self.extremum_d_price is None or ln.low < self.extremum_l_price:
+                        self.extremum_l_price = ln.low
+                        self.extremum_l = ln
+                        self.after_set_extremum_l()
+                    # 协定L不存在就设置协定
+                elif self.agreement_extremum_l_price is None:
+                    if ln.low < self.extremum_l_price:
+                        self.agreement_extremum_l = ln
+                        self.agreement_extremum_l_price = ln.low
+                    # 协定L存在就判断是否可以设置为L
+                elif self.agreement_extremum_l_price is not None:
+                    if ln.low < self.agreement_extremum_l_price:
+                        self.extremum_l_price = ln.low
+                        self.extremum_l = ln
+                        self.after_set_extremum_l()
+                    elif ln.high <= self.extremum_l_price:
+                        self.extremum_l_price = self.agreement_extremum_l_price
+                        self.extremum_l = self.agreement_extremum_l
+                        self.after_set_extremum_l()
+                    elif ln.high > self.extremum_l_price:
+                        if self.over_interval_minutes(ln):
+                            self.ml = ln.low
             else:
-                if (self.extremum_l_price is None) or ln.high > self.extremum_l_price:
-                    self.extremum_l_price = ln.high
-                    self.extremum_l = ln
-                    self.after_set_extremum_l()
-                else:
-                    if self.sub_status == S3_Cons.SUB_STATUS_OF_L:
-                        self.set_sub_status(S3_Cons.SUB_STATUS_OF_TREND_COUNTER)
+                 # 没有L就设置L,或者在五分钟以内
+                if self.extremum_l_price is None or not self.over_interval_minutes(ln):
+                    if self.extremum_l_price is None or ln.high > self.extremum_l_price:
+                        self.extremum_l_price = ln.high
+                        self.extremum_l = ln
+                        self.after_set_extremum_l()
+                # 协定L不存在就设置协定
+                elif self.agreement_extremum_l_price is None:
+                    if ln.high > self.extremum_l_price:
+                        self.agreement_extremum_l_price = ln.high
+                        self.agreement_extremum_l = ln
+                # 协定L存在就判断是否可以设置为L
+                elif self.agreement_extremum_l_price is not None:
+                    if ln.high > self.agreement_extremum_l_price:
+                        self.extremum_l_price = ln.high
+                        self.extremum_l = ln
+                        self.after_set_extremum_l()
+                    elif ln.low >= self.extremum_l_price:
+                        self.extremum_l_price = self.agreement_extremum_l_price
+                        self.extremum_l = self.agreement_extremum_l
+                        self.after_set_extremum_l()
+                    elif ln.low < self.extremum_l_price:
+                        if self.over_interval_minutes(ln):
+                            self.ml = ln.high
+                        
 
     """
     设置极值L后的动作，设置状态为L
@@ -198,6 +235,9 @@ class Minute:
         self.set_sub_status(S3_Cons.SUB_STATUS_OF_L)
         self.open_a_position_start_cd = None
         self.ml = None
+        self.agreement_extremum_l = None
+        self.agreement_extremum_l_price = None
+
         # 出现新的l刷新开仓次数
         # self.has_open_a_position_times = 0
 
@@ -207,6 +247,8 @@ class Minute:
     def reset_extremum_l(self):
         self.extremum_l = None
         self.extremum_l_price = None
+        self.agreement_extremum_l = None
+        self.agreement_extremum_l_price = None
         self.open_a_position_start_cd = None
         self.ml = None
         self.sub_status = S3_Cons.SUB_STATUS_OF_NONE
@@ -388,13 +430,13 @@ class Minute:
         # 处理出现最大的幅度情况
         self.handle_max_amplitude(cd)
         # 逆趋势判断
-        if self.sub_status == S3_Cons.SUB_STATUS_OF_TREND_COUNTER:
-            if self.extremum_l_price is not None:
-                self.set_open_a_position_start_cd(cd)
-        elif self.sub_status == S3_Cons.SUB_STATUS_OF_ML:
-            # 设置ml
-            if self.over_interval_minutes(cd):
-                self.set_ml_price(cd)
+        # if self.sub_status == S3_Cons.SUB_STATUS_OF_TREND_COUNTER:
+        #     if self.extremum_l_price is not None:
+        #         self.set_open_a_position_start_cd(cd)
+        # elif self.sub_status == S3_Cons.SUB_STATUS_OF_ML:
+        #     # 设置ml
+        #     if self.over_interval_minutes(cd):
+        #         self.set_ml_price(cd)
     
     """
     超过限定时间，设置ml

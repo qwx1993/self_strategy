@@ -98,28 +98,28 @@ class TickTest():
                             # result = self.buy(tick.current, self.hand_number)
                             self.add_action(tick, Cons.ACTION_OPEN_LONG, tick.current + self.unit_value)
                             self.open_price = tick.current + self.unit_value
-                            logging.info(f"vt_symbol:{self.vt_symbol} => direction:long => max_amplitude:{self.history.max_amplitude} =>  ml:{self.history.ml} => l: {self.history.extremum_l} => l_price:{self.history.extremum_l_price} => last_cd:{self.history.last_cd} => history_dirction:{self.history.breakthrough_direction}")
+                            logging.info(f"vt_symbol:{self.vt_symbol} => direction:long => max_amplitude:{self.history.max_amplitude} =>  ml:{self.history.ml} => l: {self.history.extremum_l} => l_price:{self.history.extremum_l_price} => last_cd:{self.history.last_cd} => history_dirction:{self.history.breakthrough_direction} agreement_extre_l => {self.history.agreement_extremum_l}")
                             self.trade_action = Cons.ACTION_CLOSE_LONG 
                             # 设置一个平仓价格
                             # self.close_price = self.history.last_cd.low
                             # 使用l_price作为平仓价
-                            self.close_price = self.history.extremum_l_price
+                            self.close_price = self.history.agreement_extremum_l_price
                             # 使用l_price作为平仓价  
-                            self.close_price_by_l = self.history.extremum_l_price
+                            self.close_price_by_l = self.history.agreement_extremum_l_price
                             # 增加开仓统计次数
                             self.add_open_a_position_times()  
                         elif instance.breakthrough_direction == Cons.DIRECTION_DOWN:
                             # result = self.short(tick.current, self.hand_number)
                             self.add_action(tick, Cons.ACTION_OPEN_SHORT, tick.current - self.unit_value)
                             self.open_price = tick.current - self.unit_value
-                            logging.info(f"vt_symbol:{self.vt_symbol} => direction:short => max_amplitude:{self.history.max_amplitude} =>  ml:{self.history.ml} => l: {self.history.extremum_l} => l_price:{self.history.extremum_l_price} => last_cd:{self.history.last_cd} => history_dirction:{self.history.breakthrough_direction}")
+                            logging.info(f"vt_symbol:{self.vt_symbol} => direction:short => max_amplitude:{self.history.max_amplitude} =>  ml:{self.history.ml} => l: {self.history.extremum_l} => l_price:{self.history.extremum_l_price} => last_cd:{self.history.last_cd} => history_dirction:{self.history.breakthrough_direction} agreement_extre_l => {self.history.agreement_extremum_l}")
                             self.trade_action = Cons.ACTION_CLOSE_SHORT
                             # 设置一个平仓价格
                             # self.close_price = self.history.last_cd.high
                             # 使用l_price作为平仓价
-                            self.close_price = self.history.extremum_l_price
+                            self.close_price = self.history.agreement_extremum_l_price
                             # 使用l_price作为平仓价
-                            self.close_price_by_l = self.history.extremum_l_price
+                            self.close_price_by_l = self.history.agreement_extremum_l_price
                             # 增加开仓统计次数
                             self.add_open_a_position_times() 
             elif self.trade_action == Cons.ACTION_CLOSE_LONG: # 止损
@@ -131,7 +131,7 @@ class TickTest():
                         self.reset_price()
                         # 重新设置ml
                         self.reset_history_ml()
-                elif S4Tick.close_a_price(self.trade_action, self.history.last_cd.low, tick_obj) or trade.simulation_need_close_position(self.vt_symbol, tick):
+                elif S4Tick.close_a_price(self.trade_action, self.close_price, tick_obj) or trade.simulation_need_close_position(self.vt_symbol, tick):
                     # result = self.sell(tick.current, self.hand_number)
                     self.add_action(tick, Cons.ACTION_CLOSE_LONG, tick.current - self.unit_value)
                     logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:long => close_price:{self.close_price} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price}")
@@ -154,7 +154,7 @@ class TickTest():
                         self.reset_price()
                         # 重新设置ml
                         self.reset_history_ml()
-                elif S4Tick.close_a_price(self.trade_action, self.history.last_cd.high, tick_obj) or trade.simulation_need_close_position(self.vt_symbol, tick):
+                elif S4Tick.close_a_price(self.trade_action, self.close_price, tick_obj) or trade.simulation_need_close_position(self.vt_symbol, tick):
                     
                     # result = self.cover(tick.current, self.hand_number)
                     self.add_action(tick, Cons.ACTION_CLOSE_SHORT, tick.current + self.unit_value)
@@ -326,6 +326,8 @@ class TickTest():
     """
     def reset_history_ml(self):
         self.history.ml = None
+        self.history.agreement_extremum_l = None
+        self.history.agreement_extremum_l_price = None
 
     """
     是否为赢得状态
