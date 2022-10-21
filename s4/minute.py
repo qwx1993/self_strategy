@@ -53,7 +53,7 @@ class Minute:
     max_limit = 1 # 满足开仓条件后
     has_open_a_position_times = 0 # 已开仓次数
     open_a_position_start_cd = None # 开仓起点
-    interval_minutes = 5
+    interval_minutes = 10
 
     """
     初始化
@@ -176,8 +176,8 @@ class Minute:
         if self.extremum_d_price is not None:
             if self.breakthrough_direction == Constants.DIRECTION_UP:
                 # 没有L就设置L,或者在五分钟以内
-                if self.extremum_l_price is None or not self.over_interval_minutes(ln):
-                    if self.extremum_d_price is None or ln.low < self.extremum_l_price:
+                if (self.extremum_l_price is None) or not self.over_interval_minutes(ln):
+                    if (self.extremum_l_price is None) or ln.low < self.extremum_l_price:
                         self.extremum_l_price = ln.low
                         self.extremum_l = ln
                         self.after_set_extremum_l()
@@ -197,12 +197,11 @@ class Minute:
                         self.extremum_l = self.agreement_extremum_l
                         self.after_set_extremum_l()
                     elif ln.high > self.extremum_l_price:
-                        if self.over_interval_minutes(ln):
-                            self.ml = ln.low
+                        self.ml = ln.low
             else:
                  # 没有L就设置L,或者在五分钟以内
-                if self.extremum_l_price is None or not self.over_interval_minutes(ln):
-                    if self.extremum_l_price is None or ln.high > self.extremum_l_price:
+                if (self.extremum_l_price is None) or not self.over_interval_minutes(ln):
+                    if (self.extremum_l_price is None) or ln.high > self.extremum_l_price:
                         self.extremum_l_price = ln.high
                         self.extremum_l = ln
                         self.after_set_extremum_l()
@@ -222,8 +221,7 @@ class Minute:
                         self.extremum_l = self.agreement_extremum_l
                         self.after_set_extremum_l()
                     elif ln.low < self.extremum_l_price:
-                        if self.over_interval_minutes(ln):
-                            self.ml = ln.high
+                        self.ml = ln.high
                         
 
     """
