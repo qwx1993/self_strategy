@@ -44,6 +44,7 @@ class TickTest():
     last_tick_list = []
     actions = [] # 交易动作
     unit_value = None
+
     # distance = None # 盈利间隔
 
     # 添加参数和变量名到对应的列表
@@ -93,7 +94,7 @@ class TickTest():
                 # 出现ml并且当前一分钟没有刷新l
                 if self.history.ml is not None and self.history.extremum_l_price is not None and self.history.extremum_l_price == instance.extremum_l_price:
                     # if S4Tick.open_a_price(instance.breakthrough_direction, self.history.last_cd, tick_obj) and self.can_open_a_position_by_max_limit() and self.open_by_beyond_max_unit_value():
-                    if S4Tick.open_a_price(instance.breakthrough_direction, self.history.last_cd, tick_obj) and self.open_by_beyond_max_unit_value():
+                    if S4Tick.open_a_price(instance.breakthrough_direction, self.history.last_cd, tick_obj) and self.within_max_opening_interval(tick) and self.open_by_beyond_max_unit_value():
                     # if S4Tick.open_a_price(instance.breakthrough_direction, self.history.last_cd, tick_obj):
                         if instance.breakthrough_direction == Cons.DIRECTION_UP:
                             # result = self.buy(tick.current, self.hand_number)
@@ -386,4 +387,12 @@ class TickTest():
         elif self.trade_action == Cons.ACTION_CLOSE_SHORT:
             if self.open_price - tick.current > distance + self.unit_value:
                 return True
+        return False
+
+    """
+    在最大的开盘范围内
+    """ 
+    def within_max_opening_interval(self, tick):
+        if abs(tick.current - self.history.extremum_l_price) < 10 * self.unit_value:
+            return True
         return False

@@ -50,7 +50,7 @@ class Minute:
     max_limit = 1 # 满足开仓条件后
     has_open_a_position_times = 0 # 已开仓次数
     open_a_position_start_cd = None # 开仓起点
-    interval_minutes = 5
+    interval_minutes = 20
 
     """
     初始化
@@ -120,9 +120,16 @@ class Minute:
     """
     def set_open_a_position_start_cd(self, cd):
        if self.open_a_position_start_cd is None:
-            if self.is_same_direction(cd) and self.can_set_start_cd(cd):
+            if self.is_same_direction(self.extremum_l) or (self.extremum_l.open == self.extremum_l.close):
+                self.open_a_position_start_cd = self.extremum_l
+                self.open_a_position_start_cd.price = self.extremum_l.open
+            elif self.is_same_direction(cd) and self.can_set_start_cd(cd):
                 self.open_a_position_start_cd = cd
                 self.set_sub_status(S3_Cons.SUB_STATUS_OF_ML)
+                if self.breakthrough_direction == Constants.DIRECTION_UP:
+                    self.open_a_position_start_cd.price = cd.low
+                elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
+                    self.open_a_position_start_cd.price = cd.high
 
     """
     在向上的趋势下，如果当前分钟的方向向上，并且最低点比L高，就为真
@@ -235,11 +242,11 @@ class Minute:
     def set_ml_price(self, cd):
         if self.extremum_l_price is not None and self.open_a_position_start_cd is not None:
             if self.breakthrough_direction == Constants.DIRECTION_UP:
-                if self.open_a_position_start_cd.low >= cd.low >= self.extremum_l_price: 
+                if self.open_a_position_start_cd.price >= cd.low >= self.extremum_l_price: 
                     if (self.ml is None) or cd.low < self.ml:
                         self.ml = cd.low
             elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
-                if self.open_a_position_start_cd.high <= cd.high <= self.extremum_l_price:
+                if self.open_a_position_start_cd.price <= cd.high <= self.extremum_l_price:
                     if (self.ml is None) or cd.high > self.ml:
                         self.ml = cd.high
 
