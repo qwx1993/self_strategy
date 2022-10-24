@@ -92,38 +92,29 @@ class TickTest():
             instance.realtime_analysis_for_cd(minute_cd)
             if self.trade_action is None and trade.simulation_can_open_a_position(self.vt_symbol, tick):
                 # 出现ml并且当前一分钟没有刷新l
-                if self.history.ml is not None and self.history.extremum_l_price is not None and self.history.extremum_l_price == instance.extremum_l_price:
+                if self.history.extremum_l_price is not None and self.history.open_a_position_start_cd is not None:
                     # if S4Tick.open_a_price(instance.breakthrough_direction, self.history.last_cd, tick_obj) and self.can_open_a_position_by_max_limit() and self.open_by_beyond_max_unit_value():
-                    if S4Tick.open_a_price(instance.breakthrough_direction, self.history.last_cd, tick_obj) and self.within_max_opening_interval(tick) and self.open_by_beyond_max_unit_value():
+                    if S4Tick.open_a_price_by_start_cd(instance.breakthrough_direction,
+                        self.history.open_a_position_start_cd,
+                        minute_cd,
+                        self.history.extremum_l_price,
+                        self.history.h_price,
+                        tick_obj) and self.within_max_opening_interval(tick) and self.open_by_beyond_max_unit_value():
                     # if S4Tick.open_a_price(instance.breakthrough_direction, self.history.last_cd, tick_obj):
                         if instance.breakthrough_direction == Cons.DIRECTION_UP:
                             # result = self.buy(tick.current, self.hand_number)
-                            self.add_action(tick, Cons.ACTION_OPEN_LONG, tick.current + self.unit_value)
-                            self.open_price = tick.current + self.unit_value
-                            logging.info(f"vt_symbol:{self.vt_symbol} => direction:long => max_amplitude:{self.history.max_amplitude} =>  ml:{self.history.ml} => l: {self.history.extremum_l} => l_price:{self.history.extremum_l_price} => last_cd:{self.history.last_cd} => history_dirction:{self.history.breakthrough_direction}")
-                            self.trade_action = Cons.ACTION_CLOSE_LONG 
-                            # 设置一个平仓价格
-                            # self.close_price = self.history.last_cd.low
-                            # 使用l_price作为平仓价
-                            self.close_price = self.history.extremum_l_price
-                            # 使用l_price作为平仓价  
-                            self.close_price_by_l = self.history.extremum_l_price
-                            # 增加开仓统计次数
-                            self.add_open_a_position_times()  
+                            if self.history.open_a_position_start_cd.type == Cons.OPEN_BY_L:
+                                self.open_long(tick, minute_cd)
+                            elif self.history.open_a_position_start_cd.type == Cons.OPEN_BY_H:
+                                self.open_short(tick, minute_cd)
                         elif instance.breakthrough_direction == Cons.DIRECTION_DOWN:
-                            # result = self.short(tick.current, self.hand_number)
-                            self.add_action(tick, Cons.ACTION_OPEN_SHORT, tick.current - self.unit_value)
-                            self.open_price = tick.current - self.unit_value
-                            logging.info(f"vt_symbol:{self.vt_symbol} => direction:short => max_amplitude:{self.history.max_amplitude} =>  ml:{self.history.ml} => l: {self.history.extremum_l} => l_price:{self.history.extremum_l_price} => last_cd:{self.history.last_cd} => history_dirction:{self.history.breakthrough_direction}")
-                            self.trade_action = Cons.ACTION_CLOSE_SHORT
-                            # 设置一个平仓价格
-                            # self.close_price = self.history.last_cd.high
-                            # 使用l_price作为平仓价
-                            self.close_price = self.history.extremum_l_price
-                            # 使用l_price作为平仓价
-                            self.close_price_by_l = self.history.extremum_l_price
-                            # 增加开仓统计次数
-                            self.add_open_a_position_times() 
+                            if self.history.open_a_position_start_cd.type == Cons.OPEN_BY_L:
+                                self.open_short(tick, minute_cd)
+                            elif self.history.open_a_position_start_cd.type == Cons.OPEN_BY_H:
+                                self.open_long(tick, minute_cd)
+                        if self.close_price_by_l is None:
+                            print(f"h => {self.history.h_price} l => {self.history.extremum_l_price} {self.history.open_a_position_start_cd} {instance.breakthrough_direction}")
+                            sys.exit(1)
             elif self.trade_action == Cons.ACTION_CLOSE_LONG: # 止损
                 # if self.close_by_same_minute(tick):
                 #     if S4Tick.close_a_price(self.trade_action, self.close_price_by_l, tick_obj):
@@ -396,3 +387,39 @@ class TickTest():
         if abs(tick.current - self.history.extremum_l_price) < 10 * self.unit_value:
             return True
         return False
+    
+    def open_long(self, tick, minute_cd):
+        self.add_action(tick, Cons.ACTION_OPEN_LONG, tick.current + self.unit_value)
+        self.open_price = tick.current + self.unit_value
+        logging.info(f"vt_symbol:{self.vt_symbol} => direction:long => max_amplitude:{self.history.max_amplitude} =>  ml:{self.history.ml} => l: {self.history.extremum_l} => l_price:{self.history.extremum_l_price} => last_cd:{self.history.last_cd} => history_dirction:{self.history.breakthrough_direction} start_cd => {self.history.open_a_position_start_cd} minute_cd =>{minute_cd}")
+        self.trade_action = Cons.ACTION_CLOSE_LONG 
+        # 设置一个平仓价格
+        # self.close_price = self.history.last_cd.low
+        # 使用l_price作为平仓价
+        if self.history.open_a_position_start_cd.type == Cons.OPEN_BY_L:
+            self.close_price = self.history.extremum_l_price
+            # 使用l_price作为平仓价  
+            self.close_price_by_l = self.history.extremum_l_price
+        elif self.history.open_a_position_start_cd.type == Cons.OPEN_BY_H:
+            self.close_price_by_l = self.history.h_price
+            self.close_price = self.history.h_price
+        # 增加开仓统计次数
+        self.add_open_a_position_times()
+    
+    def open_short(self, tick, minute_cd):
+        self.add_action(tick, Cons.ACTION_OPEN_SHORT, tick.current - self.unit_value)
+        self.open_price = tick.current - self.unit_value
+        logging.info(f"vt_symbol:{self.vt_symbol} => direction:short => max_amplitude:{self.history.max_amplitude} =>  ml:{self.history.ml} => l: {self.history.extremum_l} => l_price:{self.history.extremum_l_price} => last_cd:{self.history.last_cd} => history_dirction:{self.history.breakthrough_direction} start_cd => {self.history.open_a_position_start_cd} minute_cd =>{minute_cd}")
+        self.trade_action = Cons.ACTION_CLOSE_SHORT
+        # 设置一个平仓价格
+        # self.close_price = self.history.last_cd.high
+        # 使用l_price作为平仓价
+        if self.history.open_a_position_start_cd.type == Cons.OPEN_BY_L:
+            self.close_price = self.history.extremum_l_price
+            # 使用l_price作为平仓价
+            self.close_price_by_l = self.history.extremum_l_price
+        elif self.history.open_a_position_start_cd.type == Cons.OPEN_BY_H:
+            self.close_price_by_l = self.history.h_price
+            self.close_price = self.history.h_price
+        # 增加开仓统计次数
+        self.add_open_a_position_times()

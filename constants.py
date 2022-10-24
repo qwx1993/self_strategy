@@ -120,6 +120,9 @@ class Constants:
     OPEN_A_POSITION_ONE = 1 # 情况一开仓
     OPEN_A_POSITION_TWO = 2 # 情况二开仓
 
+    OPEN_BY_L = 0 # 通过L开仓
+    OPEN_BY_H = 1 # 通过H开仓
+
     STR_ACTIONS_AND_STATES = {
         OPEN_A_POSITION_ONE_LONG: {
             "cn": "情况一开多",
