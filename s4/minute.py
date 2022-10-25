@@ -50,8 +50,9 @@ class Minute:
     unit_value = 0 # 单位值
     max_limit = 1 # 满足开仓条件后
     has_open_a_position_times = 0 # 已开仓次数
-    open_a_position_start_cd = None # 开仓起点
-    interval_minutes = 20
+    l_start_cd = None # l开仓起点
+    h_start_cd = None # h开仓起点
+    interval_minutes = 10
 
     """
     初始化
@@ -119,38 +120,34 @@ class Minute:
     """
     设置开仓的点位
     """
-    def set_open_a_position_start_cd(self, cd):
-       if self.open_a_position_start_cd is None:
+    def set_l_start_cd(self, cd):
+       if self.l_start_cd is None:
             if self.is_same_direction(self.extremum_l) or (self.extremum_l.open == self.extremum_l.close):
-                self.open_a_position_start_cd = self.extremum_l
-                self.open_a_position_start_cd.price = self.extremum_l.open
-                self.open_a_position_start_cd.type = Constants.OPEN_BY_L
+                self.l_start_cd = self.extremum_l
+                self.l_start_cd.price = self.extremum_l.open
             elif self.is_same_direction(cd) and self.can_set_start_cd(cd):
-                self.open_a_position_start_cd = cd
+                self.l_start_cd = cd
                 self.set_sub_status(S3_Cons.SUB_STATUS_OF_ML)
-                self.open_a_position_start_cd.type = Constants.OPEN_BY_L
                 if self.breakthrough_direction == Constants.DIRECTION_UP:
-                    self.open_a_position_start_cd.price = cd.low
+                    self.l_start_cd.price = cd.low
                 elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
-                    self.open_a_position_start_cd.price = cd.high
+                    self.l_start_cd.price = cd.high
     
     """
     设置开仓的点位
     """
-    def set_open_a_position_start_cd_by_h(self, cd):
-       if self.open_a_position_start_cd is None:
+    def set_h_start_cd(self, cd):
+       if self.h_start_cd is None:
             if not self.is_same_direction(self.h_cd) or (self.h_cd.open == self.h_cd.close):
-                self.open_a_position_start_cd = self.h_cd
-                self.open_a_position_start_cd.price = self.h_cd.open
-                self.open_a_position_start_cd.type = Constants.OPEN_BY_H
+                self.h_start_cd = self.h_cd
+                self.h_start_cd.price = self.h_cd.open
             elif not self.is_same_direction(cd) and self.can_set_start_cd_by_h(cd):
-                self.open_a_position_start_cd = cd
+                self.h_start_cd = cd
                 self.set_sub_status(S3_Cons.SUB_STATUS_OF_ML)
-                self.open_a_position_start_cd.type = Constants.OPEN_BY_H
                 if self.breakthrough_direction == Constants.DIRECTION_UP:
-                    self.open_a_position_start_cd.price = cd.high
+                    self.h_start_cd.price = cd.high
                 elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
-                    self.open_a_position_start_cd.price = cd.low
+                    self.h_start_cd.price = cd.low
 
     """
     在向上的趋势下，如果当前分钟的方向向上，并且最低点比L高，就为真
@@ -204,29 +201,31 @@ class Minute:
         self.extremum_d_price = None
 
     """
-    设置l1的相关值
+    设置l的相关值
     """
     def set_extremum_l(self, ln):
         if self.extremum_d_price is not None:
             if self.breakthrough_direction == Constants.DIRECTION_UP:
-                if (self.extremum_l_price is None) or ln.low < self.extremum_l_price:
+                if (self.extremum_l_price is None and ln.low < self.extremum_d.low) or (self.extremum_l_price is not None and ln.low < self.extremum_l_price):
                     self.extremum_l_price = ln.low
                     self.extremum_l = ln
                     self.after_set_extremum_l()
                 else:
                     # 如果是L状态，就设置为逆趋势状态
-                    self.set_h_price(ln)
-                    if self.sub_status == S3_Cons.SUB_STATUS_OF_L:
-                        self.set_sub_status(S3_Cons.SUB_STATUS_OF_TREND_COUNTER)
+                    if self.extremum_l_price is not None and self.over_interval_minutes(ln):
+                        self.set_h_price(ln)
+                        if self.sub_status == S3_Cons.SUB_STATUS_OF_L:
+                            self.set_sub_status(S3_Cons.SUB_STATUS_OF_TREND_COUNTER)
             else:
-                if (self.extremum_l_price is None) or ln.high > self.extremum_l_price:
+                if (self.extremum_l_price is None and ln.high > self.extremum_d.high) or (self.extremum_l_price is not None and ln.high > self.extremum_l_price):
                     self.extremum_l_price = ln.high
                     self.extremum_l = ln
                     self.after_set_extremum_l()
                 else:
-                    self.set_h_price(ln)
-                    if self.sub_status == S3_Cons.SUB_STATUS_OF_L:
-                        self.set_sub_status(S3_Cons.SUB_STATUS_OF_TREND_COUNTER)
+                    if self.extremum_l_price is not None and self.over_interval_minutes(ln):
+                        self.set_h_price(ln)
+                        if self.sub_status == S3_Cons.SUB_STATUS_OF_L:
+                            self.set_sub_status(S3_Cons.SUB_STATUS_OF_TREND_COUNTER)
 
     """
     设置极值L后的动作，设置状态为L
@@ -235,11 +234,12 @@ class Minute:
     def after_set_extremum_l(self):
         # 设置L为最新的状态
         self.set_sub_status(S3_Cons.SUB_STATUS_OF_L)
-        self.open_a_position_start_cd = None
         self.ml = None
+        self.l_start_cd = None
         self.reset_h_price()
         # 出现新的l刷新开仓次数
         # self.has_open_a_position_times = 0
+
 
     """
     重置extremum_l的值
@@ -247,11 +247,15 @@ class Minute:
     def reset_extremum_l(self):
         self.extremum_l = None
         self.extremum_l_price = None
-        self.open_a_position_start_cd = None
+        self.l_start_cd = None
         self.ml = None
         self.sub_status = S3_Cons.SUB_STATUS_OF_NONE
         # 重置开盘次数
         self.has_open_a_position_times = 0
+        # 重置h
+        self.reset_h_price()
+        # 重置h_price_max
+        self.h_price_max = None
     
     """
     设置h_price参数
@@ -259,31 +263,40 @@ class Minute:
     def set_h_price(self, cd):
         if self.extremum_d_price is not None and Logic.is_high_point(self.breakthrough_direction, self.last_cd, cd):
             if self.breakthrough_direction == Constants.DIRECTION_UP:
-                if (self.h_price is None) or cd.high > self.h_price:
-                    self.h_price = cd.high
-                    self.h_cd = cd
-                    if (self.h_price_max is None) or self.h_price > self.h_price_max:
-                        self.h_price_max = self.h_price
+                if (self.h_price is None and cd.high > self.extremum_l.high) or (self.h_price is not None and cd.high > self.h_price):
+                        self.h_price = cd.high
+                        self.h_cd = cd
+                        self.after_set_h_price()
+                        if (self.h_price_max is None) or self.h_price > self.h_price_max:
+                            self.h_price_max = self.h_price
             elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
-                if (self.h_price is None) or cd.low < self.h_price:
+                if (self.h_price is None and cd.low < self.extremum_l.low) or (self.h_price is not None and cd.low < self.h_price):
                     self.h_price = cd.low
                     self.h_cd = cd
+                    self.after_set_h_price()
                     if (self.h_price_max is None) or self.h_price < self.h_price_max:
                         self.h_price_max = self.h_price
+    
+    """
+    h_price设置之后的处理逻辑
+    """
+    def after_set_h_price(self):
+        # h点刷新，重置开始点
+       self.h_start_cd = None
 
     """
     设置ml的price
     """   
-    def set_ml_price(self, cd):
-        if self.extremum_l_price is not None and self.open_a_position_start_cd is not None:
-            if self.breakthrough_direction == Constants.DIRECTION_UP:
-                if self.open_a_position_start_cd.price >= cd.low >= self.extremum_l_price: 
-                    if (self.ml is None) or cd.low < self.ml:
-                        self.ml = cd.low
-            elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
-                if self.open_a_position_start_cd.price <= cd.high <= self.extremum_l_price:
-                    if (self.ml is None) or cd.high > self.ml:
-                        self.ml = cd.high
+    # def set_ml_price(self, cd):
+    #     if self.extremum_l_price is not None and self.open_a_position_start_cd is not None:
+    #         if self.breakthrough_direction == Constants.DIRECTION_UP:
+    #             if self.open_a_position_start_cd.price >= cd.low >= self.extremum_l_price: 
+    #                 if (self.ml is None) or cd.low < self.ml:
+    #                     self.ml = cd.low
+    #         elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
+    #             if self.open_a_position_start_cd.price <= cd.high <= self.extremum_l_price:
+    #                 if (self.ml is None) or cd.high > self.ml:
+    #                     self.ml = cd.high
 
     """
     重新设置ml_1_price为None
@@ -353,7 +366,8 @@ class Minute:
     """     
     def reset_h_price(self):
         self.h_price = None
-        self.h_cd = None 
+        self.h_cd = None
+        self.h_start_cd = None
 
     """
     当前状态为STATUS_NONE时的逻辑
@@ -433,13 +447,13 @@ class Minute:
         # 逆趋势判断
         if self.sub_status == S3_Cons.SUB_STATUS_OF_TREND_COUNTER:
             if self.extremum_l_price is not None:
-                self.set_open_a_position_start_cd(cd)
-            if self.h_price is not None and self.open_a_position_start_cd is None:
-                self.set_open_a_position_start_cd_by_h(cd)
-        elif self.sub_status == S3_Cons.SUB_STATUS_OF_ML:
-            # 设置ml
-            if self.over_interval_minutes(cd):
-                self.set_ml_price(cd)
+                self.set_l_start_cd(cd)
+            if self.h_price is not None:
+                self.set_h_start_cd(cd)
+        # elif self.sub_status == S3_Cons.SUB_STATUS_OF_ML:
+        #     # 设置ml
+        #     if self.over_interval_minutes(cd):
+
     
     """
     超过限定时间，设置ml
@@ -626,9 +640,6 @@ class Minute:
         self.set_extremum_d(cd)
         # 重置l
         self.reset_extremum_l()
-        # 重置h
-        self.reset_h_price()
-        self.h_price_max = None
         # 重置rrn
         self.rrn = None
     
@@ -731,8 +742,6 @@ class Minute:
             self.set_extremum_d(cd)
             # 重置l数据
             self.reset_extremum_l() 
-            # todo 重置h_price 参数
-            self.reset_h_price()
         else:
             self.set_rrn(max_l_to_d_obj.length)
             # 设置extremum_l
