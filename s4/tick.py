@@ -1,6 +1,7 @@
 from operator import truediv
 import sys
 from self_strategy.constants import Constants
+from self_strategy.logic import Logic
 
 class Tick:
 
@@ -14,6 +15,38 @@ class Tick:
         elif direction == Constants.DIRECTION_DOWN:
             if tick.current < last_cd.low:
                 return True
+        return False
+    
+    """
+    方向向上时，在接下来的一分钟内低于协定d的价格开仓
+    方向向下时，在接下来的一分钟内高于协定d的价格开仓
+    """
+    def open_a_price_by_agreement_d(direction, extremum_d, agreement_extremum_d, minute_cd, tick):
+        if extremum_d is None or agreement_extremum_d is None:
+            return False
+        if Logic.diff_minutes(extremum_d.datetime, minute_cd.datetime) == 1 and not Logic.within_minutes(20, extremum_d.datetime, agreement_extremum_d.datetime):
+            if direction == Constants.DIRECTION_UP:
+                if tick.current < agreement_extremum_d.price:
+                    return True
+            elif direction == Constants.DIRECTION_DOWN:
+                if tick.current > agreement_extremum_d.price:
+                    return True
+        return False
+    
+    """
+    方向向上时，在接下来的一分钟内高于协定l的价格开仓
+    方向向下时，在接下来的一分钟内低于协定l的价格开仓
+    """
+    def open_a_price_by_agreement_l(direction, extremum_l, agreement_extremum_l, minute_cd, tick):
+        if extremum_l is None or agreement_extremum_l is None:
+            return False
+        if Logic.diff_minutes(extremum_l.datetime, minute_cd.datetime) == 1 and not Logic.within_minutes(20, extremum_l.datetime, agreement_extremum_l.datetime):
+            if direction == Constants.DIRECTION_UP:
+                if tick.current > agreement_extremum_l.price:
+                    return True
+            elif direction == Constants.DIRECTION_DOWN:
+                if tick.current < agreement_extremum_l.price:
+                    return True
         return False
     
     """

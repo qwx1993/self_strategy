@@ -134,13 +134,12 @@ def can_open_a_position(vt_symbol):
 模拟开仓时间
 """
 def simulation_can_open_a_position(vt_symbol, tick):
-    # hour = tick.datetime.hour
-    # minute = tick.datetime.minute
+    hour = tick.datetime.hour
+    minute = tick.datetime.minute
 
-    # if hour == 9 and minute < 30:
-    #     return True
-    # elif hour == 21:
-    #     return True
-    # return False
+    if hour == 9 and minute < 10:
+        return False
+    elif hour == 13 and minute < 40:
+        return False
+
     return not simulation_need_close_position(vt_symbol, tick)
-

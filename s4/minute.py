@@ -2,7 +2,9 @@
 main.py
 读取data文件夹中的所有csv文件，针对每个文件计算出该交易策略的胜率和赚钱点数
 """
+from copy import deepcopy
 import os
+from re import L
 import sys
 from self_strategy.constants import Constants
 from self_strategy.constants_s3 import ConstantsS3 as S3_Cons
@@ -30,8 +32,10 @@ class Minute:
     test_need_statistic = False # 测试是否需要统计   
     extremum_d_price = None  # 极致d的price
     extremum_d = None  # 极值点D
+    agreement_extremum_d = None # 协议D,标定开仓信号
     extremum_l_price = None # 极值点l的price
     extremum_l = None # 极值点l
+    agreement_extremum_l = None # 协定L
 
     h_price = None # h点，表示比仅次于d点第二高点
     h_cd = None
@@ -52,6 +56,7 @@ class Minute:
     has_open_a_position_times = 0 # 已开仓次数
     l_start_cd = None # l开仓起点
     h_start_cd = None # h开仓起点
+    d_start_cd = None # d开仓起点
     interval_minutes = 10
 
     """
@@ -127,12 +132,26 @@ class Minute:
                 self.l_start_cd.price = self.extremum_l.open
             elif self.is_same_direction(cd) and self.can_set_start_cd(cd):
                 self.l_start_cd = cd
-                self.set_sub_status(S3_Cons.SUB_STATUS_OF_ML)
                 if self.breakthrough_direction == Constants.DIRECTION_UP:
                     self.l_start_cd.price = cd.low
                 elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
                     self.l_start_cd.price = cd.high
-    
+
+    """
+    设置D的开始点
+    """
+    def set_d_start_cd(self, cd):
+        if self.d_start_cd is None:
+            if not self.is_same_direction(self.extremum_d) or (self.extremum_d.open == self.extremum_d.close):
+                self.d_start_cd = self.extremum_d
+                self.d_start_cd.price = self.extremum_d.open
+            elif not self.is_same_direction(cd) and self.can_set_start_cd_by_d(cd):
+                self.d_start_cd = cd
+                if self.breakthrough_direction == Constants.DIRECTION_UP:
+                    self.d_start_cd.price = cd.high
+                elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
+                    self.d_start_cd.price = cd.low
+        
     """
     设置开仓的点位
     """
@@ -143,15 +162,13 @@ class Minute:
                 self.h_start_cd.price = self.h_cd.open
             elif not self.is_same_direction(cd) and self.can_set_start_cd_by_h(cd):
                 self.h_start_cd = cd
-                self.set_sub_status(S3_Cons.SUB_STATUS_OF_ML)
                 if self.breakthrough_direction == Constants.DIRECTION_UP:
                     self.h_start_cd.price = cd.high
                 elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
                     self.h_start_cd.price = cd.low
 
     """
-    在向上的趋势下，如果当前分钟的方向向上，并且最低点比L高，就为真
-    在向下的趋势下，如果当前分钟的方向向下，并且最低点比L低，就为真
+    判断是否可以设置为L的起点
     """
     def can_set_start_cd(self, cd):
         if self.breakthrough_direction == Constants.DIRECTION_UP:
@@ -162,12 +179,27 @@ class Minute:
                 return True
         return False
     
+    """
+    判断是否可以设置H的起点
+    """
     def can_set_start_cd_by_h(self, cd):
         if self.breakthrough_direction == Constants.DIRECTION_UP:
             if cd.high <= self.h_price:
                 return True
         elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
             if cd.low >= self.h_price:
+                return True
+        return False
+    
+    """
+    判断是否可以设置D的起点
+    """
+    def can_set_start_cd_by_d(self, cd):
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
+            if cd.high <= self.extremum_d_price:
+                return True
+        elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
+            if cd.low >= self.extremum_d_price:
                 return True
         return False
     
@@ -182,16 +214,35 @@ class Minute:
     """
     设置d1极值
     """
-
     def set_extremum_d(self, dn):
-        self.extremum_d = dn
         if self.breakthrough_direction == Constants.DIRECTION_UP:
             if (self.extremum_d_price is None) or dn.high > self.extremum_d_price:
+                self.before_set_extremum_d()
                 self.extremum_d_price = dn.high
-                
+                self.extremum_d = dn
+                self.after_set_extremum_d()
         else:
             if (self.extremum_d_price is None) or dn.low < self.extremum_d_price:
+                self.before_set_extremum_d()
                 self.extremum_d_price = dn.low
+                self.extremum_d = dn
+                self.after_set_extremum_d()
+    
+    """
+    在设置新的D之前刷新协定D
+    """
+    def before_set_extremum_d(self):
+        if self.extremum_d is not None:
+            self.agreement_extremum_d = deepcopy(self.extremum_d)
+            self.agreement_extremum_d.price = self.extremum_d_price
+    
+    """
+    D刷新后重置L
+    """
+    def after_set_extremum_d(self):
+        self.d_start_cd = None
+        # 重置l数据
+        self.reset_extremum_l()
     
     """
     重新设置极值d
@@ -199,6 +250,10 @@ class Minute:
     def reset_extremum_d(self):
         self.extremum_d = None
         self.extremum_d_price = None
+        self.d_start_cd = None
+        self.agreement_extremum_d = None
+        # 重置L
+        self.reset_extremum_l()
 
     """
     设置l的相关值
@@ -206,26 +261,36 @@ class Minute:
     def set_extremum_l(self, ln):
         if self.extremum_d_price is not None:
             if self.breakthrough_direction == Constants.DIRECTION_UP:
-                if (self.extremum_l_price is None and ln.low < self.extremum_d.low) or (self.extremum_l_price is not None and ln.low < self.extremum_l_price):
+                if (self.extremum_l_price is None) or ln.low < self.extremum_l_price:
+                    self.before_set_extremum_l()
                     self.extremum_l_price = ln.low
                     self.extremum_l = ln
                     self.after_set_extremum_l()
                 else:
                     # 如果是L状态，就设置为逆趋势状态
-                    if self.extremum_l_price is not None and self.over_interval_minutes(ln):
+                    if self.extremum_l_price is not None:
                         self.set_h_price(ln)
                         if self.sub_status == S3_Cons.SUB_STATUS_OF_L:
                             self.set_sub_status(S3_Cons.SUB_STATUS_OF_TREND_COUNTER)
             else:
-                if (self.extremum_l_price is None and ln.high > self.extremum_d.high) or (self.extremum_l_price is not None and ln.high > self.extremum_l_price):
+                if (self.extremum_l_price is None) or ln.high > self.extremum_l_price:
+                    self.before_set_extremum_l()
                     self.extremum_l_price = ln.high
                     self.extremum_l = ln
                     self.after_set_extremum_l()
                 else:
-                    if self.extremum_l_price is not None and self.over_interval_minutes(ln):
+                    if self.extremum_l_price is not None:
                         self.set_h_price(ln)
                         if self.sub_status == S3_Cons.SUB_STATUS_OF_L:
                             self.set_sub_status(S3_Cons.SUB_STATUS_OF_TREND_COUNTER)
+    
+    """
+    在设置新的L之前刷新协定L
+    """
+    def before_set_extremum_l(self):
+        if self.extremum_l is not None:
+            self.agreement_extremum_l = deepcopy(self.extremum_l)
+            self.agreement_extremum_l.price = self.extremum_l_price
 
     """
     设置极值L后的动作，设置状态为L
@@ -256,6 +321,7 @@ class Minute:
         self.reset_h_price()
         # 重置h_price_max
         self.h_price_max = None
+        self.agreement_extremum_l = None
     
     """
     设置h_price参数
@@ -444,15 +510,12 @@ class Minute:
         self.history_statistic_max_r(cd)
         # 处理出现最大的幅度情况
         self.handle_max_amplitude(cd)
-        # 逆趋势判断
+
         if self.sub_status == S3_Cons.SUB_STATUS_OF_TREND_COUNTER:
             if self.extremum_l_price is not None:
                 self.set_l_start_cd(cd)
             if self.h_price is not None:
                 self.set_h_start_cd(cd)
-        # elif self.sub_status == S3_Cons.SUB_STATUS_OF_ML:
-        #     # 设置ml
-        #     if self.over_interval_minutes(cd):
 
     
     """
@@ -740,13 +803,13 @@ class Minute:
         if self.exceed_extremum_d(cd):
             # 设置点D
             self.set_extremum_d(cd)
-            # 重置l数据
-            self.reset_extremum_l() 
         else:
+            # 设置D的起点
+            self.set_d_start_cd(cd)
+
             self.set_rrn(max_l_to_d_obj.length)
             # 设置extremum_l
             self.set_extremum_l(cd)
-                
 
         # 记录下当前的max_l_to_d
         self.current_max_l_to_d_interval = max_l_to_d_obj
