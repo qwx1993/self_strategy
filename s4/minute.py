@@ -216,13 +216,13 @@ class Minute:
     """
     def set_extremum_d(self, dn):
         if self.breakthrough_direction == Constants.DIRECTION_UP:
-            if (self.extremum_d_price is None) or dn.high > self.extremum_d_price:
+            if (self.extremum_d_price is None) or dn.high >= self.extremum_d_price:
                 self.before_set_extremum_d()
                 self.extremum_d_price = dn.high
                 self.extremum_d = dn
                 self.after_set_extremum_d()
         else:
-            if (self.extremum_d_price is None) or dn.low < self.extremum_d_price:
+            if (self.extremum_d_price is None) or dn.low <= self.extremum_d_price:
                 self.before_set_extremum_d()
                 self.extremum_d_price = dn.low
                 self.extremum_d = dn
@@ -1139,8 +1139,8 @@ class Minute:
     用cd数据格式进行分析
     """   
     def realtime_analysis_for_cd(self, cd):
-        if Logic.is_realtime_start_minute(cd.datetime):
-            return
+        # if Logic.is_realtime_start_minute(cd.datetime):
+        #     return
         if self.history_status == Constants.HISTORY_STATUS_OF_NONE: 
             self.histoty_status_none(cd)
         elif self.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中

@@ -91,14 +91,21 @@ class TickTest():
             instance = self.get_history_instance()
             instance.realtime_analysis_for_cd(minute_cd)
             if self.trade_action is None and trade.simulation_can_open_a_position(self.vt_symbol, tick):
+                # if self.history.extremum_d is not None and self.history.agreement_extremum_d is not None:
+                #     if self.history.breakthrough_direction == Cons.DIRECTION_UP:
+                #         if tick.current < self.history.last_cd.low:
+                #             self.history.regression_d = True
+                #     elif self.history.breakthrough_direction == Cons.DIRECTION_DOWN:
+                #         if tick.current > self.history.last_cd.high:
+                #             self.history.regression_d = True
                 # 出现ml并且当前一分钟没有刷新l
                 direction = instance.breakthrough_direction
-                if S4Tick.open_a_price_by_agreement_d(direction, self.history.extremum_d, self.history.agreement_extremum_d, minute_cd, tick_obj):
+                if S4Tick.open_a_price_by_agreement_d(direction, self.history.extremum_d, self.history.agreement_extremum_d, self.history.last_cd, tick_obj):
                     if instance.breakthrough_direction == Cons.DIRECTION_UP:
                         # result = self.short(tick.current, self.hand_number)
                         self.add_action(tick, Cons.ACTION_OPEN_SHORT, tick.current - self.unit_value)
                         self.open_price = tick.current - self.unit_value
-                        logging.info(f"vt_symbol:{self.vt_symbol} => direction:short => max_amplitude:{self.history.max_amplitude} =>  tick:{tick.current} => l: {self.history.extremum_l} => l_price:{self.history.extremum_l_price} => last_cd:{self.history.last_cd} => history_dirction:{self.history.breakthrough_direction} agreement_extremum_d => {self.history.agreement_extremum_d} d=> {self.history.extremum_d}")
+                        logging.info(f"vt_symbol:{self.vt_symbol} => direction:short_by_d => max_amplitude:{self.history.max_amplitude} =>  tick:{tick.current} => l: {self.history.extremum_l} => l_price:{self.history.extremum_l_price} => last_cd:{self.history.last_cd} => history_dirction:{self.history.breakthrough_direction} agreement_extremum_d => {self.history.agreement_extremum_d} d=> {self.history.extremum_d}")
                         self.trade_action = Cons.ACTION_CLOSE_SHORT
                         self.close_price = self.history.extremum_d_price
                         self.close_price_by_lose = self.history.extremum_d_price
@@ -107,14 +114,14 @@ class TickTest():
                         # result = self.buy(tick.current, self.hand_number)
                         self.add_action(tick, Cons.ACTION_OPEN_LONG, tick.current + self.unit_value)
                         self.open_price = tick.current + self.unit_value
-                        logging.info(f"vt_symbol:{self.vt_symbol} => direction:long => max_amplitude:{self.history.max_amplitude} =>  tick:{tick.current} => l: {self.history.extremum_l} => l_price:{self.history.extremum_l_price} => last_cd:{self.history.last_cd} => history_dirction:{self.history.breakthrough_direction} agreement_extremum_d => {self.history.agreement_extremum_d}  d=> {self.history.extremum_d}")
+                        logging.info(f"vt_symbol:{self.vt_symbol} => direction:long_by_d => max_amplitude:{self.history.max_amplitude} =>  tick:{tick.current} => l: {self.history.extremum_l} => l_price:{self.history.extremum_l_price} => last_cd:{self.history.last_cd} => history_dirction:{self.history.breakthrough_direction} agreement_extremum_d => {self.history.agreement_extremum_d}  d=> {self.history.extremum_d}")
                         self.trade_action = Cons.ACTION_CLOSE_LONG 
                         # 使用l_price作为平仓价
                         self.close_price = self.history.extremum_d_price
                         # 使用l_price作为平仓价  
                         self.close_price_by_lose = self.history.extremum_d_price
                         self.open_type = Cons.OPEN_BY_D
-                elif self.open_by_beyond_max_unit_value() and S4Tick.open_a_price_by_agreement_l(direction, self.history.extremum_l, self.history.agreement_extremum_l, minute_cd, tick_obj):
+                elif False and self.open_by_beyond_max_unit_value() and S4Tick.open_a_price_by_agreement_l(direction, self.history.extremum_l, self.history.agreement_extremum_l, self.history.last_cd, tick_obj):
                     if instance.breakthrough_direction == Cons.DIRECTION_UP:
                         # result = self.buy(tick.current, self.hand_number)
                         self.add_action(tick, Cons.ACTION_OPEN_LONG, tick.current + self.unit_value)
@@ -141,13 +148,13 @@ class TickTest():
                         self.add_action(tick, Cons.ACTION_CLOSE_LONG, tick.current - self.unit_value)
                         logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:long_l => close_price_by_lose:{self.close_price_by_lose} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price}")
                         self.trade_action = None
-                        self.reset_price()
+                        self.after_close()
                 elif S4Tick.close_a_price(self.trade_action, self.get_close_price_by_win_point(tick), tick_obj) or trade.simulation_need_close_position(self.vt_symbol, tick):
                     # result = self.sell(tick.current, self.hand_number)
                     self.add_action(tick, Cons.ACTION_CLOSE_LONG, tick.current - self.unit_value)
                     logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:long => close_price:{self.close_price} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price}")
                     self.trade_action = None
-                    self.reset_price()
+                    self.after_close()
                 elif self.is_exceed_last_cd_high(tick):
                     self.set_agreement_close_price_by_long(tick)
                     # logging.info(f"vt_symbol:{self.vt_symbol} => set_agreement_close_price_by_long => tick_last_price:{tick.current} => close_price => {self.close_price} => agreement_close_price:{self.agreement_close_price} => last_cd:{self.history.last_cd}")
@@ -160,14 +167,14 @@ class TickTest():
                         self.add_action(tick, Cons.ACTION_CLOSE_SHORT, tick.current + self.unit_value)
                         logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:short_l => close_price_by_lose:{self.close_price_by_lose} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price}")
                         self.trade_action = None
-                        self.reset_price()
+                        self.after_close()
                 elif S4Tick.close_a_price(self.trade_action, self.get_close_price_by_win_point(tick), tick_obj) or trade.simulation_need_close_position(self.vt_symbol, tick):
                     
                     # result = self.cover(tick.current, self.hand_number)
                     self.add_action(tick, Cons.ACTION_CLOSE_SHORT, tick.current + self.unit_value)
                     logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:short => close_price:{self.close_price} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price}")
                     self.trade_action = None
-                    self.reset_price()
+                    self.after_close()
                 elif self.is_exceed_last_cd_high(tick):
                     self.set_agreement_close_price_by_short(tick)
                     # logging.info(f"vt_symbol:{self.vt_symbol} => set_agreement_close_price_by_short => tick_last_price:{tick.current} => close_price => {self.close_price} => agreement_close_price:{self.agreement_close_price} => last_cd:{self.history.last_cd}")
@@ -234,10 +241,10 @@ class TickTest():
     """
     def is_exceed_last_cd_high(self, tick):
         if self.trade_action == Cons.ACTION_CLOSE_LONG:
-            if tick.current < self.history.last_cd.low:
+            if tick.current <= self.history.last_cd.low:
                 return True
         elif self.trade_action == Cons.ACTION_CLOSE_SHORT: 
-            if tick.current > self.history.last_cd.high:
+            if tick.current >= self.history.last_cd.high:
                 return True
         return False
 
@@ -247,10 +254,10 @@ class TickTest():
     """
     def is_exceed_last_cd_low(self, tick):
         if self.trade_action == Cons.ACTION_CLOSE_LONG:
-            if tick.current > self.history.last_cd.high:
+            if tick.current >= self.history.last_cd.high:
                 return True
         elif self.trade_action == Cons.ACTION_CLOSE_SHORT: 
-            if tick.current < self.history.last_cd.low:
+            if tick.current <= self.history.last_cd.low:
                 return True
         return False
     
@@ -358,3 +365,10 @@ class TickTest():
                 return True
         
         return False
+    
+    def after_close(self):
+        if self.open_type == Cons.OPEN_BY_D:
+            self.history.agreement_extremum_d = None
+        elif self.open_type == Cons.OPEN_BY_L:
+            self.history.agreement_extremum_l = None
+        self.reset_price()

@@ -137,9 +137,9 @@ def simulation_can_open_a_position(vt_symbol, tick):
     hour = tick.datetime.hour
     minute = tick.datetime.minute
 
-    if hour == 9 and minute < 10:
+    if hour == 9 and minute < 1:
         return False
-    elif hour == 13 and minute < 40:
+    elif hour == 13 and minute < 31:
         return False
 
     return not simulation_need_close_position(vt_symbol, tick)
