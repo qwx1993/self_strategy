@@ -60,6 +60,8 @@ class Minute:
     interval_minutes = 10
     refresh_d_minute_count = 0 # D刷新的间隔分钟数
 
+    start_cd = None # 开始点
+
     """
     初始化
     """
@@ -446,25 +448,33 @@ class Minute:
     def histoty_status_none(self, cd):
         # 初始化时为十字星不处理
         if Logic.is_crossing_starlike(cd):
+            self.start_cd = cd
             return
+        if self.start_cd is None:
+           self.start_cd = cd 
+        close_price = cd.close
+        start_cd_open_price = self.start_cd.open
 
-        # 设置走势方向，设置最大的幅度对象，包括最大幅度的起始、结束值跟幅度
-        self.init_set_max_amplitude(cd)
-        # 设置最大的上涨幅度
-        self.max_l_to_d_interval = None
-        # self.init_max_l_to_d_interval_obj(cd)
-        # 初始化最大的下降幅度
-        self.max_r = None
-        # self.init_max_r_obj(cd)
-        # 设置参考点d
-        self.reference_point_d = cd
-        # 设置极限d_price
-        self.extremum_d_price = None
-        self.set_extremum_d(cd)
-        # 设置rrn
-        self.rrn = None
+        if close_price > start_cd_open_price:
+            self.breakthrough_direction = Constants.DIRECTION_UP
+        elif close_price < start_cd_open_price:
+            self.breakthrough_direction = Constants.DIRECTION_DOWN
 
-        self.history_status = Constants.HISTORY_STATUS_OF_TREND
+        if self.breakthrough_direction is not None:
+            # 设置最大的上涨幅度
+            self.max_l_to_d_interval = None
+            # self.init_max_l_to_d_interval_obj(cd)
+            # 初始化最大的下降幅度
+            self.max_r = None
+            # self.init_max_r_obj(cd)
+            # 设置参考点d
+            self.reference_point_d = cd
+            # 设置极限d_price
+            self.extremum_d_price = None
+            self.set_extremum_d(cd)
+            # 设置rrn
+            self.rrn = None
+            self.history_status = Constants.HISTORY_STATUS_OF_TREND
     
     """
     初始化设置max_l_to_d_interval
@@ -507,19 +517,24 @@ class Minute:
         # 十字星情况，将方向设置为跟上一分钟一致
         if Logic.is_crossing_starlike(cd):
             cd.direction = self.last_cd.direction
-        # 统计R、统计rrn
-        self.history_statistic_max_l_to_d(cd)
-
-        # 统计r
-        self.history_statistic_max_r(cd)
-        # 处理出现最大的幅度情况
-        self.handle_max_amplitude(cd)
+        
+        if self.exceed_extremum_d(cd):
+            # 设置点D
+            self.set_extremum_d(cd)
+        else:
+            # 设置D的起点
+            self.set_d_start_cd(cd)
+            # 设置extremum_l
+            self.set_extremum_l(cd)
 
         if self.sub_status == S3_Cons.SUB_STATUS_OF_TREND_COUNTER:
             if self.extremum_l_price is not None:
                 self.set_l_start_cd(cd)
             if self.h_price is not None:
                 self.set_h_start_cd(cd)
+        
+        # 通过方向判断是否调整参数
+        self.handle_direction_by_start_cd(cd)
 
     
     """
@@ -694,6 +709,23 @@ class Minute:
             elif Logic.is_exceed_max_amplitude_end_price(self.breakthrough_direction, self.max_amplitude, cd):
                 self.set_direction_by_max_amplitude()
                 self.on_direction_change(cd)
+
+    """
+    根据start_cd来更新方向
+    """
+    def handle_direction_by_start_cd(self, cd):
+        close_price = cd.close
+        start_open_price = self.start_cd.open
+        if close_price > start_open_price:
+            current_direction = Constants.DIRECTION_UP
+        elif close_price < start_open_price:
+            current_direction = Constants.DIRECTION_DOWN
+        elif close_price == start_open_price:
+            current_direction = self.breakthrough_direction
+        
+        if not current_direction == self.breakthrough_direction:
+            self.breakthrough_direction = current_direction
+            self.on_direction_change(cd)
                 
     """
     方向改变执行的动作
@@ -705,8 +737,6 @@ class Minute:
         # 重置d
         self.reset_extremum_d()
         self.set_extremum_d(cd)
-        # 重置l
-        self.reset_extremum_l()
         # 重置rrn
         self.rrn = None
     
