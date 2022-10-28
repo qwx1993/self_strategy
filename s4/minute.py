@@ -58,6 +58,7 @@ class Minute:
     h_start_cd = None # h开仓起点
     d_start_cd = None # d开仓起点
     interval_minutes = 10
+    refresh_d_minute_count = 0 # D刷新的间隔分钟数
 
     """
     初始化
@@ -217,32 +218,34 @@ class Minute:
     def set_extremum_d(self, dn):
         if self.breakthrough_direction == Constants.DIRECTION_UP:
             if (self.extremum_d_price is None) or dn.high >= self.extremum_d_price:
-                self.before_set_extremum_d()
+                self.before_set_extremum_d(dn)
                 self.extremum_d_price = dn.high
                 self.extremum_d = dn
                 self.after_set_extremum_d()
         else:
             if (self.extremum_d_price is None) or dn.low <= self.extremum_d_price:
-                self.before_set_extremum_d()
+                self.before_set_extremum_d(dn)
                 self.extremum_d_price = dn.low
                 self.extremum_d = dn
                 self.after_set_extremum_d()
     
     """
-    在设置新的D之前刷新协定D
+    新的D跟上一个D间隔超过30时,产生协定D
     """
-    def before_set_extremum_d(self):
-        if self.extremum_d is not None:
+    def before_set_extremum_d(self, dn):
+        if self.extremum_d is not None and self.refresh_d_minute_count > 30:
             self.agreement_extremum_d = deepcopy(self.extremum_d)
             self.agreement_extremum_d.price = self.extremum_d_price
-    
+            self.agreement_extremum_d.appoint_datetime = dn.datetime
     """
     D刷新后重置L
     """
     def after_set_extremum_d(self):
+        self.refresh_d_minute_count = 0
         self.d_start_cd = None
         # 重置l数据
         self.reset_extremum_l()
+
     
     """
     重新设置极值d
@@ -252,6 +255,7 @@ class Minute:
         self.extremum_d_price = None
         self.d_start_cd = None
         self.agreement_extremum_d = None
+        self.refresh_d_minute_count = 0
         # 重置L
         self.reset_extremum_l()
 
@@ -1147,6 +1151,8 @@ class Minute:
             self.statistic(cd)
         # 判断是否需要合并,当当前分钟为直线时考虑
         self.last_cd = Logic.handle_last_cd(self.last_cd, cd)
+        self.refresh_d_minute_count += 1
+
     
     """
     实时分析    
@@ -1160,6 +1166,7 @@ class Minute:
             self.statistic(cd)
         # 判断是否需要合并,当当前分钟为直线时考虑
         self.last_cd = Logic.handle_last_cd(self.last_cd, cd)
+        self.refresh_d_minute_count += 1
 
     """
     历史行情数据分析
