@@ -386,7 +386,7 @@ class TickTest():
     
     def after_close(self, tick):
         if self.open_type == Cons.OPEN_BY_D:
-            if self.is_win_point(tick):
+            if self.is_win_point(tick) and (abs(tick.current - self.open_price) > 0.5):
                 self.interval_minutes = self.first_interval_minutes
                 self.opportunity_number = self.opportunity_number_limit
                 self.interval_datetime = None
