@@ -39,6 +39,7 @@ class Minute:
 
     h_price = None # h点，表示比仅次于d点第二高点
     h_cd = None
+    agreement_h_cd = None # 协定h
 
     history_status = Constants.HISTORY_STATUS_OF_NONE # 历史状态
     last_cd = None # 上一点
@@ -60,8 +61,12 @@ class Minute:
     interval_minutes = 10
     refresh_d_minute_count = 0 # 协定D刷新的间隔分钟数
 
+
     #---------------------
     d_minute_count_limit = 30 # 协定D刷新的间隔分钟数
+
+    refresh_h_minute_count = 0 # 协定H刷新的间隔分钟数
+    h_minute_count_limit = 0 # 协定H最小间隔限制
 
     """
     初始化
@@ -337,6 +342,7 @@ class Minute:
         if self.extremum_d_price is not None and Logic.is_high_point(self.breakthrough_direction, self.last_cd, cd):
             if self.breakthrough_direction == Constants.DIRECTION_UP:
                 if (self.h_price is None and cd.high > self.extremum_l.high) or (self.h_price is not None and cd.high > self.h_price):
+                        self.before_set_h_price(cd)
                         self.h_price = cd.high
                         self.h_cd = cd
                         self.after_set_h_price()
@@ -344,12 +350,24 @@ class Minute:
                             self.h_price_max = self.h_price
             elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
                 if (self.h_price is None and cd.low < self.extremum_l.low) or (self.h_price is not None and cd.low < self.h_price):
+                    self.before_set_h_price(cd)
                     self.h_price = cd.low
                     self.h_cd = cd
                     self.after_set_h_price()
                     if (self.h_price_max is None) or self.h_price < self.h_price_max:
                         self.h_price_max = self.h_price
     
+    """
+    h_price设置之前的处理逻辑
+    """
+    def before_set_h_price(self, cd):
+        # h点刷新，重置开始点
+        if self.h_cd is not None and self.refresh_h_minute_count > self.h_minute_count_limit:
+            self.agreement_h_cd = deepcopy(self.h_cd)
+            self.agreement_h_cd.price = self.h_price
+            self.agreement_h_cd.appoint_datetime = cd.datetime
+
+
     """
     h_price设置之后的处理逻辑
     """
@@ -441,6 +459,8 @@ class Minute:
         self.h_price = None
         self.h_cd = None
         self.h_start_cd = None
+        self.agreement_h_cd = None
+        self.refresh_h_minute_count = 0
 
     """
     当前状态为STATUS_NONE时的逻辑
@@ -1155,6 +1175,7 @@ class Minute:
         # 判断是否需要合并,当当前分钟为直线时考虑
         self.last_cd = Logic.handle_last_cd(self.last_cd, cd)
         self.refresh_d_minute_count += 1
+        self.refresh_h_minute_count += 1
 
     
     """
@@ -1170,6 +1191,7 @@ class Minute:
         # 判断是否需要合并,当当前分钟为直线时考虑
         self.last_cd = Logic.handle_last_cd(self.last_cd, cd)
         self.refresh_d_minute_count += 1
+        self.refresh_h_minute_count += 1
 
     """
     历史行情数据分析

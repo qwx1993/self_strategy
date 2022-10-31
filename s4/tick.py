@@ -21,7 +21,7 @@ class Tick:
     方向向上时，在接下来的一分钟内低于协定d的价格开仓
     方向向下时，在接下来的一分钟内高于协定d的价格开仓
     """
-    def open_a_price_by_agreement_d(direction, extremum_d, agreement_extremum_d, last_cd, tick):
+    def open_a_price_by_agreement(direction, extremum_d, agreement_extremum_d, last_cd, tick):
         if extremum_d is None or agreement_extremum_d is None:
             return False
         
