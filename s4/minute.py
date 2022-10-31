@@ -58,7 +58,10 @@ class Minute:
     h_start_cd = None # h开仓起点
     d_start_cd = None # d开仓起点
     interval_minutes = 10
-    refresh_d_minute_count = 0 # D刷新的间隔分钟数
+    refresh_d_minute_count = 0 # 协定D刷新的间隔分钟数
+
+    #---------------------
+    d_minute_count_limit = 30 # 协定D刷新的间隔分钟数
 
     """
     初始化
@@ -233,7 +236,7 @@ class Minute:
     新的D跟上一个D间隔超过30时,产生协定D
     """
     def before_set_extremum_d(self, dn):
-        if self.extremum_d is not None and self.refresh_d_minute_count > 30:
+        if self.extremum_d is not None and self.refresh_d_minute_count > self.d_minute_count_limit:
             self.agreement_extremum_d = deepcopy(self.extremum_d)
             self.agreement_extremum_d.price = self.extremum_d_price
             self.agreement_extremum_d.appoint_datetime = dn.datetime

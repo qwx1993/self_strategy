@@ -54,6 +54,9 @@ class TickTest():
     opportunity_number = 0 # 亏损后允许重开的机会
     opportunity_number_limit = 2
 
+    first_interval_minutes = 15 # 第一次开仓的间隔时间
+    second_interval_minutes = 10 # 第二次开仓的间隔时间
+
     # 添加参数和变量名到对应的列表
     def __init__(self, vt_symbol, unit_value):
         """"""
@@ -203,7 +206,7 @@ class TickTest():
         # 如果刷新了协定的D
         if last_appoint_datetime is not None and current_appoint_datetime is not None and not current_appoint_datetime == last_appoint_datetime:
             self.opportunity_number = 0
-            self.interval_minutes = 15 
+            self.interval_minutes = self.first_interval_minutes 
             self.interval_datetime = None
             # print(f"参数  => {last_appoint_datetime} => {current_appoint_datetime} {self.history.agreement_extremum_d} {self.history.extremum_d}")
 
@@ -384,17 +387,16 @@ class TickTest():
     def after_close(self, tick):
         if self.open_type == Cons.OPEN_BY_D:
             if self.is_win_point(tick):
-                self.interval_minutes = 15
+                self.interval_minutes = self.first_interval_minutes
                 self.opportunity_number = self.opportunity_number_limit
                 self.interval_datetime = None
             else:
                 if self.opportunity_number < self.opportunity_number_limit: # 一共两次机会
-                    self.interval_minutes = 10
+                    self.interval_minutes = self.second_interval_minutes
                     self.interval_datetime = str(tick.datetime)
                 else:
-                    self.interval_minutes = 15
+                    self.interval_minutes = self.first_interval_minutes
                     self.interval_datetime = None
-
         elif self.open_type == Cons.OPEN_BY_L:
             self.history.agreement_extremum_l = None
         self.reset_price()
