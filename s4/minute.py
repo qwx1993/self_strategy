@@ -66,7 +66,7 @@ class Minute:
     d_minute_count_limit = 30 # 协定D刷新的间隔分钟数
 
     refresh_h_minute_count = 0 # 协定H刷新的间隔分钟数
-    h_minute_count_limit = 0 # 协定H最小间隔限制
+    h_minute_count_limit = 5 # 协定H最小间隔限制
 
     """
     初始化
@@ -374,6 +374,7 @@ class Minute:
     def after_set_h_price(self):
         # h点刷新，重置开始点
        self.h_start_cd = None
+       self.refresh_h_minute_count = 0
 
     """
     设置ml的price
