@@ -138,7 +138,7 @@ class TickTest():
                             self.close_price_by_lose = self.history.extremum_d_price
                             self.open_type = Cons.OPEN_BY_D
                             self.increase_opportunity_number()
-                elif self.d_win_flag and S4Tick.open_a_price_by_agreement(direction, self.history.h_cd, self.history.agreement_h_cd, self.history.last_cd, tick_obj):
+                elif False and self.d_win_flag and S4Tick.open_a_price_by_agreement(direction, self.history.h_cd, self.history.agreement_h_cd, self.history.last_cd, tick_obj):
                 # 时间间隔起点
                     if self.h_interval_datetime is None:
                         self.h_interval_datetime = self.history.agreement_h_cd.appoint_datetime
