@@ -13,7 +13,7 @@ from types import SimpleNamespace
 
 from datetime import datetime
 # 
-class Minute:
+class FixedMinute:
     breakthrough_direction = None # 突破的方向 -1 开空 1开多
 
     stop_loss_ln_price = None  # 情况三的止损点价位 L - 2*unit
@@ -72,14 +72,9 @@ class Minute:
     初始化
     """
 
-    def __init__(self):
+    def __init__(self, direction):
         # 所有的list跟dict需要重置
-        self.max_l_to_d_interval = None
-        self.max_r = None
-        self.actions = []
-        self.max_amplitude = None
-        self.m_max_r = None  # 小级别r
-        self.M_MAX_R = None  # 小级别R
+        self.breakthrough_direction = direction
 
 
     """
@@ -531,21 +526,22 @@ class Minute:
         # 十字星情况，将方向设置为跟上一分钟一致
         if Logic.is_crossing_starlike(cd):
             cd.direction = self.last_cd.direction
-        # 统计R、统计rrn
-        self.history_statistic_max_l_to_d(cd)
 
-        # 统计r
-        self.history_statistic_max_r(cd)
-        # 处理出现最大的幅度情况
-        self.handle_max_amplitude(cd)
+        if self.extremum_d_price is None:
+           self.set_extremum_d(cd)
 
-        if self.sub_status == S3_Cons.SUB_STATUS_OF_TREND_COUNTER:
-            if self.extremum_l_price is not None:
-                self.set_l_start_cd(cd)
-            if self.h_price is not None:
-                self.set_h_start_cd(cd)
+        # 判断是否出现极值d点
+        if self.exceed_extremum_d(cd):
+            # 设置点D
+            self.set_extremum_d(cd)
+        else:
+            # 设置D的起点
+            self.set_d_start_cd(cd)
 
-    
+            # self.set_rrn(max_l_to_d_obj.length)
+            # 设置extremum_l
+            self.set_extremum_l(cd)
+
     """
     超过限定时间，设置ml
     """ 
@@ -1173,16 +1169,10 @@ class Minute:
     用cd数据格式进行分析
     """   
     def realtime_analysis_for_cd(self, cd):
-        # if Logic.is_realtime_start_minute(cd.datetime):
-        #     return
-        if self.history_status == Constants.HISTORY_STATUS_OF_NONE: 
-            self.histoty_status_none(cd)
-        elif self.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中
-            self.statistic(cd)
+        self.statistic(cd)
         # 判断是否需要合并,当当前分钟为直线时考虑
         self.last_cd = Logic.handle_last_cd(self.last_cd, cd)
-        self.refresh_d_minute_count += 1
-        self.refresh_h_minute_count += 1
+
 
     
     """

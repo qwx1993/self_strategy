@@ -18,6 +18,17 @@ class Tick:
         return False
     
     """
+    通过指定开仓价进行开仓
+    """
+    def open_a_position_by_price(direction, price, tick):
+        if direction == Constants.DIRECTION_UP:
+            if tick.current > price:
+                return True
+        elif direction == Constants.DIRECTION_DOWN:
+            if tick.current < price:
+                return True
+        return False
+    """
     方向向上时，在接下来的一分钟内低于协定d的价格开仓
     方向向下时，在接下来的一分钟内高于协定d的价格开仓
     """
