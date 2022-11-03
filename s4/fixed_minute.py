@@ -31,10 +31,17 @@ class FixedMinute:
     actions = []  # 记录所有的动作，包括开空，开多，逆开空，逆开多，注意：逆趋势下是两倍仓位
     test_need_statistic = False # 测试是否需要统计   
     extremum_d_price = None  # 极致d的price
+    last_extremum_d_price = None # 上一个D
+    last_extremum_d = None # 上一个D
     extremum_d = None  # 极值点D
     agreement_extremum_d = None # 协议D,标定开仓信号
     extremum_l_price = None # 极值点l的price
     extremum_l = None # 极值点l
+
+
+    last_extremum_l = None # 上一个L的位置数据
+    last_extremum_l_price = None # 上一个L的价格
+
     agreement_extremum_l = None # 协定L
 
     h_price = None # h点，表示比仅次于d点第二高点
@@ -70,6 +77,8 @@ class FixedMinute:
     h_minute_count_limit = 5 # 协定H最小间隔限制
 
     init_max_list = [] # 用来初始化队列
+    start_cd = None # 程序的起点
+    allow_open = True # 允许开仓
 
     """
     初始化
@@ -241,6 +250,9 @@ class FixedMinute:
     新的D跟上一个D间隔超过30时,产生协定D
     """
     def before_set_extremum_d(self, dn):
+        self.last_extremum_d_price = self.extremum_d_price
+        self.last_extremum_d = self.extremum_d
+
         if self.extremum_d is not None and self.refresh_d_minute_count > self.d_minute_count_limit:
             self.agreement_extremum_d = deepcopy(self.extremum_d)
             self.agreement_extremum_d.price = self.extremum_d_price
@@ -322,6 +334,9 @@ class FixedMinute:
     重置extremum_l的值
     """
     def reset_extremum_l(self):
+        # 重置l之前动作，保存到上一个
+        self.before_reset_extremum_l()
+
         self.extremum_l = None
         self.extremum_l_price = None
         self.l_start_cd = None
@@ -334,6 +349,35 @@ class FixedMinute:
         # 重置h_price_max
         self.h_price_max = None
         self.agreement_extremum_l = None
+
+
+    """
+    在重置l之前的动作
+    """
+    def before_reset_extremum_l(self):
+        if self.refresh_last_extremum_l_by_before_d_distance():
+            if self.last_extremum_l_price is None:
+                self.last_extremum_l = self.extremum_l
+                self.last_extremum_l_price = self.extremum_l_price
+            else:
+                if self.breakthrough_direction == Constants.DIRECTION_UP:
+                    if self.extremum_l_price is not None and self.extremum_l_price > self.last_extremum_l_price:
+                        self.last_extremum_l_price = self.extremum_l_price
+                        self.last_extremum_l = self.extremum_l   
+                elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
+                    if self.extremum_l_price is not None and self.extremum_l_price < self.last_extremum_l_price:
+                        self.last_extremum_l_price = self.extremum_l_price
+                        self.last_extremum_l = self.extremum_l 
+
+    """
+    前后两个D相隔的距离
+    """     
+    def refresh_last_extremum_l_by_before_d_distance(self):
+        if self.last_extremum_d_price is not None and self.extremum_d_price is not None:
+            if abs(self.extremum_d_price - self.last_extremum_d_price) > 10 * self.unit_value:
+                return True
+        return False
+            
     
     """
     设置h_price参数
@@ -469,7 +513,7 @@ class FixedMinute:
     def histoty_status_none(self, list):
         # 初始化时为十字星不处理
         if len(list) > 0:
-            start_cd = list[0]
+            self.start_cd = list[0]
             for cd in list:
                 if self.extremum_d_price is None:
                     self.set_extremum_d(cd)
@@ -482,9 +526,9 @@ class FixedMinute:
                 self.last_cd = Logic.handle_last_cd(self.last_cd, cd)
 
             self.same_direction_max_obj =  SimpleNamespace()
-            self.same_direction_max_obj.start  = start_cd
+            self.same_direction_max_obj.start  = self.start_cd
             self.same_direction_max_obj.end = self.extremum_d
-            self.same_direction_max_obj.length = self.get_same_direction_max_obj_length(start_cd, self.extremum_d)
+            self.same_direction_max_obj.length = self.get_same_direction_max_obj_length(self.start_cd, self.extremum_d)
             self.history_status = Constants.HISTORY_STATUS_OF_TREND
 
     """
@@ -556,6 +600,10 @@ class FixedMinute:
         
         if self.extremum_l_price is not None and self.is_same_direction(cd):
             self.handle_same_direction_max_obj(cd)
+        
+        # 检测是否允许开仓
+        self.handle_allow_open_by_start_cd(cd)
+
     
     """
     设置相同方向最大的幅度
@@ -576,6 +624,18 @@ class FixedMinute:
                 self.same_direction_max_obj.end = cd
                 self.same_direction_max_obj.length = current_length
                 # print(f" 刷新same_direction_max_obj =》 {self.same_direction_max_obj}")
+    
+    """
+    跌落起点，不允许开仓
+    """
+    def handle_allow_open_by_start_cd(self, cd):
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
+            if cd.low < self.start_cd.low:
+                self.allow_open = False
+        elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
+            if cd.high > self.start_cd.high:
+                self.allow_open = False
+
     """
     超过限定时间，设置ml
     """ 
