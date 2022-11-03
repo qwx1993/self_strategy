@@ -44,6 +44,7 @@ class FixedMinute:
     history_status = Constants.HISTORY_STATUS_OF_NONE # 历史状态
     last_cd = None # 上一点
     max_amplitude = None # 最大幅度对象
+    same_direction_max_obj = None # 最大的幅度对象 初始化时为起点到D， 后面统计为最低点到当前D的幅度
     h_price_max = None # h的极值
     trade_action = None
     ml = None # 出现小级别逆趋势后的低点，需比L的值大
@@ -68,14 +69,18 @@ class FixedMinute:
     refresh_h_minute_count = 0 # 协定H刷新的间隔分钟数
     h_minute_count_limit = 5 # 协定H最小间隔限制
 
+    init_max_list = [] # 用来初始化队列
+
     """
     初始化
     """
 
-    def __init__(self, direction):
+    def __init__(self, direction, list):
         # 所有的list跟dict需要重置
         self.breakthrough_direction = direction
-
+        self.init_max_list = list
+        if self.history_status == Constants.HISTORY_STATUS_OF_NONE: 
+            self.histoty_status_none(self.init_max_list)
 
     """
     添加对应的动作，目前包括开空、平空、开多、平多
@@ -461,30 +466,37 @@ class FixedMinute:
     """
     当前状态为STATUS_NONE时的逻辑
     """
-
-    def histoty_status_none(self, cd):
+    def histoty_status_none(self, list):
         # 初始化时为十字星不处理
-        if Logic.is_crossing_starlike(cd):
-            return
+        if len(list) > 0:
+            start_cd = list[0]
+            for cd in list:
+                if self.extremum_d_price is None:
+                    self.set_extremum_d(cd)
+                # 判断是否出现极值d点
+                if self.exceed_extremum_d(cd):
+                    # 设置点D
+                    self.set_extremum_d(cd)
+                else:
+                    self.set_extremum_l(cd)
+                self.last_cd = Logic.handle_last_cd(self.last_cd, cd)
 
-        # 设置走势方向，设置最大的幅度对象，包括最大幅度的起始、结束值跟幅度
-        self.init_set_max_amplitude(cd)
-        # 设置最大的上涨幅度
-        self.max_l_to_d_interval = None
-        # self.init_max_l_to_d_interval_obj(cd)
-        # 初始化最大的下降幅度
-        self.max_r = None
-        # self.init_max_r_obj(cd)
-        # 设置参考点d
-        self.reference_point_d = cd
-        # 设置极限d_price
-        self.extremum_d_price = None
-        self.set_extremum_d(cd)
-        # 设置rrn
-        self.rrn = None
+            self.same_direction_max_obj =  SimpleNamespace()
+            self.same_direction_max_obj.start  = start_cd
+            self.same_direction_max_obj.end = self.extremum_d
+            self.same_direction_max_obj.length = self.get_same_direction_max_obj_length(start_cd, self.extremum_d)
+            self.history_status = Constants.HISTORY_STATUS_OF_TREND
 
-        self.history_status = Constants.HISTORY_STATUS_OF_TREND
-    
+    """
+    获取相同方向的最大幅度，L到D的幅度
+    """
+    def get_same_direction_max_obj_length(self, start_cd, end_cd):
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
+            length = abs(end_cd.high - start_cd.low)
+        else:
+            length = abs(end_cd.low - start_cd.high)
+        return length
+
     """
     初始化设置max_l_to_d_interval
     """
@@ -541,7 +553,29 @@ class FixedMinute:
             # self.set_rrn(max_l_to_d_obj.length)
             # 设置extremum_l
             self.set_extremum_l(cd)
-
+        
+        if self.extremum_l_price is not None and self.is_same_direction(cd):
+            self.handle_same_direction_max_obj(cd)
+    
+    """
+    设置相同方向最大的幅度
+    """
+    def handle_same_direction_max_obj(self, cd):
+        current_length = self.get_same_direction_max_obj_length(self.extremum_l, cd)
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
+            if cd.high > self.extremum_l_price and current_length > self.same_direction_max_obj.length:
+                # print(f" 刷新old_same_direction_max_obj =》 {self.same_direction_max_obj}")
+                self.same_direction_max_obj.start  = self.extremum_l
+                self.same_direction_max_obj.end = cd
+                self.same_direction_max_obj.length = current_length
+                # print(f" 刷新same_direction_max_obj =》 {self.same_direction_max_obj}")
+        elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
+            if cd.low < self.extremum_l_price and current_length > self.same_direction_max_obj.length:
+                # print(f" 刷新old_same_direction_max_obj =》 {self.same_direction_max_obj}")
+                self.same_direction_max_obj.start  = self.extremum_l
+                self.same_direction_max_obj.end = cd
+                self.same_direction_max_obj.length = current_length
+                # print(f" 刷新same_direction_max_obj =》 {self.same_direction_max_obj}")
     """
     超过限定时间，设置ml
     """ 
@@ -1169,11 +1203,10 @@ class FixedMinute:
     用cd数据格式进行分析
     """   
     def realtime_analysis_for_cd(self, cd):
-        self.statistic(cd)
+        if self.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中
+            self.statistic(cd)
         # 判断是否需要合并,当当前分钟为直线时考虑
         self.last_cd = Logic.handle_last_cd(self.last_cd, cd)
-
-
     
     """
     实时分析    

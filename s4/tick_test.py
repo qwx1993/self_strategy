@@ -65,9 +65,10 @@ class TickTest():
     l_opportunity_number_limit = 2
 
     start_list = [] # 起点记录
-    instance_1_can_open = True
     instance_1_open_number = 0 # 开仓次数
-    instance_1_open_number_limit = 2 # 开仓次数限制
+    instance_1_open_win_number = 0 # 赢得次数
+    instance_1_open_win_number_limit = 2 # 赢开仓次数限制
+    instance_1_open_number_limit = 2000 # 开仓次数限制
 
     # 添加参数和变量名到对应的列表
     def __init__(self, vt_symbol, unit_value):
@@ -130,9 +131,9 @@ class TickTest():
                             self.last_open_d_datetime = self.history.extremum_d.datetime
                             self.last_open_d = self.history.extremum_d
                             self.increase_opportunity_number()
-                elif self.d_win_flag and self.instance_1 is not None and self.has_opportunity_by_instance_1():
+                elif self.d_win_flag and self.instance_1 is not None and self.has_opportunity_by_instance_1_win():
                     direciton1 = self.instance_1.breakthrough_direction
-                    # if tick.datetime.day == 19 and tick.datetime.hour == 0 and tick.datetime.minute == 32:
+                    # if tick.datetime.day == 19 and tick.datetime.hour == 0 and tick.datetime.minute == 1:
                     #     print(f"ddddddd {tick.datetime} {tick.current} {self.instance_1.extremum_d_price} d => {self.instance_1.extremum_d} =>l {self.instance_1.extremum_l_price} {S4Tick.open_a_position_by_price(direciton1, self.instance_1.extremum_d_price, tick_obj)} direciton1 => {direciton1}")
                     if self.instance_1.extremum_d_price is not None and self.instance_1.extremum_l_price is not None and S4Tick.open_a_position_by_price(direciton1, self.instance_1.extremum_d_price, tick_obj):
                         if direciton1 == Cons.DIRECTION_UP:
@@ -152,7 +153,7 @@ class TickTest():
                             logging.info(f"vt_symbol:{self.vt_symbol} => direction:short_by_instance_1 =>  tick1:{tick.current} => l: {self.instance_1.extremum_l} => l_price:{self.instance_1.extremum_l_price} => last_cd1:{self.instance_1.last_cd} => history_dirction1:{direciton1}  d1=> {self.instance_1.extremum_d}  d_price => {self.instance_1.extremum_d_price}")
                             self.trade_action = Cons.ACTION_CLOSE_SHORT
                             self.close_price = self.instance_1.extremum_l_price
-                            self.close_price_by_lose = self.history.extremum_l_price
+                            self.close_price_by_lose = self.instance_1.extremum_l_price
                             self.increase_opportunity_number_by_instance_1()
             elif self.trade_action == Cons.ACTION_CLOSE_LONG:
                 if self.close_by_same_minute(tick):
@@ -175,13 +176,13 @@ class TickTest():
                 if self.close_by_same_minute(tick):
                     if S4Tick.close_a_price(self.trade_action, self.close_price_by_lose, tick_obj):
                         self.add_action(tick, Cons.ACTION_CLOSE_SHORT, tick.current + self.unit_value)
-                        logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:short_l => close_price_by_lose:{self.close_price_by_lose} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price}")
+                        logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:short_l => close_price_by_lose:{self.close_price_by_lose} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price}  open_price => {self.open_price} close_price_by_lose => {self.close_price_by_lose}")
                         self.after_close(tick_obj)
                 elif S4Tick.close_a_price(self.trade_action, self.get_close_price_by_win_point(tick), tick_obj) or trade.simulation_need_close_position(self.vt_symbol, tick):
                     
                     # result = self.cover(tick.current, self.hand_number)
                     self.add_action(tick, Cons.ACTION_CLOSE_SHORT, tick.current + self.unit_value)
-                    logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:short => close_price:{self.close_price} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price}")
+                    logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:short => close_price:{self.close_price} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price} open_price => {self.open_price} close_price_by_lose => {self.close_price_by_lose}")
                     self.after_close(tick_obj)
                 elif self.is_exceed_last_cd_high(tick):
                     self.set_agreement_close_price_by_short(tick)
@@ -422,29 +423,40 @@ class TickTest():
         
         return False
     
+    """
+    平仓之后的动作
+    """
     def after_close(self, tick):
-        if self.open_type == Cons.OPEN_BY_D:
-            if self.is_win_point(tick) and (abs(tick.current - self.open_price) > 0.5):
-                self.interval_minutes = self.first_interval_minutes
-                self.opportunity_number = self.opportunity_number_limit
-                self.interval_datetime = None
-                self.d_win_flag = True
-                self.init_history1_by_win(self.trade_action)
-            else:
-                if self.opportunity_number < self.opportunity_number_limit: # 一共两次机会
-                    self.interval_minutes = self.second_interval_minutes
-                    # if self.opportunity_number == 2:
-                    #     self.interval_minutes = 5
-                    self.interval_datetime = str(tick.datetime)
-                else:
+        if not self.d_win_flag:
+            if self.open_type == Cons.OPEN_BY_D:
+                if self.is_win_point(tick) and (abs(tick.current - self.open_price) > 0.5):
                     self.interval_minutes = self.first_interval_minutes
+                    self.opportunity_number = self.opportunity_number_limit
                     self.interval_datetime = None
-        if self.d_win_flag and self.instance_1 is not None:
-            if self.is_win_point(tick) and (abs(tick.current - self.open_price) > 0.5):
-                self.instance_1_open_number = self.instance_1_open_number_limit
+                    self.d_win_flag = True
+                    self.init_history1_by_win(self.trade_action)
+                else:
+                    if self.opportunity_number < self.opportunity_number_limit: # 一共两次机会
+                        self.interval_minutes = self.second_interval_minutes
+                        # if self.opportunity_number == 2:
+                        #     self.interval_minutes = 5
+                        self.interval_datetime = str(tick.datetime)
+                    else:
+                        self.interval_minutes = self.first_interval_minutes
+                        self.interval_datetime = None
+        else:
+            self.after_close_by_instance_1(tick)
 
         self.reset_price()
         self.trade_action = None
+    
+    """
+    实例1平仓后
+    """
+    def after_close_by_instance_1(self, tick):
+        if self.is_win_point(tick) and (abs(tick.current - self.open_price) > 0 * self.unit_value):
+            # self.instance_1_open_number = self.instance_1_open_number_limit
+            self.instance_1_open_win_number += 1
 
     """
     初始化子程序
@@ -456,12 +468,10 @@ class TickTest():
             direction = Cons.DIRECTION_DOWN
         if direction is not None:    
             if self.instance_1 is None:
-                self.instance_1 = FixedMinute(direction)
-                for cd in self.start_list:
-                    self.instance_1.realtime_analysis_for_cd(cd)
-            # 初始化完成的对应的统计数据
-            logging.info(f"init_instance_1 => d:{self.instance_1.extremum_d} => direction => {self.instance_1.breakthrough_direction} => l:{self.instance_1.extremum_l} => last_cd:{self.instance_1.last_cd}")
-            logging.info(f"history => d:{self.history.extremum_d} => direction => {self.history.breakthrough_direction} => l:{self.history.extremum_l} => last_cd:{self.history.last_cd}")
+                self.instance_1 = FixedMinute(direction, self.start_list)
+                # 初始化完成的对应的统计数据
+                logging.info(f"init_instance_1 => d:{self.instance_1.extremum_d} => direction => {self.instance_1.breakthrough_direction} => l:{self.instance_1.extremum_l} => last_cd:{self.instance_1.last_cd} same_direction_max_obj => {self.instance_1.same_direction_max_obj}")
+                logging.info(f"history => d:{self.history.extremum_d} => direction => {self.history.breakthrough_direction} => l:{self.history.extremum_l} => last_cd:{self.history.last_cd}")
 
 
     """
@@ -498,6 +508,14 @@ class TickTest():
     
     def has_opportunity_by_instance_1(self):
         if self.instance_1_open_number < self.instance_1_open_number_limit:
+            return True
+        return False
+    
+    """
+    限制赢得次数
+    """
+    def has_opportunity_by_instance_1_win(self):
+        if self.instance_1_open_win_number < self.instance_1_open_win_number_limit:
             return True
         return False
     
