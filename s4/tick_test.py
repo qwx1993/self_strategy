@@ -64,11 +64,15 @@ class TickTest():
     l_opportunity_number = 0 # 亏损后允许重开的机会
     l_opportunity_number_limit = 2
 
-    start_list = [] # 起点记录
+    start_list = [] # 起点记录，D刷新时会被重置
+    complete_start_list = [] # 真实得分钟记录
     instance_1_open_number = 0 # 开仓次数
     instance_1_open_win_number = 0 # 赢得次数
     instance_1_open_win_number_limit = 2 # 赢开仓次数限制
     instance_1_open_number_limit = 2000 # 开仓次数限制
+
+    start_price = None # 起点价
+    start_cd = None # 起点数据
 
     # 添加参数和变量名到对应的列表
     def __init__(self, vt_symbol, unit_value):
@@ -117,6 +121,7 @@ class TickTest():
                             self.last_open_d_datetime = self.history.extremum_d.datetime
                             self.last_open_d = self.history.extremum_d
                             self.increase_opportunity_number()
+                            self.after_open_a_position()
                         elif self.history.breakthrough_direction == Cons.DIRECTION_DOWN:
                             # result = self.buy(tick.current, self.hand_number)
                             self.add_action(tick, Cons.ACTION_OPEN_LONG, tick.current + self.unit_value)
@@ -131,6 +136,7 @@ class TickTest():
                             self.last_open_d_datetime = self.history.extremum_d.datetime
                             self.last_open_d = self.history.extremum_d
                             self.increase_opportunity_number()
+                            self.after_open_a_position()
                 elif self.d_win_flag and self.instance_1 is not None and self.instance_1.allow_open and self.has_opportunity_by_instance_1_win():
                     direciton1 = self.instance_1.breakthrough_direction
                     # if tick.datetime.day == 19 and tick.datetime.hour == 0 and tick.datetime.minute == 1:
@@ -143,8 +149,8 @@ class TickTest():
                             logging.info(f"vt_symbol:{self.vt_symbol} => direction:long_by_instance_1   =>  tick1:{tick.current} => l: {self.instance_1.extremum_l} => l_price:{self.instance_1.extremum_l_price} => last_cd1:{self.instance_1.last_cd} => history_dirction1:{direciton1}  d1=> {self.instance_1.extremum_d} d_price => {self.instance_1.extremum_d_price}")
                             self.trade_action = Cons.ACTION_CLOSE_LONG 
                             # 使用l_price作为平仓价
-                            self.close_price = self.instance_1.extremum_l_price
-                            self.close_price_by_lose = self.instance_1.extremum_l_price
+                            self.close_price = self.instance_1.last_extremum_l_price
+                            self.close_price_by_lose = self.instance_1.last_extremum_l_price
                             self.increase_opportunity_number_by_instance_1()
                         elif direciton1 == Cons.DIRECTION_DOWN:
                             # result = self.short(tick.current, self.hand_number)
@@ -152,8 +158,8 @@ class TickTest():
                             self.open_price = tick.current - self.unit_value
                             logging.info(f"vt_symbol:{self.vt_symbol} => direction:short_by_instance_1 =>  tick1:{tick.current} => l: {self.instance_1.extremum_l} => l_price:{self.instance_1.extremum_l_price} => last_cd1:{self.instance_1.last_cd} => history_dirction1:{direciton1}  d1=> {self.instance_1.extremum_d}  d_price => {self.instance_1.extremum_d_price}")
                             self.trade_action = Cons.ACTION_CLOSE_SHORT
-                            self.close_price = self.instance_1.extremum_l_price
-                            self.close_price_by_lose = self.instance_1.extremum_l_price
+                            self.close_price = self.instance_1.last_extremum_l_price
+                            self.close_price_by_lose = self.instance_1.last_extremum_l_price
                             self.increase_opportunity_number_by_instance_1()
             elif self.trade_action == Cons.ACTION_CLOSE_LONG:
                 if self.close_by_same_minute(tick):
@@ -235,6 +241,10 @@ class TickTest():
                 self.start_list.append(cd)
             else:
                 self.start_list.append(cd)
+
+            # 开仓时记录开仓后每分钟得数据
+            if self.trade_action is not None:
+                self.complete_start_list.append(cd)
 
             if self.history.agreement_extremum_d is not None:
                 d_current_appoint_datetime = self.history.agreement_extremum_d.appoint_datetime
@@ -474,6 +484,8 @@ class TickTest():
 
         self.reset_price()
         self.trade_action = None
+        # 平仓后消除这个周期的统计
+        self.complete_start_list = []
     
     """
     实例1平仓后
@@ -493,9 +505,9 @@ class TickTest():
             direction = Cons.DIRECTION_DOWN
         if direction is not None:    
             if self.instance_1 is None:
-                self.instance_1 = FixedMinute(direction, self.start_list)
+                self.instance_1 = FixedMinute(direction, self.complete_start_list)
                 # 初始化完成的对应的统计数据
-                logging.info(f"init_instance_1 => d:{self.instance_1.extremum_d} => direction => {self.instance_1.breakthrough_direction} => l:{self.instance_1.extremum_l} => last_cd:{self.instance_1.last_cd} same_direction_max_obj => {self.instance_1.same_direction_max_obj}")
+                logging.info(f"init_instance_1 => d:{self.instance_1.extremum_d} => direction => {self.instance_1.breakthrough_direction} => l:{self.instance_1.extremum_l} => last_cd:{self.instance_1.last_cd} same_direction_max_obj => {self.instance_1.same_direction_max_obj} complete_start_list => {self.complete_start_list}")
                 logging.info(f"history => d:{self.history.extremum_d} => direction => {self.history.breakthrough_direction} => l:{self.history.extremum_l} => last_cd:{self.history.last_cd}")
 
 
@@ -551,3 +563,9 @@ class TickTest():
         if self.history.extremum_d.datetime == self.last_open_d_datetime:
             return True
         return False
+    
+    """
+    开仓时间
+    """
+    def after_open_a_position(self):
+        self.complete_start_list = deepcopy(self.start_list)

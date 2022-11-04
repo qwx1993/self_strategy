@@ -524,11 +524,18 @@ class FixedMinute:
                 else:
                     self.set_extremum_l(cd)
                 self.last_cd = Logic.handle_last_cd(self.last_cd, cd)
-
+            # 设置最大得幅度
             self.same_direction_max_obj =  SimpleNamespace()
             self.same_direction_max_obj.start  = self.start_cd
             self.same_direction_max_obj.end = self.extremum_d
             self.same_direction_max_obj.length = self.get_same_direction_max_obj_length(self.start_cd, self.extremum_d)
+            # 设置起点为上一个l
+            if self.breakthrough_direction == Constants.DIRECTION_UP:
+                self.last_extremum_l_price = self.start_cd.low
+                self.last_extremum_l = self.start_cd
+            elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
+                self.last_extremum_l_price = self.start_cd.high
+                self.last_extremum_l = self.start_cd 
             self.history_status = Constants.HISTORY_STATUS_OF_TREND
 
     """
