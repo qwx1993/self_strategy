@@ -68,7 +68,7 @@ class TickTest():
     complete_start_list = [] # 真实得分钟记录
     instance_1_open_number = 0 # 开仓次数
     instance_1_open_win_number = 0 # 赢得次数
-    instance_1_open_win_number_limit = 2 # 赢开仓次数限制
+    instance_1_open_win_number_limit = 1 # 赢开仓次数限制
     instance_1_open_number_limit = 2000 # 开仓次数限制
 
     start_price = None # 起点价
