@@ -68,7 +68,7 @@ class TickTest():
     complete_start_list = [] # 真实得分钟记录
     instance_1_open_number = 0 # 开仓次数
     instance_1_open_win_number = 0 # 赢得次数
-    instance_1_open_win_number_limit = 2 # 赢开仓次数限制
+    instance_1_open_win_number_limit = 3 # 赢开仓次数限制
     instance_1_open_number_limit = 2000 # 开仓次数限制
 
     # 添加参数和变量名到对应的列表
@@ -134,7 +134,7 @@ class TickTest():
                             self.last_open_d = self.history.extremum_d
                             self.increase_opportunity_number()
                             self.after_open_a_position()
-                elif self.d_win_flag and self.instance_1 is not None and self.has_opportunity_by_instance_1_win():
+                elif self.d_win_flag and self.instance_1 is not None  and self.has_opportunity_by_instance_1_win():
                     direciton1 = self.instance_1.breakthrough_direction
                     # if tick.datetime.day == 19 and tick.datetime.hour == 0 and tick.datetime.minute == 1:
                     #     print(f"ddddddd {tick.datetime} {tick.current} {self.instance_1.extremum_d_price} d => {self.instance_1.extremum_d} =>l {self.instance_1.extremum_l_price} {S4Tick.open_a_position_by_price(direciton1, self.instance_1.extremum_d_price, tick_obj)} direciton1 => {direciton1}")
