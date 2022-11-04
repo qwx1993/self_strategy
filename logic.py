@@ -436,6 +436,12 @@ class Logic:
 		diff = abs(reference_obj - target_obj).total_seconds() / 60
 		return diff
 
+	def real_diff_minutes(reference, target):
+		reference_obj = datetime.strptime(reference, '%Y-%m-%d %H:%M:%S')
+		target_obj = datetime.strptime(target, '%Y-%m-%d %H:%M:%S')
+		diff = (reference_obj - target_obj).total_seconds() / 60
+		return diff	
+
 	"""
 	计算最近的n分钟的波动之和
 	:param n: 最近的n分钟

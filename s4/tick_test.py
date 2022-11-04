@@ -73,7 +73,7 @@ class TickTest():
 
     start_price = None # 起点价
     start_cd = None # 起点数据
-
+ 
     # 添加参数和变量名到对应的列表
     def __init__(self, vt_symbol, unit_value):
         """"""
@@ -146,20 +146,20 @@ class TickTest():
                             # result = self.buy(tick.current, self.hand_number)
                             self.add_action(tick, Cons.ACTION_OPEN_LONG, tick.current + self.unit_value)
                             self.open_price = tick.current + self.unit_value
-                            logging.info(f"vt_symbol:{self.vt_symbol} => direction:long_by_instance_1   =>  tick1:{tick.current} => l: {self.instance_1.extremum_l} => l_price:{self.instance_1.extremum_l_price} => last_cd1:{self.instance_1.last_cd} => history_dirction1:{direciton1}  d1=> {self.instance_1.extremum_d} d_price => {self.instance_1.extremum_d_price}")
+                            logging.info(f"vt_symbol:{self.vt_symbol} => direction:long_by_instance_1   =>  tick1:{tick.current} => l: {self.instance_1.extremum_l} => l_price:{self.instance_1.extremum_l_price} => last_cd1:{self.instance_1.last_cd} => history_dirction1:{direciton1}  d1=> {self.instance_1.extremum_d} d_price => {self.instance_1.extremum_d_price} for_close_extremum_l_price => {self.instance_1.for_close_extremum_l}")
                             self.trade_action = Cons.ACTION_CLOSE_LONG 
                             # 使用l_price作为平仓价
-                            self.close_price = self.instance_1.last_extremum_l_price
-                            self.close_price_by_lose = self.instance_1.last_extremum_l_price
+                            self.close_price = self.instance_1.for_close_extremum_l_price
+                            self.close_price_by_lose = self.instance_1.for_close_extremum_l_price
                             self.increase_opportunity_number_by_instance_1()
                         elif direciton1 == Cons.DIRECTION_DOWN:
                             # result = self.short(tick.current, self.hand_number)
                             self.add_action(tick, Cons.ACTION_OPEN_SHORT, tick.current - self.unit_value)
                             self.open_price = tick.current - self.unit_value
-                            logging.info(f"vt_symbol:{self.vt_symbol} => direction:short_by_instance_1 =>  tick1:{tick.current} => l: {self.instance_1.extremum_l} => l_price:{self.instance_1.extremum_l_price} => last_cd1:{self.instance_1.last_cd} => history_dirction1:{direciton1}  d1=> {self.instance_1.extremum_d}  d_price => {self.instance_1.extremum_d_price}")
+                            logging.info(f"vt_symbol:{self.vt_symbol} => direction:short_by_instance_1 =>  tick1:{tick.current} => l: {self.instance_1.extremum_l} => l_price:{self.instance_1.extremum_l_price} => last_cd1:{self.instance_1.last_cd} => history_dirction1:{direciton1}  d1=> {self.instance_1.extremum_d}  d_price => {self.instance_1.extremum_d_price} for_close_extremum_l_price => {self.instance_1.for_close_extremum_l}")
                             self.trade_action = Cons.ACTION_CLOSE_SHORT
-                            self.close_price = self.instance_1.last_extremum_l_price
-                            self.close_price_by_lose = self.instance_1.last_extremum_l_price
+                            self.close_price = self.instance_1.for_close_extremum_l_price
+                            self.close_price_by_lose = self.instance_1.for_close_extremum_l_price
                             self.increase_opportunity_number_by_instance_1()
             elif self.trade_action == Cons.ACTION_CLOSE_LONG:
                 if self.close_by_same_minute(tick):
@@ -168,7 +168,7 @@ class TickTest():
                         if not self.d_win_flag:
                             logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:long_l => close_price_by_lose:{self.close_price_by_lose} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price}")
                         else:
-                            logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:long_l => close_price_by_lose:{self.close_price_by_lose} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price} last_extremum_l => {self.instance_1.last_extremum_l} last_extremum_l_price => {self.instance_1.last_extremum_l_price}")
+                            logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:long_l => close_price_by_lose:{self.close_price_by_lose} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price} for_close_extremum_l => {self.instance_1.for_close_extremum_l} for_close_extremum_l_price => {self.instance_1.for_close_extremum_l_price}")
                         self.after_close(tick_obj)
                 elif S4Tick.close_a_price(self.trade_action, self.get_close_price_by_win_point(tick_obj), tick_obj) or trade.simulation_need_close_position(self.vt_symbol, tick):
                     # result = self.sell(tick.current, self.hand_number)
@@ -176,7 +176,7 @@ class TickTest():
                     if not self.d_win_flag:
                         logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:long => close_price:{self.close_price} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price} ")
                     else:
-                        logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:long => close_price:{self.close_price} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price} last_extremum_l => {self.instance_1.last_extremum_l} last_extremum_l_price => {self.instance_1.last_extremum_l_price}")
+                        logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:long => close_price:{self.close_price} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price} for_close_extremum_l => {self.instance_1.for_close_extremum_l} for_close_extremum_l_price => {self.instance_1.for_close_extremum_l_price}")
 
                     self.after_close(tick_obj)
                 elif self.is_exceed_last_cd_high(tick):
@@ -192,7 +192,7 @@ class TickTest():
                         if not self.d_win_flag:
                             logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:short_l => close_price_by_lose:{self.close_price_by_lose} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price}  open_price => {self.open_price} close_price_by_lose => {self.close_price_by_lose} ")
                         else:
-                            logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:short_l => close_price_by_lose:{self.close_price_by_lose} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price}  open_price => {self.open_price} close_price_by_lose => {self.close_price_by_lose} last_extremum_l => {self.instance_1.last_extremum_l} last_extremum_l_price => {self.instance_1.last_extremum_l_price}")
+                            logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:short_l => close_price_by_lose:{self.close_price_by_lose} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price}  open_price => {self.open_price} close_price_by_lose => {self.close_price_by_lose} for_close_extremum_l => {self.instance_1.for_close_extremum_l} for_close_extremum_l_price => {self.instance_1.for_close_extremum_l_price}")
                         self.after_close(tick_obj)
                 elif S4Tick.close_a_price(self.trade_action, self.get_close_price_by_win_point(tick_obj), tick_obj) or trade.simulation_need_close_position(self.vt_symbol, tick):
                     
@@ -201,7 +201,7 @@ class TickTest():
                     if not self.d_win_flag:
                         logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:short => close_price:{self.close_price} => close_price_by_lose:{self.close_price_by_lose} => tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price} open_price => {self.open_price} close_price_by_lose => {self.close_price_by_lose}")
                     else:
-                        logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:short => close_price:{self.close_price} => close_price_by_lose:{self.close_price_by_lose} => tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price} open_price => {self.open_price} close_price_by_lose => {self.close_price_by_lose} last_extremum_l => {self.instance_1.last_extremum_l} last_extremum_l_price => {self.instance_1.last_extremum_l_price}")
+                        logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:short => close_price:{self.close_price} => close_price_by_lose:{self.close_price_by_lose} => tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price} open_price => {self.open_price} close_price_by_lose => {self.close_price_by_lose} for_close_extremum_l => {self.instance_1.for_close_extremum_l} for_close_extremum_l_price => {self.instance_1.for_close_extremum_l_price}")
                     self.after_close(tick_obj)
                 elif self.is_exceed_last_cd_high(tick):
                     self.set_agreement_close_price_by_short(tick)
@@ -435,14 +435,14 @@ class TickTest():
             else:
                 return self.close_price_by_lose
         else:
-            return self.get_close_price_by_last_extremum_l()
+            return self.get_close_price_by_for_close_extremum_l_price()
 
     """
-    如果存在上一个L的数据，就使用上一个的数据进行平仓
+    使用系统最新刷新的平仓L去进行平仓
     """
-    def get_close_price_by_last_extremum_l(self):
-        if self.instance_1.last_extremum_l_price is not None:
-            return self.instance_1.last_extremum_l_price
+    def get_close_price_by_for_close_extremum_l_price(self):
+        if self.instance_1.for_close_extremum_l_price is not None:
+            return self.instance_1.for_close_extremum_l_price
         else:
             return self.close_price_by_lose
     
