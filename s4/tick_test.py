@@ -68,14 +68,15 @@ class TickTest():
     complete_start_list = [] # 真实得分钟记录
     instance_1_open_number = 0 # 开仓次数
     instance_1_open_win_number = 0 # 赢得次数
-    instance_1_open_win_number_limit = 3 # 赢开仓次数限制
+    instance_1_open_win_number_limit = 3 # 赢开仓次数限制 默认3次
     instance_1_open_number_limit = 2000 # 开仓次数限制
 
     # 添加参数和变量名到对应的列表
-    def __init__(self, vt_symbol, unit_value):
+    def __init__(self, vt_symbol, unit_value, win_number_limit):
         """"""
         self.vt_symbol = vt_symbol
         self.unit_value = unit_value
+        self.instance_1_open_win_number_limit = win_number_limit
 
         """
         初始化日志
