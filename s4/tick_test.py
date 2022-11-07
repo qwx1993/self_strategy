@@ -54,6 +54,8 @@ class TickTest():
     first_interval_minutes = 15 # 第一次开仓的间隔时间
     second_interval_minutes = 10 # 第二次开仓的间隔时间
     d_win_flag = False # D开仓并且止盈的标记
+    d_win_number = 0 # 左侧策略开仓赢次数
+    d_win_number_limit = 1 # 左侧赢多少次进入右侧策略
     last_open_d_datetime = None # 最后
     last_open_d = None 
 
@@ -441,8 +443,10 @@ class TickTest():
                     self.interval_minutes = self.first_interval_minutes
                     self.opportunity_number = self.opportunity_number_limit
                     self.interval_datetime = None
-                    self.d_win_flag = True
-                    self.init_history1_by_win(self.trade_action)
+                    self.d_win_number += 1
+                    if self.d_win_number >= self.d_win_number_limit: 
+                        self.d_win_flag = True
+                        self.init_history1_by_win(self.trade_action)
                 else:
                     if self.opportunity_number < self.opportunity_number_limit: # 一共两次机会
                         self.interval_minutes = self.second_interval_minutes
