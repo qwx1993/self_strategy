@@ -88,16 +88,17 @@ def simulation_need_close_position(vt_symbol, tick):
     minute = tick.datetime.minute
     # 23点平仓
     twenty_three_list = [
-        'FU_DOMINANT_90_TICK',
-        'M_DOMINANT_90_TICK',
-        'RB_DOMINANT_90_TICK',
-        'SA_DOMINANT_90_TICK',
-        'V_DOMINANT_90_TICK',
-        'Y_DOMINANT_90_TICK',
+        'SA_DOMINANT_180_TICK',
+        'Y_DOMINANT_180_TICK',
+        'M_DOMINANT_180_TICK',
+        'V_DOMINANT_180_TICK',
+        'RB_DOMINANT_180_TICK',
+        'BU_DOMINANT_180_TICK',
+        'FU_DOMINANT_180_TICK',
     ]
     # 01 点平仓
     one_list = [
-        'ZN_DOMINANT_90_TICK'
+        'ZN_DOMINANT_180_TICK',
     ]
 
     # 02：30
