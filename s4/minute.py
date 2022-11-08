@@ -707,6 +707,8 @@ class Minute:
                 self.max_amplitude.datetime = cd.datetime
                 appear = True
                 self.on_direction_change(cd)
+                # 暂时改成只有幅度变化转向才生效
+                self.change_direction_number += 1
                 # print(f"不同方向设置最大的max_amplitudeooooooooooooooooooooooooooooooooooooooo => {cd.datetime} => {self.max_amplitude} 方向 => {self.breakthrough_direction}")
         if appear:
             # 重置R
@@ -737,7 +739,7 @@ class Minute:
         # 重置rrn
         self.rrn = None
         # 增加转向次数
-        self.change_direction_number += 1
+        # self.change_direction_number += 1
     
     """
     趋势分析
