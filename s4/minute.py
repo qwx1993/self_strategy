@@ -44,6 +44,7 @@ class Minute:
     history_status = Constants.HISTORY_STATUS_OF_NONE # 历史状态
     last_cd = None # 上一点
     max_amplitude = None # 最大幅度对象
+    change_direction_number = 0 # Rmax改变方向的次数
     h_price_max = None # h的极值
     trade_action = None
     ml = None # 出现小级别逆趋势后的低点，需比L的值大
@@ -735,6 +736,8 @@ class Minute:
         self.reset_extremum_l()
         # 重置rrn
         self.rrn = None
+        # 增加转向次数
+        self.change_direction_number += 1
     
     """
     趋势分析
