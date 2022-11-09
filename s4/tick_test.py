@@ -45,6 +45,7 @@ class TickTest():
     last_tick_list = []
     actions = [] # 交易动作
     unit_value = None
+    yesterday_close_price = None # 昨日收盘价格 
     open_type = 1 # 开仓类型
     interval_datetime = None #开仓间隔
     interval_minutes = 15 # 开仓间隔15分钟
@@ -55,7 +56,7 @@ class TickTest():
     second_interval_minutes = 10 # 第二次开仓的间隔时间
     d_win_flag = False # D开仓并且止盈的标记
     d_win_number = 0 # 左侧策略开仓赢次数
-    d_win_number_limit = 2 # 左侧赢多少次进入右侧策略
+    d_win_number_limit = 1 # 左侧赢多少次进入右侧策略
     last_open_d_datetime = None # 最后
     last_open_d = None 
 
@@ -74,10 +75,11 @@ class TickTest():
     instance_1_open_number_limit = 2000 # 开仓次数限制
 
     # 添加参数和变量名到对应的列表
-    def __init__(self, vt_symbol, unit_value, win_number_limit):
+    def __init__(self, vt_symbol, unit_value, yesterday_close_price, win_number_limit):
         """"""
         self.vt_symbol = vt_symbol
         self.unit_value = unit_value
+        self.yesterday_close_price = yesterday_close_price
         self.instance_1_open_win_number_limit = win_number_limit
 
         """
@@ -85,7 +87,7 @@ class TickTest():
         """
         file.init_log(self.vt_symbol)
         logging.info(self.vt_symbol)
-        self.history = History()
+        self.history = History(self.yesterday_close_price, self.unit_value)
         self.tick_list = []
         self.last_tick_list = []
         self.actions = []
@@ -104,7 +106,7 @@ class TickTest():
             if self.trade_action is None and trade.simulation_can_open_a_position(self.vt_symbol, tick):
                 # 出现ml并且当前一分钟没有刷新l
                 direction = self.history.breakthrough_direction
-                if (not self.d_win_flag) and S4Tick.open_a_price_by_agreement(direction, self.history.extremum_d, self.history.agreement_extremum_d, self.history.last_cd, tick_obj) and self.history.change_direction_number >= 0:
+                if (not self.d_win_flag) and S4Tick.open_a_price_by_agreement(direction, self.history.extremum_d, self.history.agreement_extremum_d, self.history.last_cd, tick_obj) and self.history.change_direction_number == 1:
                     # 时间间隔起点
                     if self.interval_datetime is None:
                         self.interval_datetime = self.history.agreement_extremum_d.appoint_datetime
@@ -139,7 +141,7 @@ class TickTest():
                             self.after_open_a_position()
                 elif self.d_win_flag and self.instance_1 is not None  and self.has_opportunity_by_instance_1_win():
                     direciton1 = self.instance_1.breakthrough_direction
-                    # if tick.datetime.day == 19 and tick.datetime.hour == 0 and tick.datetime.minute == 1:
+                    # if tick.datetime.day == 2 and tick.datetime.hour == 14 and tick.datetime.minute == 5:
                     #     print(f"ddddddd {tick.datetime} {tick.current} {self.instance_1.extremum_d_price} d => {self.instance_1.extremum_d} =>l {self.instance_1.extremum_l_price} {S4Tick.open_a_position_by_price(direciton1, self.instance_1.extremum_d_price, tick_obj)} direciton1 => {direciton1}")
                     if self.instance_1.extremum_d_price is not None and self.instance_1.extremum_l_price is not None and S4Tick.open_a_position_by_price(direciton1, self.instance_1.extremum_d_price, tick_obj):
                         if direciton1 == Cons.DIRECTION_UP:

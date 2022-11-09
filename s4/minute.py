@@ -44,6 +44,7 @@ class Minute:
     history_status = Constants.HISTORY_STATUS_OF_NONE # 历史状态
     last_cd = None # 上一点
     max_amplitude = None # 最大幅度对象
+    last_max_amplitude = None # 上一个Rmax
     change_direction_number = 0 # Rmax改变方向的次数
     h_price_max = None # h的极值
     trade_action = None
@@ -69,16 +70,24 @@ class Minute:
     refresh_h_minute_count = 0 # 协定H刷新的间隔分钟数
     h_minute_count_limit = 5 # 协定H最小间隔限制
 
+    yesterday_close_price = None # 昨日收盘价格
+    start_cd = None # 当日的起点
+
     """
     初始化
     """
 
-    def __init__(self):
+    def __init__(self, yesterday_close_price, unit_value):
+        #昨日收盘价
+        self.yesterday_close_price = yesterday_close_price
+        self.unit_value = unit_value
+        print(f"昨日收盘价 => {self.yesterday_close_price} unit_value => {self.unit_value}")
         # 所有的list跟dict需要重置
         self.max_l_to_d_interval = None
         self.max_r = None
         self.actions = []
         self.max_amplitude = None
+        self.last_max_amplitude = None
         self.m_max_r = None  # 小级别r
         self.M_MAX_R = None  # 小级别R
 
@@ -469,9 +478,20 @@ class Minute:
     """
 
     def histoty_status_none(self, cd):
-        # 初始化时为十字星不处理
-        if Logic.is_crossing_starlike(cd):
-            return
+        # 初始化起点
+        if self.start_cd is None:
+            self.start_cd = cd
+
+        # 根据昨日收盘价跟起点价定方向
+        if self.yesterday_close_price is not None:
+            if self.start_cd.open > self.yesterday_close_price:
+                self.breakthrough_direction = Constants.DIRECTION_UP
+            elif self.start_cd.open < self.yesterday_close_price:
+                self.breakthrough_direction = Constants.DIRECTION_DOWN
+            else:
+                # 初始化时为十字星不处理
+                if Logic.is_crossing_starlike(cd):
+                    return
 
         # 设置走势方向，设置最大的幅度对象，包括最大幅度的起始、结束值跟幅度
         self.init_set_max_amplitude(cd)
@@ -540,11 +560,37 @@ class Minute:
         # 处理出现最大的幅度情况
         self.handle_max_amplitude(cd)
 
+        # 处理方向的逻辑
+        self.handle_direction(cd)
+        
         if self.sub_status == S3_Cons.SUB_STATUS_OF_TREND_COUNTER:
             if self.extremum_l_price is not None:
                 self.set_l_start_cd(cd)
             if self.h_price is not None:
                 self.set_h_start_cd(cd)
+
+    """
+    方向处理
+    """
+    def handle_direction(self, cd):
+      # 判断方向是否改变
+        current_change = False
+        if self.yesterday_close_price is not None:
+            if self.breakthrough_direction == Constants.DIRECTION_UP and cd.low < min(self.yesterday_close_price, self.start_cd.open):
+                self.breakthrough_direction == Constants.DIRECTION_DOWN
+                self.on_direction_change(cd)
+                current_change = True
+            elif self.breakthrough_direction == Constants.DIRECTION_DOWN and cd.high > max(self.yesterday_close_price, self.start_cd.open):
+                self.breakthrough_direction = Constants.DIRECTION_UP
+                self.on_direction_change(cd)
+                current_change = True
+            
+            if not current_change and self.last_max_amplitude is not None:
+                if (not self.breakthrough_direction == self.max_amplitude.direction) and (self.max_amplitude.length > 30 * self.unit_value) and (self.max_amplitude.length > 3 * self.last_max_amplitude.length):
+                    self.breakthrough_direction = self.max_amplitude.direction
+                    self.last_max_amplitude = deepcopy(self.max_amplitude)
+                    self.on_direction_change(cd)
+                    current_change = True  
 
     
     """
@@ -687,7 +733,7 @@ class Minute:
         appear = False
         if self.max_l_to_d_interval.length >= self.max_r.length:
             if self.max_l_to_d_interval.length > self.max_amplitude.length:
-                self.max_amplitude.direction = self.breakthrough_direction
+                self.max_amplitude.direction = self.max_l_to_d_interval.direction
                 self.max_amplitude.real_direction = self.breakthrough_direction
                 self.max_amplitude.start = self.max_l_to_d_interval.start_price            
                 self.max_amplitude.end = self.max_l_to_d_interval.end_price
@@ -697,32 +743,28 @@ class Minute:
                 # print(f"相同方向设置最大的max_amplitude00000000000000000000000000000000000000 => {cd.datetime} => {self.max_amplitude} 方向 => {self.breakthrough_direction}")
         else:
             if self.max_r.length > self.max_amplitude.length:
-                # 当r为最大的幅度时，改变方向
-                self.reverse_direct()
-                self.max_amplitude.direction = self.breakthrough_direction 
+                self.max_amplitude.direction = self.max_r.direction 
                 self.max_amplitude.real_direction = self.breakthrough_direction
                 self.max_amplitude.start = self.max_r.start_price
                 self.max_amplitude.end = self.max_r.end_price
                 self.max_amplitude.length = abs(self.max_amplitude.start - self.max_amplitude.end)
                 self.max_amplitude.datetime = cd.datetime
                 appear = True
-                self.on_direction_change(cd)
                 # 暂时改成只有幅度变化转向才生效
-                self.change_direction_number += 1
                 # print(f"不同方向设置最大的max_amplitudeooooooooooooooooooooooooooooooooooooooo => {cd.datetime} => {self.max_amplitude} 方向 => {self.breakthrough_direction}")
         if appear:
             # 重置R
             self.max_l_to_d_interval = None
             # 重置r
             self.max_r = None
-        else:
-            if Logic.is_exceed_max_amplitude_start_price(self.breakthrough_direction, self.max_amplitude, cd):
-                self.reverse_direct_by_max_amplitude()
-                self.on_direction_change(cd)
-                # print(f"突破max_amplitude的起始价格@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ => {cd.datetime}")
-            elif Logic.is_exceed_max_amplitude_end_price(self.breakthrough_direction, self.max_amplitude, cd):
-                self.set_direction_by_max_amplitude()
-                self.on_direction_change(cd)
+        # else:
+        #     if Logic.is_exceed_max_amplitude_start_price(self.breakthrough_direction, self.max_amplitude, cd):
+        #         self.reverse_direct_by_max_amplitude()
+        #         self.on_direction_change(cd)
+        #         # print(f"突破max_amplitude的起始价格@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ => {cd.datetime}")
+        #     elif Logic.is_exceed_max_amplitude_end_price(self.breakthrough_direction, self.max_amplitude, cd):
+        #         self.set_direction_by_max_amplitude()
+        #         self.on_direction_change(cd)
                 
     """
     方向改变执行的动作
@@ -739,7 +781,7 @@ class Minute:
         # 重置rrn
         self.rrn = None
         # 增加转向次数
-        # self.change_direction_number += 1
+        self.change_direction_number += 1
     
     """
     趋势分析
@@ -877,6 +919,14 @@ class Minute:
         obj.length = abs(start_price - end_price)
         obj.start_price = start_price
         obj.end_price = end_price
+        if start_price < end_price:
+            obj.direction = Constants.DIRECTION_UP
+        elif start_price > end_price:
+            obj.direction = Constants.DIRECTION_DOWN
+        else:
+            obj.direction = None
+
+
         return obj
 
     """
@@ -993,8 +1043,10 @@ class Minute:
     设置最大的幅度，包括开始价、结束价，幅度值
     """
     def init_set_max_amplitude(self, cd):
+        # 十字星就将方向定义跟主程序方向一致
+        if Logic.is_crossing_starlike(cd):
+            cd.direction = self.breakthrough_direction
         # 当前点的方向决定走势方向
-        self.breakthrough_direction = cd.direction
         current = SimpleNamespace()
         current.length = Logic.max_amplitude_length(cd)
         current.direction = cd.direction
@@ -1005,8 +1057,13 @@ class Minute:
         else:
             current.start = cd.high
             current.end = cd.low
-        current.real_dirction = cd.direction
+
+        # 在主程序没有方向，其实就是昨日收盘价跟今日开盘价想等的时候
+        if self.breakthrough_direction is None:
+            self.breakthrough_direction = cd.direction
+        current.real_dirction = self.breakthrough_direction
         self.max_amplitude = current
+        self.last_max_amplitude = deepcopy(self.max_amplitude)
 
     """
     设置最小的ln
@@ -1182,7 +1239,9 @@ class Minute:
         #     return
         if self.history_status == Constants.HISTORY_STATUS_OF_NONE: 
             self.histoty_status_none(cd)
+            # print(f"完成状态初始化 => yesterday_close_price => {self.yesterday_close_price} start_cd => {self.start_cd} , breakthrough_direction => {self.breakthrough_direction} max_amplitude => {self.max_amplitude} extremum_d => {self.extremum_d}")
         elif self.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中
+            
             self.statistic(cd)
         # 判断是否需要合并,当当前分钟为直线时考虑
         self.last_cd = Logic.handle_last_cd(self.last_cd, cd)
