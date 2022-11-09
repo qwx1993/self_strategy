@@ -55,7 +55,7 @@ class TickTest():
     second_interval_minutes = 10 # 第二次开仓的间隔时间
     d_win_flag = False # D开仓并且止盈的标记
     d_win_number = 0 # 左侧策略开仓赢次数
-    d_win_number_limit = 1 # 左侧赢多少次进入右侧策略
+    d_win_number_limit = 2 # 左侧赢多少次进入右侧策略
     last_open_d_datetime = None # 最后
     last_open_d = None 
 
@@ -104,7 +104,7 @@ class TickTest():
             if self.trade_action is None and trade.simulation_can_open_a_position(self.vt_symbol, tick):
                 # 出现ml并且当前一分钟没有刷新l
                 direction = self.history.breakthrough_direction
-                if (not self.d_win_flag) and S4Tick.open_a_price_by_agreement(direction, self.history.extremum_d, self.history.agreement_extremum_d, self.history.last_cd, tick_obj) and self.history.change_direction_number >= 1:
+                if (not self.d_win_flag) and S4Tick.open_a_price_by_agreement(direction, self.history.extremum_d, self.history.agreement_extremum_d, self.history.last_cd, tick_obj) and self.history.change_direction_number >= 0:
                     # 时间间隔起点
                     if self.interval_datetime is None:
                         self.interval_datetime = self.history.agreement_extremum_d.appoint_datetime
