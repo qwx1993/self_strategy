@@ -65,7 +65,7 @@ class Minute:
 
 
     #---------------------
-    d_minute_count_limit = 30 # 协定D刷新的间隔分钟数
+    d_minute_count_limit = 5 # 协定D刷新的间隔分钟数
 
     refresh_h_minute_count = 0 # 协定H刷新的间隔分钟数
     h_minute_count_limit = 5 # 协定H最小间隔限制
@@ -81,7 +81,7 @@ class Minute:
         #昨日收盘价
         self.yesterday_close_price = yesterday_close_price
         self.unit_value = unit_value
-        print(f"昨日收盘价 => {self.yesterday_close_price} unit_value => {self.unit_value}")
+        # print(f"昨日收盘价 => {self.yesterday_close_price} unit_value => {self.unit_value}")
         # 所有的list跟dict需要重置
         self.max_l_to_d_interval = None
         self.max_r = None
@@ -576,17 +576,18 @@ class Minute:
       # 判断方向是否改变
         current_change = False
         if self.yesterday_close_price is not None:
-            if self.breakthrough_direction == Constants.DIRECTION_UP and cd.low < min(self.yesterday_close_price, self.start_cd.open):
-                self.breakthrough_direction == Constants.DIRECTION_DOWN
-                self.on_direction_change(cd)
-                current_change = True
-            elif self.breakthrough_direction == Constants.DIRECTION_DOWN and cd.high > max(self.yesterday_close_price, self.start_cd.open):
-                self.breakthrough_direction = Constants.DIRECTION_UP
-                self.on_direction_change(cd)
-                current_change = True
+            # if self.breakthrough_direction == Constants.DIRECTION_UP and cd.low < min(self.yesterday_close_price, self.start_cd.open):
+            #     self.breakthrough_direction == Constants.DIRECTION_DOWN
+            #     self.on_direction_change(cd)
+            #     current_change = True
+            # elif self.breakthrough_direction == Constants.DIRECTION_DOWN and cd.high > max(self.yesterday_close_price, self.start_cd.open):
+            #     self.breakthrough_direction = Constants.DIRECTION_UP
+            #     self.on_direction_change(cd)
+            #     current_change = True
             
             if not current_change and self.last_max_amplitude is not None:
-                if (not self.breakthrough_direction == self.max_amplitude.direction) and (self.max_amplitude.length > 30 * self.unit_value) and (self.max_amplitude.length > 3 * self.last_max_amplitude.length):
+                if (not self.breakthrough_direction == self.max_amplitude.direction) and (self.max_amplitude.length > 20 * self.unit_value) and (self.max_amplitude.length > 2 * self.last_max_amplitude.length):
+                    print(f"Rmax转向 => max_amplitude => {self.max_amplitude.length} last_max_amplitude => {self.last_max_amplitude}")
                     self.breakthrough_direction = self.max_amplitude.direction
                     self.last_max_amplitude = deepcopy(self.max_amplitude)
                     self.on_direction_change(cd)

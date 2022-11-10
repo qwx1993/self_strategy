@@ -106,7 +106,7 @@ class TickTest():
             if self.trade_action is None and trade.simulation_can_open_a_position(self.vt_symbol, tick):
                 # 出现ml并且当前一分钟没有刷新l
                 direction = self.history.breakthrough_direction
-                if (not self.d_win_flag) and S4Tick.open_a_price_by_agreement(direction, self.history.extremum_d, self.history.agreement_extremum_d, self.history.last_cd, tick_obj) and self.history.change_direction_number == 1:
+                if (not self.d_win_flag) and S4Tick.open_a_price_by_agreement(direction, self.history.extremum_d, self.history.agreement_extremum_d, self.history.last_cd, tick_obj) and self.history.change_direction_number == 1 and self.d_win_number < 1:
                     # 时间间隔起点
                     if self.interval_datetime is None:
                         self.interval_datetime = self.history.agreement_extremum_d.appoint_datetime
@@ -143,7 +143,7 @@ class TickTest():
                     direciton1 = self.instance_1.breakthrough_direction
                     # if tick.datetime.day == 2 and tick.datetime.hour == 14 and tick.datetime.minute == 5:
                     #     print(f"ddddddd {tick.datetime} {tick.current} {self.instance_1.extremum_d_price} d => {self.instance_1.extremum_d} =>l {self.instance_1.extremum_l_price} {S4Tick.open_a_position_by_price(direciton1, self.instance_1.extremum_d_price, tick_obj)} direciton1 => {direciton1}")
-                    if self.instance_1.extremum_d_price is not None and self.instance_1.extremum_l_price is not None and S4Tick.open_a_position_by_price(direciton1, self.instance_1.extremum_d_price, tick_obj):
+                    if False and self.instance_1.extremum_d_price is not None and self.instance_1.extremum_l_price is not None and S4Tick.open_a_position_by_price(direciton1, self.instance_1.extremum_d_price, tick_obj):
                         if direciton1 == Cons.DIRECTION_UP:
                             # result = self.buy(tick.current, self.hand_number)
                             self.add_action(tick, Cons.ACTION_OPEN_LONG, tick.current + self.unit_value)
@@ -239,7 +239,7 @@ class TickTest():
                 d_current_appoint_datetime = self.history.agreement_extremum_d.appoint_datetime
             # 如果刷新了协定的D
             if d_last_appoint_datetime is not None and d_current_appoint_datetime is not None and not d_current_appoint_datetime == d_last_appoint_datetime:
-                self.opportunity_number = 0
+                # self.opportunity_number = 0
                 self.interval_minutes = self.first_interval_minutes 
                 self.interval_datetime = None
         elif self.instance_1 is not None:
@@ -448,7 +448,7 @@ class TickTest():
                     self.d_win_number += 1
                     if self.d_win_number >= self.d_win_number_limit: 
                         self.d_win_flag = True
-                        self.init_history1_by_win(self.trade_action)
+                        # self.init_history1_by_win(self.trade_action)
                 else:
                     if self.opportunity_number < self.opportunity_number_limit: # 一共两次机会
                         self.interval_minutes = self.second_interval_minutes

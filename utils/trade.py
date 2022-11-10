@@ -112,6 +112,7 @@ def simulation_need_close_position(vt_symbol, tick):
         'SC_11',
         'AG_DOMINANT_180_TICK',
         'SC_DOMINANT_365_TICK',
+        'SC_DOMINANT_30_TICK',
     ]
         # 两点之后平仓
     if hour == 14 and minute >= 58:
