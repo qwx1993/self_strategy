@@ -122,7 +122,10 @@ class Constants:
 
     OPEN_BY_L = 0 # 通过L开仓
     OPEN_BY_H = 1 # 通过H开仓
-    OPEN_BY_D = 2 # 通过D开仓
+    OPEN_BY_D = 2 # 通过D开仓OPEN
+
+    OPEN_STATUS_OF_TOP = 0 # 找顶状态
+    OPEN_STATUS_OF_LOW = 1 # 找底状态
 
     STR_ACTIONS_AND_STATES = {
         OPEN_A_POSITION_ONE_LONG: {

@@ -65,12 +65,15 @@ class Minute:
 
 
     #---------------------
-    d_minute_count_limit = 5 # 协定D刷新的间隔分钟数
+    d_minute_count_limit = 0 # 协定D刷新的间隔分钟数
 
     refresh_h_minute_count = 0 # 协定H刷新的间隔分钟数
     h_minute_count_limit = 5 # 协定H最小间隔限制
 
+    yesterday_open_price = None # 昨日开盘价格
     yesterday_close_price = None # 昨日收盘价格
+    yesterday_direction = None # 上一个交易日的方向
+
     start_cd = None # 当日的起点
 
     #-----------------------------------
@@ -78,16 +81,21 @@ class Minute:
     last_min_price = None # 前一个交易日的最小价格
     continue_r_max_list = [] # 连续趋势的统计
     continue_r_max_length = 0 # 连续趋势的幅度 默认为0
+    open_status = None # 开仓状态 0:找顶 1:找底
 
     """
     初始化
     """
 
-    def __init__(self, yesterday_close_price, unit_value, last_max_price, last_min_price):
-        #昨日收盘价
+    def __init__(self, yesterday_open_price, yesterday_close_price, unit_value, last_max_price, last_min_price):
+        # 昨日收盘价格
+        self.yesterday_open_price = yesterday_open_price
+        # 昨日收盘价
         self.yesterday_close_price = yesterday_close_price
+        # 设置昨日方向
+        self.set_yesterday_direction()
         self.unit_value = unit_value
-        print(f"昨日收盘价 => {self.yesterday_close_price} unit_value => {self.unit_value} last_max_price => {last_max_price} last_min_price=>{last_min_price}") 
+        # print(f"昨日开盘价 => {self.yesterday_open_price} 昨日收盘价 => {self.yesterday_close_price} unit_value => {self.unit_value} last_max_price => {last_max_price} last_min_price=>{last_min_price} yesterday_direction => {self.yesterday_direction}") 
         # 所有的list跟dict需要重置
         self.max_l_to_d_interval = None
         self.max_r = None
@@ -99,6 +107,17 @@ class Minute:
         self.M_MAX_R = None  # 小级别R
         self.last_max_price = last_max_price # 前一个交易日的最大价格
         self.last_min_price = last_min_price # 前一个交易日的最小价格
+
+
+    """
+    根据昨日的开盘跟收盘价定昨日方向
+    """
+    def set_yesterday_direction(self):
+        if self.yesterday_open_price is not None and self.yesterday_close_price is not None:
+            if self.yesterday_close_price > self.yesterday_open_price:
+                self.yesterday_direction = Constants.DIRECTION_UP
+            else:
+                self.yesterday_direction = Constants.DIRECTION_DOWN
 
     """
     添加对应的动作，目前包括开空、平空、开多、平多
@@ -430,14 +449,6 @@ class Minute:
                 open_a_price = self.last_cd.low - self.unit_value
                 self.close_price = self.last_cd.high
             self.add_action(cd, self.trade_action, open_a_price)
-            
-            # print(f"Rmax => {self.max_amplitude}")
-            # print(f"进入ml1开仓 {cd.datetime} 开仓价{self.last_cd} ---------------------------------------------------------------------------------------")
-            # print(f"l => {self.extremum_l_price}")   
-            # print(f"ml => {self.ml}")
-            # print(f"开仓方向 => {self.breakthrough_direction}")
-            # print(f"M_MAX_R => {self.M_MAX_R}")   
-            # print(f"m_max_r => {self.m_max_r} -------------------------------------------------------------------------------------")   
 
     """
     设置开仓状态
@@ -594,8 +605,8 @@ class Minute:
             #     current_change = True
             
             if not current_change and self.last_max_amplitude is not None:
-                if (self.max_amplitude.length > 10 * self.unit_value) and (self.max_amplitude.length > 2 * self.last_max_amplitude.length) and self.continue_r_max_length > 30 * self.unit_value:
-                    print(f"Rmax幅度突破 direction => {self.breakthrough_direction} => cd => {cd} max_amplitude => {self.max_amplitude} last_max_amplitude => {self.last_max_amplitude} continue_r_max_length => {self.continue_r_max_length} {self.continue_r_max_list}")
+                if (self.max_amplitude.length > 10 * self.unit_value) and (self.max_amplitude.length > 1.1 * self.last_max_amplitude.length) and self.continue_r_max_length > 30 * self.unit_value:
+                    # print(f"Rmax幅度突破 direction => {self.breakthrough_direction} => cd => {cd} max_amplitude => {self.max_amplitude} last_max_amplitude => {self.last_max_amplitude} continue_r_max_length => {self.continue_r_max_length} {self.continue_r_max_list}")
                     if self.breakthrough_direction == self.max_amplitude.direction:
                         self.change_direction_number += 1
                     else:
@@ -1259,14 +1270,34 @@ class Minute:
         self.last_cd = Logic.handle_last_cd(self.last_cd, cd)
         self.refresh_d_minute_count += 1
         self.refresh_h_minute_count += 1
+        # 处理状态
+        self.handle_open_status()
+
+    """
+    设置开仓的状态，当前方向跟昨日方向不同，是找顶状态
+    当前方向跟昨日方向相同，是找底状态
+    """
+    def handle_open_status(self):
+        if self.breakthrough_direction == self.yesterday_direction:
+            self.open_status = Constants.OPEN_STATUS_OF_LOW
+        else:
+            self.open_status = Constants.OPEN_STATUS_OF_TOP
 
     """
     处理连续行情数据
     """
     def handle_continue_r_max_list(self, cd):
         if len(self.continue_r_max_list) == 0:
-            self.continue_r_max_list.append(cd)
-        else:
+            first_cd = SimpleNamespace()
+            first_cd.high = max(self.yesterday_close_price, cd.open)
+            first_cd.low = min(self.yesterday_close_price, cd.open)
+            if self.yesterday_close_price > cd.open:
+                first_cd.direction = Constants.DIRECTION_DOWN
+            else:
+                first_cd.direction = Constants.DIRECTION_UP
+            self.continue_r_max_list.append(first_cd)
+            # print(f"将开盘的幅度统计进去 {self.continue_r_max_list} yesterday_close_price => {self.yesterday_close_price} => cd => {cd}")
+        if len(self.continue_r_max_list) > 0:
             temp_last_cd = self.continue_r_max_list[-1]
             if not cd.direction == temp_last_cd.direction:
                 self.continue_r_max_list = []
