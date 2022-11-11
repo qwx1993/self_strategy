@@ -76,6 +76,9 @@ class TickTest():
     instance_1_open_win_number_limit = 3 # 赢开仓次数限制 默认3次
     instance_1_open_number_limit = 2000 # 开仓次数限制
 
+    # --------------------------------------------------------
+    allow_open_by_agreement_d = True # 是否回到协定D可以开仓的位置 
+
     # 添加参数和变量名到对应的列表
     def __init__(self, vt_symbol, unit_value, yesterday_close_price, win_number_limit, last_max_price, last_min_price):
         """"""
@@ -107,10 +110,13 @@ class TickTest():
         if self.is_new_minute and last_minute_cd is not None:
             self.on_bar(last_minute_cd)
         if minute_cd is not None:
+            # 统计是否上去
+            self.refresh_allow_open(tick)
             if self.trade_action is None and trade.simulation_can_open_a_position(self.vt_symbol, tick):
                 # 出现ml并且当前一分钟没有刷新l
                 direction = self.history.breakthrough_direction
-                if (not self.d_win_flag) and S4Tick.open_a_price_by_agreement(direction, self.history.extremum_d, self.history.agreement_extremum_d, self.history.last_cd, tick_obj) and self.history.change_direction_number == 1 and self.d_win_number < 1:
+                # and self.allow_open_by_agreement_d
+                if (not self.d_win_flag)  and S4Tick.open_a_price_by_agreement(direction, self.history.extremum_d, self.history.agreement_extremum_d, self.history.last_cd, tick_obj) and self.history.change_direction_number == 1 and self.d_win_number < 1:
                     # 时间间隔起点
                     if self.interval_datetime is None:
                         self.interval_datetime = self.history.agreement_extremum_d.appoint_datetime
@@ -551,3 +557,16 @@ class TickTest():
     """
     def after_open_a_position(self):
         self.complete_start_list = deepcopy(self.start_list)
+        self.allow_open_by_agreement_d = False
+ 
+    """
+    刷新是否可以开仓
+    """
+    def refresh_allow_open(self, tick):
+        if (not self.d_win_flag) and not self.allow_open_by_agreement_d:
+            if self.history.breakthrough_direction == Cons.DIRECTION_UP:
+                if tick.current > self.history.agreement_extremum_d.price:
+                    self.allow_open_by_agreement_d = True
+            elif self.history.breakthrough_direction == Cons.DIRECTION_DOWN:
+                if tick.current < self.history.agreement_extremum_d.price:
+                    self.allow_open_by_agreement_d = True

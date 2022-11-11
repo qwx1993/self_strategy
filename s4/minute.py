@@ -594,14 +594,15 @@ class Minute:
             #     current_change = True
             
             if not current_change and self.last_max_amplitude is not None:
-                if (self.breakthrough_direction == self.max_amplitude.direction) and (self.max_amplitude.length > 10 * self.unit_value) and (self.max_amplitude.length > 2 * self.last_max_amplitude.length) and self.continue_r_max_length > 30 * self.unit_value:
-                    print(f"Rmax转向 => cd => {cd} max_amplitude => {self.max_amplitude} last_max_amplitude => {self.last_max_amplitude} continue_r_max_length => {self.continue_r_max_length} {self.continue_r_max_list}")
-                    # self.breakthrough_direction = self.max_amplitude.direction
+                if (self.max_amplitude.length > 10 * self.unit_value) and (self.max_amplitude.length > 2 * self.last_max_amplitude.length) and self.continue_r_max_length > 30 * self.unit_value:
+                    print(f"Rmax幅度突破 direction => {self.breakthrough_direction} => cd => {cd} max_amplitude => {self.max_amplitude} last_max_amplitude => {self.last_max_amplitude} continue_r_max_length => {self.continue_r_max_length} {self.continue_r_max_list}")
+                    if self.breakthrough_direction == self.max_amplitude.direction:
+                        self.change_direction_number += 1
+                    else:
+                        self.breakthrough_direction = self.max_amplitude.direction
+                        self.on_direction_change(cd)
+                    current_change = True
                     self.last_max_amplitude = deepcopy(self.max_amplitude)
-                    self.on_direction_change(cd)
-                    current_change = True  
-
-    
     """
     超过限定时间，设置ml
     """ 
@@ -791,6 +792,7 @@ class Minute:
         self.rrn = None
         # 增加转向次数
         self.change_direction_number += 1
+
     
     """
     趋势分析
