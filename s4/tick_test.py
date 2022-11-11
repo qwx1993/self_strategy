@@ -45,6 +45,8 @@ class TickTest():
     last_tick_list = []
     actions = [] # 交易动作
     unit_value = None
+    last_max_price = None # 前一个交易日的最大价格
+    last_min_price = None # 后一个交易日的最小价格
     yesterday_close_price = None # 昨日收盘价格 
     open_type = 1 # 开仓类型
     interval_datetime = None #开仓间隔
@@ -75,10 +77,12 @@ class TickTest():
     instance_1_open_number_limit = 2000 # 开仓次数限制
 
     # 添加参数和变量名到对应的列表
-    def __init__(self, vt_symbol, unit_value, yesterday_close_price, win_number_limit):
+    def __init__(self, vt_symbol, unit_value, yesterday_close_price, win_number_limit, last_max_price, last_min_price):
         """"""
         self.vt_symbol = vt_symbol
         self.unit_value = unit_value
+        self.last_max_price = last_max_price
+        self.last_min_price = last_min_price
         self.yesterday_close_price = yesterday_close_price
         self.instance_1_open_win_number_limit = win_number_limit
 
@@ -87,7 +91,7 @@ class TickTest():
         """
         file.init_log(self.vt_symbol)
         logging.info(self.vt_symbol)
-        self.history = History(self.yesterday_close_price, self.unit_value)
+        self.history = History(self.yesterday_close_price, self.unit_value, last_max_price, last_min_price)
         self.tick_list = []
         self.last_tick_list = []
         self.actions = []
@@ -115,7 +119,7 @@ class TickTest():
                             # result = self.short(tick.current, self.hand_number)
                             self.add_action(tick, Cons.ACTION_OPEN_SHORT, tick.current - self.unit_value)
                             self.open_price = tick.current - self.unit_value
-                            logging.info(f"vt_symbol:{self.vt_symbol} => direction:short_by_d => max_amplitude:{self.history.max_amplitude} =>  tick:{tick.current} => l: {self.history.extremum_l} => l_price:{self.history.extremum_l_price} => last_cd:{self.history.last_cd} => history_dirction:{self.history.breakthrough_direction} agreement_extremum_d => {self.history.agreement_extremum_d} d=> {self.history.extremum_d} opportunity => {self.opportunity_number} change_direction_number => {self.history.change_direction_number}")
+                            logging.info(f"vt_symbol:{self.vt_symbol} => direction:short_by_d => max_amplitude:{self.history.max_amplitude} =>  tick:{tick.current} => l: {self.history.extremum_l} => l_price:{self.history.extremum_l_price} => last_cd:{self.history.last_cd} => history_dirction:{self.history.breakthrough_direction} agreement_extremum_d => {self.history.agreement_extremum_d} d=> {self.history.extremum_d} opportunity => {self.opportunity_number} change_direction_number => {self.history.change_direction_number} continue_r_max_length => {self.history.continue_r_max_length}")
                             self.trade_action = Cons.ACTION_CLOSE_SHORT
                             self.close_price = self.history.extremum_d_price
                             self.close_price_by_lose = self.history.extremum_d_price
@@ -128,7 +132,7 @@ class TickTest():
                             # result = self.buy(tick.current, self.hand_number)
                             self.add_action(tick, Cons.ACTION_OPEN_LONG, tick.current + self.unit_value)
                             self.open_price = tick.current + self.unit_value
-                            logging.info(f"vt_symbol:{self.vt_symbol} => direction:long_by_d => max_amplitude:{self.history.max_amplitude} =>  tick:{tick.current} => l: {self.history.extremum_l} => l_price:{self.history.extremum_l_price} => last_cd:{self.history.last_cd} => history_dirction:{self.history.breakthrough_direction} agreement_extremum_d => {self.history.agreement_extremum_d}  d=> {self.history.extremum_d} opportunity => {self.opportunity_number} change_direction_number => {self.history.change_direction_number}")
+                            logging.info(f"vt_symbol:{self.vt_symbol} => direction:long_by_d => max_amplitude:{self.history.max_amplitude} =>  tick:{tick.current} => l: {self.history.extremum_l} => l_price:{self.history.extremum_l_price} => last_cd:{self.history.last_cd} => history_dirction:{self.history.breakthrough_direction} agreement_extremum_d => {self.history.agreement_extremum_d}  d=> {self.history.extremum_d} opportunity => {self.opportunity_number} change_direction_number => {self.history.change_direction_number} continue_r_max_length => {self.history.continue_r_max_length}")
                             self.trade_action = Cons.ACTION_CLOSE_LONG 
                             # 使用l_price作为平仓价
                             self.close_price = self.history.extremum_d_price

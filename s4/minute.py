@@ -73,24 +73,32 @@ class Minute:
     yesterday_close_price = None # 昨日收盘价格
     start_cd = None # 当日的起点
 
+    #-----------------------------------
+    last_max_price = None # 前一个交易日的最大价格
+    last_min_price = None # 前一个交易日的最小价格
+    continue_r_max_list = [] # 连续趋势的统计
+    continue_r_max_length = 0 # 连续趋势的幅度 默认为0
+
     """
     初始化
     """
 
-    def __init__(self, yesterday_close_price, unit_value):
+    def __init__(self, yesterday_close_price, unit_value, last_max_price, last_min_price):
         #昨日收盘价
         self.yesterday_close_price = yesterday_close_price
         self.unit_value = unit_value
-        # print(f"昨日收盘价 => {self.yesterday_close_price} unit_value => {self.unit_value}")
+        print(f"昨日收盘价 => {self.yesterday_close_price} unit_value => {self.unit_value} last_max_price => {last_max_price} last_min_price=>{last_min_price}") 
         # 所有的list跟dict需要重置
         self.max_l_to_d_interval = None
         self.max_r = None
         self.actions = []
+        self.continue_r_max_list = []
         self.max_amplitude = None
         self.last_max_amplitude = None
         self.m_max_r = None  # 小级别r
         self.M_MAX_R = None  # 小级别R
-
+        self.last_max_price = last_max_price # 前一个交易日的最大价格
+        self.last_min_price = last_min_price # 前一个交易日的最小价格
 
     """
     添加对应的动作，目前包括开空、平空、开多、平多
@@ -586,9 +594,9 @@ class Minute:
             #     current_change = True
             
             if not current_change and self.last_max_amplitude is not None:
-                if (not self.breakthrough_direction == self.max_amplitude.direction) and (self.max_amplitude.length > 20 * self.unit_value) and (self.max_amplitude.length > 2 * self.last_max_amplitude.length):
-                    print(f"Rmax转向 => max_amplitude => {self.max_amplitude.length} last_max_amplitude => {self.last_max_amplitude}")
-                    self.breakthrough_direction = self.max_amplitude.direction
+                if (self.breakthrough_direction == self.max_amplitude.direction) and (self.max_amplitude.length > 10 * self.unit_value) and (self.max_amplitude.length > 2 * self.last_max_amplitude.length) and self.continue_r_max_length > 30 * self.unit_value:
+                    print(f"Rmax转向 => cd => {cd} max_amplitude => {self.max_amplitude} last_max_amplitude => {self.last_max_amplitude} continue_r_max_length => {self.continue_r_max_length} {self.continue_r_max_list}")
+                    # self.breakthrough_direction = self.max_amplitude.direction
                     self.last_max_amplitude = deepcopy(self.max_amplitude)
                     self.on_direction_change(cd)
                     current_change = True  
@@ -1236,20 +1244,42 @@ class Minute:
     用cd数据格式进行分析
     """   
     def realtime_analysis_for_cd(self, cd):
+        # 统计连续的幅度
+        self.handle_continue_r_max_list(cd)
         # if Logic.is_realtime_start_minute(cd.datetime):
         #     return
         if self.history_status == Constants.HISTORY_STATUS_OF_NONE: 
             self.histoty_status_none(cd)
             # print(f"完成状态初始化 => yesterday_close_price => {self.yesterday_close_price} start_cd => {self.start_cd} , breakthrough_direction => {self.breakthrough_direction} max_amplitude => {self.max_amplitude} extremum_d => {self.extremum_d}")
         elif self.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中
-            
             self.statistic(cd)
         # 判断是否需要合并,当当前分钟为直线时考虑
         self.last_cd = Logic.handle_last_cd(self.last_cd, cd)
         self.refresh_d_minute_count += 1
         self.refresh_h_minute_count += 1
 
-    
+    """
+    处理连续行情数据
+    """
+    def handle_continue_r_max_list(self, cd):
+        if len(self.continue_r_max_list) == 0:
+            self.continue_r_max_list.append(cd)
+        else:
+            temp_last_cd = self.continue_r_max_list[-1]
+            if not cd.direction == temp_last_cd.direction:
+                self.continue_r_max_list = []
+            self.continue_r_max_list.append(cd)
+        
+        if len(self.continue_r_max_list) > 0:
+            temp_start_cd = self.continue_r_max_list[0]
+            temp_end_cd = self.continue_r_max_list[-1]
+            temp_direciton = temp_start_cd.direction
+            if temp_direciton == Constants.DIRECTION_UP:
+                self.continue_r_max_length = abs(temp_end_cd.high - temp_start_cd.low)
+            elif temp_direciton == Constants.DIRECTION_DOWN:
+                self.continue_r_max_length = abs(temp_start_cd.high - temp_end_cd.low)
+
+
     """
     实时分析    
     """
