@@ -79,8 +79,11 @@ class Minute:
     #-----------------------------------
     last_max_price = None # 前一个交易日的最大价格
     last_min_price = None # 前一个交易日的最小价格
-    continue_r_max_list = [] # 连续趋势的统计
-    continue_r_max_length = 0 # 连续趋势的幅度 默认为0
+    cr_list = [] # 连续趋势的统计
+    cr_obj = None # 连续趋势的幅度 默认为0
+    max_cr_list = [] # 最大的连续趋势区间
+    max_cr_obj = None # 最大的区间幅度
+
     open_status = None # 开仓状态 0:找顶 1:找底
 
     """
@@ -100,7 +103,7 @@ class Minute:
         self.max_l_to_d_interval = None
         self.max_r = None
         self.actions = []
-        self.continue_r_max_list = []
+        self.cr_list = []
         self.max_amplitude = None
         self.last_max_amplitude = None
         self.m_max_r = None  # 小级别r
@@ -568,9 +571,6 @@ class Minute:
     分析统计R、r、rrn
     """
     def statistic(self, cd):
-        # 十字星情况，将方向设置为跟上一分钟一致
-        if Logic.is_crossing_starlike(cd):
-            cd.direction = self.last_cd.direction
         # 统计R、统计rrn
         self.history_statistic_max_l_to_d(cd)
 
@@ -582,11 +582,11 @@ class Minute:
         # 处理方向的逻辑
         self.handle_direction(cd)
         
-        if self.sub_status == S3_Cons.SUB_STATUS_OF_TREND_COUNTER:
-            if self.extremum_l_price is not None:
-                self.set_l_start_cd(cd)
-            if self.h_price is not None:
-                self.set_h_start_cd(cd)
+        # if self.sub_status == S3_Cons.SUB_STATUS_OF_TREND_COUNTER:
+        #     if self.extremum_l_price is not None:
+        #         self.set_l_start_cd(cd)
+        #     if self.h_price is not None:
+        #         self.set_h_start_cd(cd)
 
     """
     方向处理
@@ -594,7 +594,7 @@ class Minute:
     def handle_direction(self, cd):
       # 判断方向是否改变
         current_change = False
-        if self.yesterday_close_price is not None:
+        # if self.yesterday_close_price is not None:
             # if self.breakthrough_direction == Constants.DIRECTION_UP and cd.low < min(self.yesterday_close_price, self.start_cd.open):
             #     self.breakthrough_direction == Constants.DIRECTION_DOWN
             #     self.on_direction_change(cd)
@@ -604,16 +604,25 @@ class Minute:
             #     self.on_direction_change(cd)
             #     current_change = True
             
-            if not current_change and self.last_max_amplitude is not None:
-                if (self.max_amplitude.length > 10 * self.unit_value) and (self.max_amplitude.length > 1.1 * self.last_max_amplitude.length) and self.continue_r_max_length > 30 * self.unit_value:
-                    # print(f"Rmax幅度突破 direction => {self.breakthrough_direction} => cd => {cd} max_amplitude => {self.max_amplitude} last_max_amplitude => {self.last_max_amplitude} continue_r_max_length => {self.continue_r_max_length} {self.continue_r_max_list}")
-                    if self.breakthrough_direction == self.max_amplitude.direction:
-                        self.change_direction_number += 1
-                    else:
-                        self.breakthrough_direction = self.max_amplitude.direction
-                        self.on_direction_change(cd)
-                    current_change = True
-                    self.last_max_amplitude = deepcopy(self.max_amplitude)
+        if not current_change:
+            if self.max_cr_obj.length == self.cr_obj.length and self.cr_obj.length > 30 * self.unit_value and  (self.max_amplitude.length > 10 * self.unit_value):
+                print(f"cr幅度突破 direction => {self.breakthrough_direction} => cd => {cd} cr_obj => {self.cr_obj} cr_list => {self.cr_list} max_cr_list => {self.max_cr_list} max_cr_obj {self.max_cr_obj}")
+                if self.breakthrough_direction == self.cr_obj.direction:
+                    self.change_direction_number += 1
+                else:
+                    self.breakthrough_direction = self.cr_obj.direction
+                    self.on_direction_change(cd)
+                current_change = True
+                self.last_max_amplitude = deepcopy(self.max_amplitude)
+            else:
+                if Logic.is_exceed_max_rc_start_price(self.breakthrough_direction, self.max_cr_obj, self.max_cr_list[0], cd):
+                    self.reverse_direct_by_max_rc()
+                    self.on_direction_change(cd)
+                elif Logic.is_exceed_max_rc_end_price(self.breakthrough_direction, self.max_cr_obj, self.max_cr_list[-1], cd):
+                    self.set_direction_by_max_rc()
+                    self.on_direction_change(cd)
+                
+                
     """
     超过限定时间，设置ml
     """ 
@@ -1208,7 +1217,22 @@ class Minute:
         elif self.max_amplitude.direction == Constants.DIRECTION_DOWN:
             self.breakthrough_direction = Constants.DIRECTION_UP
             self.max_amplitude.real_direction = self.breakthrough_direction
-            
+    
+    """
+    改变方向
+    """
+    def reverse_direct_by_max_rc(self):
+        if self.max_cr_obj.direction == Constants.DIRECTION_UP:
+            self.breakthrough_direction = Constants.DIRECTION_DOWN
+        elif self.max_cr_obj.direction == Constants.DIRECTION_DOWN:
+            self.breakthrough_direction = Constants.DIRECTION_UP
+
+    """
+    通过max_amplitude制定方向
+    """
+    def set_direction_by_max_rc(self):
+        self.breakthrough_direction = self.max_cr_obj.direction
+
     """
     通过max_amplitude制定方向
     """
@@ -1257,14 +1281,20 @@ class Minute:
     用cd数据格式进行分析
     """   
     def realtime_analysis_for_cd(self, cd):
-        # 统计连续的幅度
-        self.handle_continue_r_max_list(cd)
-        # if Logic.is_realtime_start_minute(cd.datetime):
-        #     return
+        # 十字星情况，将方向设置为跟上一分钟一致
+        if Logic.is_crossing_starlike(cd):
+            if self.last_cd is not None and not self.last_cd.direction == Constants.DIRECTION_NONE:
+                cd.direction = self.last_cd.direction
+ 
         if self.history_status == Constants.HISTORY_STATUS_OF_NONE: 
             self.histoty_status_none(cd)
+            # 统计连续的幅度
+            self.handle_cr_list(cd)
             # print(f"完成状态初始化 => yesterday_close_price => {self.yesterday_close_price} start_cd => {self.start_cd} , breakthrough_direction => {self.breakthrough_direction} max_amplitude => {self.max_amplitude} extremum_d => {self.extremum_d}")
         elif self.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中
+            # 统计连续的幅度
+            self.handle_cr_list(cd)
+            
             self.statistic(cd)
         # 判断是否需要合并,当当前分钟为直线时考虑
         self.last_cd = Logic.handle_last_cd(self.last_cd, cd)
@@ -1286,8 +1316,8 @@ class Minute:
     """
     处理连续行情数据
     """
-    def handle_continue_r_max_list(self, cd):
-        if len(self.continue_r_max_list) == 0:
+    def handle_cr_list(self, cd):
+        if len(self.cr_list) == 0:
             first_cd = SimpleNamespace()
             first_cd.high = max(self.yesterday_close_price, cd.open)
             first_cd.low = min(self.yesterday_close_price, cd.open)
@@ -1295,22 +1325,34 @@ class Minute:
                 first_cd.direction = Constants.DIRECTION_DOWN
             else:
                 first_cd.direction = Constants.DIRECTION_UP
-            self.continue_r_max_list.append(first_cd)
-            # print(f"将开盘的幅度统计进去 {self.continue_r_max_list} yesterday_close_price => {self.yesterday_close_price} => cd => {cd}")
-        if len(self.continue_r_max_list) > 0:
-            temp_last_cd = self.continue_r_max_list[-1]
+            self.cr_list.append(first_cd)
+            self.max_cr_list = deepcopy(self.cr_list)
+            self.max_cr_obj = SimpleNamespace()
+            self.max_cr_obj.length = abs(first_cd.high - first_cd.low)
+            self.max_cr_obj.direction = first_cd.direction
+            # print(f"将开盘的幅度统计进去 {self.cr_list} yesterday_close_price => {self.yesterday_close_price} => cd => {cd}")
+        if len(self.cr_list) > 0:
+            temp_last_cd = self.cr_list[-1]
+  
             if not cd.direction == temp_last_cd.direction:
-                self.continue_r_max_list = []
-            self.continue_r_max_list.append(cd)
+                self.cr_list = []
+            self.cr_list.append(cd)
         
-        if len(self.continue_r_max_list) > 0:
-            temp_start_cd = self.continue_r_max_list[0]
-            temp_end_cd = self.continue_r_max_list[-1]
+        if len(self.cr_list) > 0:
+            temp_start_cd = self.cr_list[0]
+            temp_end_cd = self.cr_list[-1]
             temp_direciton = temp_start_cd.direction
+            if self.cr_obj is None:
+                self.cr_obj = SimpleNamespace()
             if temp_direciton == Constants.DIRECTION_UP:
-                self.continue_r_max_length = abs(temp_end_cd.high - temp_start_cd.low)
+                self.cr_obj.length = abs(temp_end_cd.high - temp_start_cd.low)
+                self.cr_obj.direction = temp_direciton
             elif temp_direciton == Constants.DIRECTION_DOWN:
-                self.continue_r_max_length = abs(temp_start_cd.high - temp_end_cd.low)
+                self.cr_obj.length = abs(temp_start_cd.high - temp_end_cd.low)
+                self.cr_obj.direction = temp_direciton
+            if self.cr_obj is not None and (self.max_cr_obj is None or self.cr_obj.length > self.max_cr_obj.length):
+                self.max_cr_obj = deepcopy(self.cr_obj)
+                self.max_cr_list = deepcopy(self.cr_list)
 
 
     """
