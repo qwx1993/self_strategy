@@ -867,7 +867,7 @@ class Logic:
 		if cd.direction == breakthrough_direction:
 			return True
 		return False
-
+	
 	"""
 	计算胜率和赔率
 	"""
