@@ -580,10 +580,12 @@ class TickTest():
     刷新是否可以开仓
     """
     def refresh_allow_open(self, tick):
-        if (not self.d_win_flag) and not self.allow_open_by_agreement_d:
+        if (not self.d_win_flag) and not self.allow_open_by_agreement_d and self.trade_action is None:
             if self.history.breakthrough_direction == Cons.DIRECTION_UP:
                 if tick.current > self.history.agreement_extremum_d.price:
+                    print(f"tick1 => {tick} ad => {self.history.agreement_extremum_d}")
                     self.allow_open_by_agreement_d = True
             elif self.history.breakthrough_direction == Cons.DIRECTION_DOWN:
                 if tick.current < self.history.agreement_extremum_d.price:
                     self.allow_open_by_agreement_d = True
+                    print(f"tick2 => {tick} ad => {self.history.agreement_extremum_d}")
