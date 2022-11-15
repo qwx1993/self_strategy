@@ -76,6 +76,7 @@ class Price:
             value_1m.to_csv('C:/Users/Administrator/strategies/data_tick/' + f"{underlying_symbols}_dominant_{days}_tick.csv" )
         
         """
+        下载指定日期的tick合约数据
         """
         def save_appoint_dominant_tick_price(self, underlying_symbols, start_date, end_date):
             print(f"参数 => underlying_symbols:{underlying_symbols} => start_date:{start_date} => end_date:{end_date}")
