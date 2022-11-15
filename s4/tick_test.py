@@ -195,15 +195,16 @@ class TickTest():
                             self.close_price_by_lose = self.instance_1.extremum_l_price
                             self.increase_opportunity_number_by_instance_1()
             elif self.trade_action == Cons.ACTION_CLOSE_LONG:
+                close_by_cr_bool = self.close_by_cr(tick_obj)
                 if self.close_by_same_minute(tick):
                     if S4Tick.close_a_price(self.trade_action, self.close_price_by_lose, tick_obj):
                         self.add_action(tick, Cons.ACTION_CLOSE_LONG, tick.current - self.unit_value)
                         logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:long_l => close_price_by_lose:{self.close_price_by_lose} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price}")
                         self.after_close(tick_obj)
-                elif S4Tick.close_a_price(self.trade_action, self.get_close_price_by_win_point(tick), tick_obj) or trade.simulation_need_close_position(self.vt_symbol, tick):
+                elif S4Tick.close_a_price(self.trade_action, self.get_close_price_by_win_point_and_cr(tick), tick_obj) or trade.simulation_need_close_position(self.vt_symbol, tick):
                     # result = self.sell(tick.current, self.hand_number)
                     self.add_action(tick, Cons.ACTION_CLOSE_LONG, tick.current - self.unit_value)
-                    logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:long => close_price:{self.close_price} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price}")
+                    logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:long => close_price:{self.close_price} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price} close_by_cr_bool => {close_by_cr_bool} cr_list => {self.history.cr_list} cr_obj => {self.history.cr_obj}")
                     self.after_close(tick_obj)
                 elif self.is_exceed_last_cd_high(tick):
                     self.set_agreement_close_price_by_long(tick)
@@ -212,17 +213,18 @@ class TickTest():
                     self.set_close_price_by_agreement()
                     # logging.info(f"vt_symbol:{self.vt_symbol} => set_close_price_by_agreement => tick_last_price:{tick.current} => close_price => {self.close_price} => agreement_close_price:{self.agreement_close_price} => last_cd:{self.history.last_cd}")
             elif self.trade_action == Cons.ACTION_CLOSE_SHORT:
+                close_by_cr_bool = self.close_by_cr(tick_obj)
                 if self.close_by_same_minute(tick):
                     if S4Tick.close_a_price(self.trade_action, self.close_price_by_lose, tick_obj):
                         self.add_action(tick, Cons.ACTION_CLOSE_SHORT, tick.current + self.unit_value)
                         logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:short_l => close_price_by_lose:{self.close_price_by_lose} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price}  open_price => {self.open_price} close_price_by_lose => {self.close_price_by_lose}")
                         self.after_close(tick_obj)
-                elif S4Tick.close_a_price(self.trade_action, self.get_close_price_by_win_point(tick), tick_obj) or trade.simulation_need_close_position(self.vt_symbol, tick):
+                elif S4Tick.close_a_price(self.trade_action, self.get_close_price_by_win_point_and_cr(tick), tick_obj) or trade.simulation_need_close_position(self.vt_symbol, tick):
                     
                     # result = self.cover(tick.current, self.hand_number)
                     # if self.d_win_flag:
                     self.add_action(tick, Cons.ACTION_CLOSE_SHORT, tick.current + self.unit_value)
-                    logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:short => close_price:{self.close_price} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price} open_price => {self.open_price} close_price_by_lose => {self.close_price_by_lose}")
+                    logging.info(f"vt_symbol:{self.vt_symbol} => close_direction:short => close_price:{self.close_price} =>  tick_price:{tick.current} => agreement_close_price:{self.agreement_close_price} open_price => {self.open_price} close_price_by_lose => {self.close_price_by_lose} close_by_cr_bool => {close_by_cr_bool} cr_list => {self.history.cr_list} cr_obj => {self.history.cr_obj}")
                     self.after_close(tick_obj)
                 elif self.is_exceed_last_cd_high(tick):
                     self.set_agreement_close_price_by_short(tick)
@@ -466,6 +468,22 @@ class TickTest():
             return self.close_price
         else:
             return self.close_price_by_lose
+
+    """
+    获取平仓价通过rc
+    """
+    def get_close_price_by_win_point_and_cr(self, tick):
+        if self.close_by_cr(tick):
+            last_cd = self.history.cr_list[-1]
+            if self.trade_action == Cons.ACTION_CLOSE_LONG:
+                if tick.current < last_cd.low:
+                    temp_close_price = last_cd.low
+            elif self.trade_action == Cons.ACTION_CLOSE_SHORT:
+                if tick.current > last_cd.high:
+                   temp_close_price = last_cd.high
+            return temp_close_price
+        else:
+             return self.close_price_by_lose
     
     """
     d跟l的间距要超过限定个数单位才能开仓
@@ -603,3 +621,19 @@ class TickTest():
             elif self.history.breakthrough_direction == Cons.DIRECTION_DOWN:
                 if tick.current < self.history.agreement_extremum_d.price:
                     self.allow_open_by_agreement_d = True
+    
+    """
+    通过rc的方式平仓
+    当前的cr长度需要大于30个单位，并且是赢的
+    """
+    def close_by_cr(self, tick):
+        if self.history.cr_obj.length > 30 * self.unit_value and self.is_win_point(tick):
+            last_cd = self.history.cr_list[-1]
+            if self.trade_action == Cons.ACTION_CLOSE_LONG:
+                if tick.current < last_cd.low:
+                    return True
+            elif self.trade_action == Cons.ACTION_CLOSE_SHORT:
+                if tick.current > last_cd.high:
+                    return True
+        return False
+        

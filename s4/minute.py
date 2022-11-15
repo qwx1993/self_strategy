@@ -526,7 +526,7 @@ class Minute:
         if self.last_history is not None and self.last_history.breakthrough_direction == self.breakthrough_direction:
             self.extremum_d_price = self.last_history.extremum_d_price
             self.extremum_d = self.last_history.extremum_d
-            print(f"初始化设置的D => {self.extremum_d} {self.extremum_d_price}")
+            # print(f"初始化设置的D => {self.extremum_d} {self.extremum_d_price}")
         else:
             self.extremum_d_price = None
             self.extremum_d = None
@@ -605,8 +605,8 @@ class Minute:
             
         if not current_change:
             if self.max_cr_obj.length == self.cr_obj.length and self.cr_obj.length > 30 * self.unit_value and  (self.max_amplitude.length > 10 * self.unit_value):
-                if self.last_history is not None:
-                    print(f"cr幅度突破 direction => {self.breakthrough_direction} => cd => {cd} cr_obj => {self.cr_obj} cr_list => {self.cr_list} max_cr_list => {self.max_cr_list} max_cr_obj {self.max_cr_obj}")
+                # if self.last_history is not None:
+                #     print(f"cr幅度突破 direction => {self.breakthrough_direction} => cd => {cd} cr_obj => {self.cr_obj} cr_list => {self.cr_list} max_cr_list => {self.max_cr_list} max_cr_obj {self.max_cr_obj}")
                 if self.breakthrough_direction == self.cr_obj.direction:
                     self.change_direction_number += 1
                 else:
