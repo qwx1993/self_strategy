@@ -81,8 +81,20 @@ class TickTest():
     # --------------------------------------------------------
     allow_open_by_agreement_d = True # 是否回到协定D可以开仓的位置 
 
+    # ------------------------------------------------------- 
+    statistic_history = None 
+
     # 添加参数和变量名到对应的列表
-    def __init__(self, vt_symbol, unit_value, yesterday_open_price, yesterday_close_price, win_number_limit, last_max_price, last_min_price):
+    def __init__(self, 
+        vt_symbol,
+        unit_value,
+        yesterday_open_price,
+        yesterday_close_price,
+        win_number_limit,
+        last_max_price,
+        last_min_price,
+        last_history:History
+           ):
         """"""
         self.vt_symbol = vt_symbol
         self.unit_value = unit_value
@@ -97,7 +109,8 @@ class TickTest():
         """
         file.init_log(self.vt_symbol)
         logging.info(self.vt_symbol)
-        self.history = History(self.yesterday_open_price, self.yesterday_close_price, self.unit_value, last_max_price, last_min_price)
+        self.history = History(self.yesterday_open_price, self.yesterday_close_price, self.unit_value, last_max_price, last_min_price, last_history)
+        self.statistic_history = History(self.yesterday_open_price, self.yesterday_close_price, self.unit_value, last_max_price, last_min_price, None)
         self.tick_list = []
         self.last_tick_list = []
         self.actions = []
@@ -239,6 +252,9 @@ class TickTest():
                 d_last_extremum_datetime = self.history.extremum_d.datetime
 
             self.history.realtime_analysis_for_cd(cd)
+
+            self.statistic_history.realtime_analysis_for_cd(cd) # 只做统计
+
             if self.history.extremum_d is not None:
                 d_current_extremum_datetime = self.history.extremum_d.datetime
             

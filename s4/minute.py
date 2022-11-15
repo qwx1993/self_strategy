@@ -86,12 +86,14 @@ class Minute:
 
     open_status = None # 开仓状态 0:找顶 1:找底
     fictitious_cd = None
+    # -------------------------------------
+    last_history  = None 
 
     """
     初始化
     """
 
-    def __init__(self, yesterday_open_price, yesterday_close_price, unit_value, last_max_price, last_min_price):
+    def __init__(self, yesterday_open_price, yesterday_close_price, unit_value, last_max_price, last_min_price, last_history):
         # 昨日收盘价格
         self.yesterday_open_price = yesterday_open_price
         # 昨日收盘价
@@ -111,6 +113,8 @@ class Minute:
         self.M_MAX_R = None  # 小级别R
         self.last_max_price = last_max_price # 前一个交易日的最大价格
         self.last_min_price = last_min_price # 前一个交易日的最小价格
+        self.last_history = last_history
+        self.init_max_cr() # 将昨日max_cr相关参数赋给今天参数
 
 
     """
@@ -518,7 +522,15 @@ class Minute:
         self.max_r = None
         # self.init_max_r_obj(cd)
         # 设置极限d_price
-        self.extremum_d_price = None
+        # 将D的相关参数初始化为昨日的D
+        if self.last_history is not None and self.last_history.breakthrough_direction == self.breakthrough_direction:
+            self.extremum_d_price = self.last_history.extremum_d_price
+            self.extremum_d = self.last_history.extremum_d
+            print(f"初始化设置的D => {self.extremum_d} {self.extremum_d_price}")
+        else:
+            self.extremum_d_price = None
+            self.extremum_d = None
+
         self.set_extremum_d(cd)
         # 设置rrn
         self.rrn = None
@@ -593,7 +605,8 @@ class Minute:
             
         if not current_change:
             if self.max_cr_obj.length == self.cr_obj.length and self.cr_obj.length > 30 * self.unit_value and  (self.max_amplitude.length > 10 * self.unit_value):
-                # print(f"cr幅度突破 direction => {self.breakthrough_direction} => cd => {cd} cr_obj => {self.cr_obj} cr_list => {self.cr_list} max_cr_list => {self.max_cr_list} max_cr_obj {self.max_cr_obj}")
+                if self.last_history is not None:
+                    print(f"cr幅度突破 direction => {self.breakthrough_direction} => cd => {cd} cr_obj => {self.cr_obj} cr_list => {self.cr_list} max_cr_list => {self.max_cr_list} max_cr_obj {self.max_cr_obj}")
                 if self.breakthrough_direction == self.cr_obj.direction:
                     self.change_direction_number += 1
                 else:
@@ -1334,10 +1347,21 @@ class Minute:
         else:
             self.open_status = Constants.OPEN_STATUS_OF_TOP
 
+
+    """
+    将昨日的max_cr相关的参数设置到今天
+    """
+    def init_max_cr(self):
+        if self.last_history is not None and self.max_cr_obj is None:
+            self.max_cr_list = deepcopy(self.last_history.max_cr_list)
+            self.max_cr_obj = deepcopy(self.last_history.max_cr_obj)
+            # print(f"初始化数据到今天 => max_cr_list : {self.max_cr_list} max_cr_obj => {self.max_cr_obj}")
+
     """
     处理连续行情数据
     """
     def handle_cr_list(self, cd):
+        # 将昨日的max_cr相关初始化到今天
         if not Logic.is_crossing_starlike(cd):
             if len(self.cr_list) == 0:
                 self.cr_list.append(cd)
