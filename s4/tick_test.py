@@ -109,8 +109,12 @@ class TickTest():
         """
         file.init_log(self.vt_symbol)
         logging.info(self.vt_symbol)
-        self.history = History(self.yesterday_open_price, self.yesterday_close_price, self.unit_value, last_max_price, last_min_price, last_history)
-        self.statistic_history = History(self.yesterday_open_price, self.yesterday_close_price, self.unit_value, last_max_price, last_min_price, None)
+        if last_history is not None:
+            last_history_direction = last_history.breakthrough_direction
+        else:
+            last_history_direction = None
+        self.history = History(self.yesterday_open_price, self.yesterday_close_price, self.unit_value, last_max_price, last_min_price, last_history, last_history_direction)
+        self.statistic_history = History(self.yesterday_open_price, self.yesterday_close_price, self.unit_value, last_max_price, last_min_price, None, last_history_direction)
         self.tick_list = []
         self.last_tick_list = []
         self.actions = []
@@ -133,7 +137,7 @@ class TickTest():
                 direction = self.history.breakthrough_direction
                 # and self.allow_open_by_agreement_d
                 # and self.history.open_status == Cons.OPEN_STATUS_OF_TOP
-                if (not self.d_win_flag) and self.allow_open_by_agreement_d and S4Tick.open_a_price_by_agreement(direction, self.history.extremum_d, self.history.agreement_extremum_d, self.history.last_cd, tick_obj) and self.history.change_direction_number >= 1:
+                if (not self.d_win_flag) and self.allow_open_by_agreement_d and S4Tick.open_a_price_by_agreement(direction, self.history.extremum_d, self.history.agreement_extremum_d, self.history.last_cd, tick_obj) and self.has_change_direction_number() and self.is_allow_open():
                     # 时间间隔起点
                     if self.interval_datetime is None:
                         self.interval_datetime = self.history.agreement_extremum_d.appoint_datetime
@@ -636,4 +640,16 @@ class TickTest():
                 if tick.current > last_cd.high:
                     return True
         return False
+
+    """
+    是否回到cr的起点
+    """   
+    def is_allow_open(self):
+        return self.history.allow_open
+
+    """
+    是否满足rc刷新次数限制
+    """
+    def has_change_direction_number(self):
+        return self.history.change_direction_number >= 1
         

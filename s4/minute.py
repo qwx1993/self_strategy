@@ -15,9 +15,6 @@ from datetime import datetime
 # 
 class Minute:
     breakthrough_direction = None # 突破的方向 -1 开空 1开多
-
-    stop_loss_ln_price = None  # 情况三的止损点价位 L - 2*unit
-
     max_l_to_d_interval = None  # 最大上涨的间隔,即R
     current_max_l_to_d_interval = None # 当前的上涨间隔
     max_r = None  # 表示从dn-ln的最大值，d1点开始
@@ -88,12 +85,16 @@ class Minute:
     fictitious_cd = None
     # -------------------------------------
     last_history  = None 
+    last_history_direction = None
+
+    #-------------------------------------1116
+    allow_open = True # 允许开仓
 
     """
     初始化
     """
 
-    def __init__(self, yesterday_open_price, yesterday_close_price, unit_value, last_max_price, last_min_price, last_history):
+    def __init__(self, yesterday_open_price, yesterday_close_price, unit_value, last_max_price, last_min_price, last_history, last_history_direction):
         # 昨日收盘价格
         self.yesterday_open_price = yesterday_open_price
         # 昨日收盘价
@@ -114,6 +115,7 @@ class Minute:
         self.last_max_price = last_max_price # 前一个交易日的最大价格
         self.last_min_price = last_min_price # 前一个交易日的最小价格
         self.last_history = last_history
+        self.last_history_direction = last_history_direction # 昨日方向
         self.init_max_cr() # 将昨日max_cr相关参数赋给今天参数
 
 
@@ -605,8 +607,8 @@ class Minute:
             
         if not current_change:
             if self.max_cr_obj.length == self.cr_obj.length and self.cr_obj.length > 30 * self.unit_value and  (self.max_amplitude.length > 10 * self.unit_value):
-                # if self.last_history is not None:
-                #     print(f"cr幅度突破 direction => {self.breakthrough_direction} => cd => {cd} cr_obj => {self.cr_obj} cr_list => {self.cr_list} max_cr_list => {self.max_cr_list} max_cr_obj {self.max_cr_obj}")
+                if self.last_history is not None:
+                    print(f"cr幅度突破 direction => {self.breakthrough_direction} => cd => {cd} cr_obj => {self.cr_obj} cr_list => {self.cr_list} max_cr_list => {self.max_cr_list} max_cr_obj {self.max_cr_obj}")
                 if self.breakthrough_direction == self.cr_obj.direction:
                     self.change_direction_number += 1
                 else:
@@ -618,10 +620,21 @@ class Minute:
                 if Logic.is_exceed_max_rc_start_price(self.breakthrough_direction, self.max_cr_obj, self.max_cr_list[0], cd):
                     self.reverse_direct_by_max_rc()
                     self.on_direction_change(cd)
+                    # 设置成不能开仓状态
+                    self.handle_allow_open_by_rc_start_cd()
+                    if self.last_history is not None:
+                        print(f"回到cr的起点 => {cd} 方向 => {self.breakthrough_direction} 起点 => {self.max_cr_list[0]} max_cr_obj => {self.max_cr_obj} {self.max_cr_list}")
                 elif Logic.is_exceed_max_rc_end_price(self.breakthrough_direction, self.max_cr_obj, self.max_cr_list[-1], cd):
                     self.set_direction_by_max_rc()
                     self.on_direction_change(cd)
-                
+                    if self.last_history is not None:
+                        print(f"回到cr的终点 => {cd} 方向 => {self.breakthrough_direction} 终点 => {self.max_cr_list[0]} max_cr_obj => {self.max_cr_obj} {self.max_cr_list}")
+    
+    """
+    跌落起点，不允许开仓
+    """
+    def handle_allow_open_by_rc_start_cd(self):
+        self.allow_open = False
                 
     """
     超过限定时间，设置ml
@@ -1287,6 +1300,9 @@ class Minute:
                 cd.direction = self.last_cd.direction
  
         if self.history_status == Constants.HISTORY_STATUS_OF_NONE: 
+            # 初始定方向
+            if self.last_history_direction is not None:
+                self.breakthrough_direction = self.last_history_direction
             # 初始化起点
             if self.start_cd is None:
                 self.start_cd = cd
@@ -1330,12 +1346,14 @@ class Minute:
             self.fictitious_cd.datetime = self.start_cd.datetime # 用开始的一分钟时间 
             if self.start_cd.open > self.yesterday_close_price:
                 self.fictitious_cd.direction = Constants.DIRECTION_UP
-                self.breakthrough_direction = Constants.DIRECTION_UP
+                # self.breakthrough_direction = Constants.DIRECTION_UP
             elif self.start_cd.open < self.yesterday_close_price:
                 self.fictitious_cd.direction = Constants.DIRECTION_DOWN
-                self.breakthrough_direction = Constants.DIRECTION_DOWN
+                # self.breakthrough_direction = Constants.DIRECTION_DOWN
             else:
                 self.fictitious_cd.direction = Constants.DIRECTION_NONE
+            if self.breakthrough_direction is None:
+                self.breakthrough_direction = self.fictitious_cd.direction
 
     """
     设置开仓的状态，当前方向跟昨日方向不同，是找顶状态
