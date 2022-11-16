@@ -18,6 +18,7 @@ class Minute:
     max_l_to_d_interval = None  # 最大上涨的间隔,即R
     current_max_l_to_d_interval = None # 当前的上涨间隔
     max_r = None  # 表示从dn-ln的最大值，d1点开始
+    current_max_r = None # 表示从dn-ln的当前值
     rrn = None  # 逆趋势止盈使用的参数  todo 暂时不使用
 
     current_status = Constants.STATUS_NONE  # 当前状态，目前就无状态跟非加速振荡
@@ -89,6 +90,8 @@ class Minute:
 
     #-------------------------------------1116
     allow_open = True # 允许开仓
+    max_ir_by_cr = None
+    current_ir = None # 当前的ir
 
     """
     初始化
@@ -108,6 +111,7 @@ class Minute:
         self.max_r = None
         self.actions = []
         self.cr_list = []
+        self.max_cr_list = []
         self.max_amplitude = None
         self.last_max_amplitude = None
         self.m_max_r = None  # 小级别r
@@ -117,6 +121,8 @@ class Minute:
         self.last_history = last_history
         self.last_history_direction = last_history_direction # 昨日方向
         self.init_max_cr() # 将昨日max_cr相关参数赋给今天参数
+        self.max_ir_by_cr = None # cr_list区间中最大的ir
+        self.current_ir = None # 当前的ir
 
 
     """
@@ -508,7 +514,6 @@ class Minute:
 
     def histoty_status_none(self, cd):
         # 初始化时为十字星不处理
-        
         if Logic.is_crossing_starlike(cd):
             if self.breakthrough_direction is None:
                 return
@@ -579,15 +584,17 @@ class Minute:
     def statistic(self, cd):
         # 统计R、统计rrn
         self.history_statistic_max_l_to_d(cd)
-
         # 统计r
         self.history_statistic_max_r(cd)
+        # 处理ir
+        self.handle_max_ir_by_cr(cd)
+        # 处理ir
+        self.handle_current_ir()
         # 处理出现最大的幅度情况
         self.handle_max_amplitude(cd)
 
         # 处理方向的逻辑
         self.handle_direction(cd)
-
 
     """
     方向处理
@@ -607,34 +614,42 @@ class Minute:
             
         if not current_change:
             if self.max_cr_obj.length == self.cr_obj.length and self.cr_obj.length > 30 * self.unit_value and  (self.max_amplitude.length > 10 * self.unit_value):
-                if self.last_history is not None:
-                    print(f"cr幅度突破 direction => {self.breakthrough_direction} => cd => {cd} cr_obj => {self.cr_obj} cr_list => {self.cr_list} max_cr_list => {self.max_cr_list} max_cr_obj {self.max_cr_obj}")
-                if self.breakthrough_direction == self.cr_obj.direction:
-                    self.change_direction_number += 1
-                else:
+                # if self.last_history is not None:
+                    # print(f"cr幅度突破 direction => {self.breakthrough_direction} => cd => {cd} cr_obj => {self.cr_obj} cr_list => {self.cr_list} max_cr_list => {self.max_cr_list} max_cr_obj {self.max_cr_obj} max_ir_by_cr => {self.max_ir_by_cr}")
+                if not self.breakthrough_direction == self.cr_obj.direction:
                     self.breakthrough_direction = self.cr_obj.direction
                     self.on_direction_change(cd)
+
+                self.change_direction_number += 1
                 current_change = True
                 self.last_max_amplitude = deepcopy(self.max_amplitude)
+                # 刷新cr，允许开仓
+                self.handle_allow_open_by_cr_refresh()
             else:
                 if Logic.is_exceed_max_rc_start_price(self.breakthrough_direction, self.max_cr_obj, self.max_cr_list[0], cd):
-                    self.reverse_direct_by_max_rc()
+                    self.reverse_direct_by_max_cr()
                     self.on_direction_change(cd)
                     # 设置成不能开仓状态
-                    self.handle_allow_open_by_rc_start_cd()
-                    if self.last_history is not None:
-                        print(f"回到cr的起点 => {cd} 方向 => {self.breakthrough_direction} 起点 => {self.max_cr_list[0]} max_cr_obj => {self.max_cr_obj} {self.max_cr_list}")
+                    self.handle_allow_open_by_cr_refresh()
+                    # if self.last_history is not None:
+                    #     print(f"回到cr的起点 => {cd} 方向 => {self.breakthrough_direction} 起点 => {self.max_cr_list[0]} max_cr_obj => {self.max_cr_obj} {self.max_cr_list}")
                 elif Logic.is_exceed_max_rc_end_price(self.breakthrough_direction, self.max_cr_obj, self.max_cr_list[-1], cd):
-                    self.set_direction_by_max_rc()
+                    self.set_direction_by_max_cr()
                     self.on_direction_change(cd)
-                    if self.last_history is not None:
-                        print(f"回到cr的终点 => {cd} 方向 => {self.breakthrough_direction} 终点 => {self.max_cr_list[0]} max_cr_obj => {self.max_cr_obj} {self.max_cr_list}")
+                    # if self.last_history is not None:
+                    #     print(f"回到cr的终点 => {cd} 方向 => {self.breakthrough_direction} 终点 => {self.max_cr_list[0]} max_cr_obj => {self.max_cr_obj} {self.max_cr_list}")
     
     """
     跌落起点，不允许开仓
     """
     def handle_allow_open_by_rc_start_cd(self):
         self.allow_open = False
+    
+    """
+    跌落起点，不允许开仓
+    """
+    def handle_allow_open_by_cr_refresh(self):
+        self.allow_open = True
                 
     """
     超过限定时间，设置ml
@@ -808,6 +823,60 @@ class Minute:
         #     elif Logic.is_exceed_max_amplitude_end_price(self.breakthrough_direction, self.max_amplitude, cd):
         #         self.set_direction_by_max_amplitude()
         #         self.on_direction_change(cd)
+    
+    """
+    处理最大的ir
+    """
+    def handle_max_ir_by_cr(self, cd):
+        if self.current_max_l_to_d_interval is not None and self.current_max_r is not None:
+            if self.current_max_l_to_d_interval.length >= self.current_max_r.length:
+                self.set_max_ir_by_max_l_to_d_interval(cd)
+            else:
+                self.set_max_ir_by_max_r(cd)
+        elif self.current_max_l_to_d_interval is not None and self.current_max_r is None:
+            self.set_max_ir_by_max_l_to_d_interval(cd)
+        elif self.current_max_l_to_d_interval is None and self.current_max_r is not None:
+            self.set_max_ir_by_max_r(cd)
+    
+    """
+    设置当前的ir,比较 current_max_l_to_d_interval 跟 current_max_r的大小，大者为当前ir
+    """
+    def handle_current_ir(self):
+        if self.current_max_l_to_d_interval is not None and self.current_max_r is not None:
+            if self.current_max_l_to_d_interval.length >= self.current_max_r.length:
+                self.current_ir = self.current_max_l_to_d_interval
+            else:
+                self.current_ir = self.current_max_r
+        elif self.current_max_l_to_d_interval is not None and self.current_max_r is None:
+            self.current_ir = self.current_max_l_to_d_interval
+        elif self.current_max_l_to_d_interval is None and self.current_max_r is not None:
+            self.current_ir = self.current_max_r
+
+    """
+    通过max_l_to_d_interval设置ir
+    """
+    def set_max_ir_by_max_l_to_d_interval(self, cd):
+          if self.max_ir_by_cr is None or self.current_max_l_to_d_interval.length > self.max_ir_by_cr.length:
+            self.max_ir_by_cr = SimpleNamespace()
+            self.max_ir_by_cr.direction = self.current_max_l_to_d_interval.direction
+            self.max_ir_by_cr.real_direction = self.breakthrough_direction
+            self.max_ir_by_cr.start = self.current_max_l_to_d_interval.start_price            
+            self.max_ir_by_cr.end = self.current_max_l_to_d_interval.end_price
+            self.max_ir_by_cr.length = abs(self.current_max_l_to_d_interval.start_price - self.current_max_l_to_d_interval.end_price)
+            self.max_ir_by_cr.datetime = cd.datetime
+
+    """
+    通过max_r设置ir
+    """
+    def set_max_ir_by_max_r(self, cd):
+        if self.max_ir_by_cr is None or self.current_max_r.length > self.max_ir_by_cr.length:
+            self.max_ir_by_cr = SimpleNamespace()
+            self.max_ir_by_cr.direction = self.current_max_r.direction 
+            self.max_ir_by_cr.real_direction = self.breakthrough_direction
+            self.max_ir_by_cr.start = self.current_max_r.start_price
+            self.max_ir_by_cr.end = self.current_max_r.end_price
+            self.max_ir_by_cr.length = abs(self.current_max_r.start_price - self.current_max_r.end_price)
+            self.max_ir_by_cr.datetime = cd.datetime
                 
     """
     方向改变执行的动作
@@ -824,7 +893,7 @@ class Minute:
         # 重置rrn
         self.rrn = None
         # 增加转向次数
-        self.change_direction_number += 1
+        # self.change_direction_number += 1
 
     
     """
@@ -1077,10 +1146,8 @@ class Minute:
                     else:
                         max_len = Logic.max_amplitude_length(cd)
                         max_r_obj = self.amplitude_obj(cd.low, cd.high)
-        if max_len != max_r_obj.length: 
-            # print(f"max_r对象 => {self.max_r}")
-            print(f"出现了异常，要检查,datetime:{cd.datetime} max_len:{max_len} max_r_obj.length => {max_r_obj.length}")
         self.set_max_r(max_r_obj) 
+        self.current_max_r = max_r_obj
 
     """
     设置走势方向
@@ -1234,7 +1301,7 @@ class Minute:
     """
     改变方向
     """
-    def reverse_direct_by_max_rc(self):
+    def reverse_direct_by_max_cr(self):
         if self.max_cr_obj.direction == Constants.DIRECTION_UP:
             self.breakthrough_direction = Constants.DIRECTION_DOWN
         elif self.max_cr_obj.direction == Constants.DIRECTION_DOWN:
@@ -1243,7 +1310,7 @@ class Minute:
     """
     通过max_amplitude制定方向
     """
-    def set_direction_by_max_rc(self):
+    def set_direction_by_max_cr(self):
         self.breakthrough_direction = self.max_cr_obj.direction
 
     """
@@ -1310,10 +1377,12 @@ class Minute:
             if self.fictitious_cd is not None:
                 self.histoty_status_none(self.fictitious_cd)
                 self.handle_cr_list(self.fictitious_cd)
+                self.handle_ir_by_histoty_status_none(self.fictitious_cd)
             if self.history_status == Constants.HISTORY_STATUS_OF_NONE:
                 self.histoty_status_none(cd)
                 # 统计连续的幅度
                 self.handle_cr_list(cd)
+                self.handle_ir_by_histoty_status_none(cd)
             elif self.history_status == Constants.HISTORY_STATUS_OF_TREND:
                 # 统计连续的幅度
                 self.handle_cr_list(cd)
@@ -1333,6 +1402,25 @@ class Minute:
         self.refresh_h_minute_count += 1
         # 处理状态
         self.handle_open_status()
+
+    """
+    在没有进入行情的时候处理ir
+    """
+    def handle_ir_by_histoty_status_none(self, cd):
+        if self.breakthrough_direction is not None and not Logic.is_crossing_starlike(cd):
+                self.max_ir_by_cr = SimpleNamespace()
+                self.max_ir_by_cr.direction = cd.direction
+                self.max_ir_by_cr.real_direction = self.breakthrough_direction
+                if cd.direction == Constants.DIRECTION_UP:
+                    start_price = cd.low
+                    end_price = cd.high
+                else:
+                    start_price = cd.high
+                    end_price = cd.low
+                self.max_ir_by_cr.start = start_price         
+                self.max_ir_by_cr.end = end_price
+                self.max_ir_by_cr.length = abs(start_price - end_price)
+                self.max_ir_by_cr.datetime = cd.datetime
     
 
     # 将昨日收盘价跟今日开盘模拟成一分钟
@@ -1388,6 +1476,8 @@ class Minute:
                 temp_last_cd = self.cr_list[-1]
                 if not cd.direction == temp_last_cd.direction:
                     self.cr_list = []
+                    # 重置ir
+                    self.max_ir_by_cr = None 
                 self.cr_list.append(cd)
             
             if len(self.cr_list) > 0:
