@@ -613,18 +613,19 @@ class Minute:
             #     current_change = True
             
         if not current_change:
-            if self.max_cr_obj.length == self.cr_obj.length and self.cr_obj.length > 30 * self.unit_value and  (self.max_amplitude.length > 10 * self.unit_value):
-                # if self.last_history is not None:
-                    # print(f"cr幅度突破 direction => {self.breakthrough_direction} => cd => {cd} cr_obj => {self.cr_obj} cr_list => {self.cr_list} max_cr_list => {self.max_cr_list} max_cr_obj {self.max_cr_obj} max_ir_by_cr => {self.max_ir_by_cr}")
+            if self.max_cr_obj.length == self.cr_obj.length:
                 if not self.breakthrough_direction == self.cr_obj.direction:
                     self.breakthrough_direction = self.cr_obj.direction
                     self.on_direction_change(cd)
-
-                self.change_direction_number += 1
+                
+                if self.cr_obj.length > 30 * self.unit_value and  (self.max_ir_by_cr.length > 10 * self.unit_value):
+                    self.change_direction_number += 1
+                    # 刷新cr，允许开仓
+                    self.handle_allow_open_by_cr_refresh()
+                    # if self.last_history is not None:
+                    #     print(f"cr幅度突破 direction => {self.breakthrough_direction} => cd => {cd} cr_obj => {self.cr_obj} cr_list => {self.cr_list} max_cr_list => {self.max_cr_list} max_cr_obj {self.max_cr_obj} max_ir_by_cr => {self.max_ir_by_cr}")
                 current_change = True
-                self.last_max_amplitude = deepcopy(self.max_amplitude)
-                # 刷新cr，允许开仓
-                self.handle_allow_open_by_cr_refresh()
+                # self.last_max_amplitude = deepcopy(self.max_amplitude)
             else:
                 if Logic.is_exceed_max_rc_start_price(self.breakthrough_direction, self.max_cr_obj, self.max_cr_list[0], cd):
                     self.reverse_direct_by_max_cr()
