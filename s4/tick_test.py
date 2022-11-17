@@ -480,8 +480,8 @@ class TickTest():
     获取平仓价通过rc
     """
     def get_close_price_by_win_point_and_cr(self, tick):
-        # if self.close_by_cr(tick) or self.is_close_by_current_ir:
-        if self.close_by_cr(tick):
+        if self.close_by_cr(tick) or self.close_by_current_ir(tick):
+        # if self.close_by_cr(tick):
             last_cd = self.history.last_cd
             temp_close_price = self.close_price_by_lose
             if self.trade_action == Cons.ACTION_CLOSE_LONG:
@@ -493,6 +493,17 @@ class TickTest():
             return temp_close_price
         else:
              return self.close_price_by_lose
+    
+    """
+    通过当前的ir判断是否可以平仓，如果挣钱就使用
+    """
+    def close_by_current_ir(self, tick):
+        if self.is_close_by_current_ir:
+            if self.is_win_point(tick):
+                return True
+            else:
+                self.is_close_by_current_ir = False
+        return False
     
     """
     d跟l的间距要超过限定个数单位才能开仓
@@ -663,7 +674,7 @@ class TickTest():
     看是否出现可以平仓的ir
     """
     def refresh_close_by_current_ir(self, tick):
-       if self.trade_action is not None and not self.is_close_by_current_ir and self.is_win_point(tick): 
+       if self.trade_action is not None and not self.is_close_by_current_ir: 
         if self.history.current_ir is not None:
             if self.trade_action == Cons.ACTION_CLOSE_LONG:
                 if self.history.current_ir.direction == Cons.DIRECTION_UP and self.history.current_ir.length > 10 * self.unit_value:
