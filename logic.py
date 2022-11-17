@@ -435,6 +435,28 @@ class Logic:
 		target_obj = datetime.strptime(target, '%Y-%m-%d %H:%M:%S')
 		diff = abs(reference_obj - target_obj).total_seconds() / 60
 		return diff
+	
+	"""
+	时间字符串转成时间格式
+	"""
+	def ptime(target):
+		return datetime.strptime(target, '%Y-%m-%d %H:%M:%S')
+	
+	# 将上一分钟的收盘价跟当前一分钟开盘价格合成新的一分钟
+	def get_fictitious_cd(last_cd, cd):
+		fictitious_cd = SimpleNamespace()
+		fictitious_cd.open = last_cd.close
+		fictitious_cd.close = cd.open
+		fictitious_cd.high = max(last_cd.close, cd.open)
+		fictitious_cd.low = min(last_cd.close, cd.open) 
+		fictitious_cd.datetime = cd.datetime # 用开始的一分钟时间 
+		if last_cd.close > cd.open:
+			fictitious_cd.direction = Constants.DIRECTION_DOWN
+		elif last_cd.close < cd.open:
+			fictitious_cd.direction = Constants.DIRECTION_UP
+		else:
+			fictitious_cd.direction = Constants.DIRECTION_NONE
+		return fictitious_cd
 
 	"""
 	计算最近的n分钟的波动之和

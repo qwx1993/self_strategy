@@ -1409,6 +1409,14 @@ class Minute:
 
             # print(f"完成状态初始化 => yesterday_close_price => {self.yesterday_close_price} start_cd => {self.start_cd} , breakthrough_direction => {self.breakthrough_direction} max_amplitude => {self.max_amplitude} extremum_d => {self.extremum_d}")
         elif self.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中
+            cd_time = Logic.ptime(cd.datetime)
+            if cd_time.hour == 9 and cd_time.minute == 0:
+                fictitious_cd = Logic.get_fictitious_cd(self.last_cd, cd)
+                # 统计连续的幅度
+                self.handle_cr_list(fictitious_cd)
+                self.statistic(fictitious_cd)
+                self.last_cd = Logic.handle_last_cd(self.last_cd, fictitious_cd)
+
             # 统计连续的幅度
             self.handle_cr_list(cd)
             self.statistic(cd)

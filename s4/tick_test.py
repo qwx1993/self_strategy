@@ -648,7 +648,7 @@ class TickTest():
     当前的cr长度需要大于30个单位，并且是赢的
     """
     def close_by_cr(self, tick):
-        if self.history.cr_obj.length > 30 * self.unit_value:
+        if self.history.cr_obj.length > 40 * self.unit_value:
             last_cd = self.history.cr_list[-1]
             if self.trade_action == Cons.ACTION_CLOSE_LONG and self.history.cr_obj.direction == Cons.DIRECTION_UP:
                 if tick.current < last_cd.low:
@@ -677,10 +677,10 @@ class TickTest():
        if self.trade_action is not None and not self.is_close_by_current_ir: 
         if self.history.current_ir is not None:
             if self.trade_action == Cons.ACTION_CLOSE_LONG:
-                if self.history.current_ir.direction == Cons.DIRECTION_UP and self.history.current_ir.length > 10 * self.unit_value:
+                if self.history.current_ir.direction == Cons.DIRECTION_UP and self.history.current_ir.length > 15 * self.unit_value:
                     self.is_close_by_current_ir = True
             elif self.trade_action == Cons.ACTION_CLOSE_SHORT:
-                if self.history.current_ir.direction == Cons.DIRECTION_DOWN and self.history.current_ir.length > 10 * self.unit_value:
+                if self.history.current_ir.direction == Cons.DIRECTION_DOWN and self.history.current_ir.length > 15 * self.unit_value:
                     self.is_close_by_current_ir = True
 
         
