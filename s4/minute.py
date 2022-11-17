@@ -631,8 +631,10 @@ class Minute:
                     self.on_direction_change(cd)
                     # 设置成不能开仓状态
                     self.handle_allow_open_by_cr_refresh()
+                    self.reset_max_cr()
+                    self.reset_change_direction_number()
                     # if self.last_history is not None:
-                    #     print(f"回到cr的起点 => {cd} 方向 => {self.breakthrough_direction} 起点 => {self.max_cr_list[0]} max_cr_obj => {self.max_cr_obj} {self.max_cr_list}")
+                    #     print(f"回到cr的起点 => {cd} 方向 => {self.breakthrough_direction} 起点 => {self.max_cr_list} max_cr_obj => {self.max_cr_obj}")
                 elif Logic.is_exceed_max_rc_end_price(self.breakthrough_direction, self.max_cr_obj, self.max_cr_list[-1], cd):
                     self.set_direction_by_max_cr()
                     self.on_direction_change(cd)
@@ -650,6 +652,19 @@ class Minute:
     """
     def handle_allow_open_by_cr_refresh(self):
         self.allow_open = True
+    
+    """
+    重置cr
+    """
+    def reset_max_cr(self):
+        self.max_cr_list = []
+        self.max_cr_obj = None
+
+    """
+    将开仓机会重置为0
+    """    
+    def reset_change_direction_number(self):
+        self.change_direction_number = 0
                 
     """
     超过限定时间，设置ml

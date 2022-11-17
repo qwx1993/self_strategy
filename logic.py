@@ -805,14 +805,14 @@ class Logic:
 			start_price = start_cd.low
 		else:
 			start_price = start_cd.high
-		if direction == max_rc_obj.direction:
-			if direction == Constants.DIRECTION_UP:
-				if cd.low < start_price:
-					return True
-			elif direction == Constants.DIRECTION_DOWN:
-				if cd.high > start_price:
-					return True
-			return False
+		# if direction == max_rc_obj.direction:
+		if direction == Constants.DIRECTION_UP:
+			if cd.low < start_price:
+				return True
+		elif direction == Constants.DIRECTION_DOWN:
+			if cd.high > start_price:
+				return True
+		return False
 
 	"""
 	超过最大幅度的起始价就改变方向、重置max_amplitude,R,r,rrn,max_r
