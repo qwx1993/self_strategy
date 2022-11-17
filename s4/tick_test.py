@@ -480,7 +480,7 @@ class TickTest():
     获取平仓价通过rc
     """
     def get_close_price_by_win_point_and_cr(self, tick):
-        if self.close_by_cr(tick) or self.close_by_current_ir(tick):
+        if self.close_by_cr(tick) or self.is_close_by_current_ir:
         # if self.close_by_cr(tick):
             last_cd = self.history.last_cd
             temp_close_price = self.close_price_by_lose
@@ -492,18 +492,18 @@ class TickTest():
                    temp_close_price = last_cd.high
             return temp_close_price
         else:
-             return self.close_price_by_lose
+            return self.close_price_by_lose
     
     """
     通过当前的ir判断是否可以平仓，如果挣钱就使用
     """
-    def close_by_current_ir(self, tick):
-        if self.is_close_by_current_ir:
-            if self.is_win_point(tick):
-                return True
-            else:
-                self.is_close_by_current_ir = False
-        return False
+    # def close_by_current_ir(self, tick):
+    #     if self.is_close_by_current_ir:
+    #         if self.is_win_point(tick):
+    #             return True
+    #         else:
+    #             self.is_close_by_current_ir = False
+    #     return False
     
     """
     d跟l的间距要超过限定个数单位才能开仓
@@ -648,12 +648,12 @@ class TickTest():
     当前的cr长度需要大于30个单位，并且是赢的
     """
     def close_by_cr(self, tick):
-        if self.history.cr_obj.length > 30 * self.unit_value and self.is_win_point(tick):
+        if self.history.cr_obj.length > 30 * self.unit_value:
             last_cd = self.history.cr_list[-1]
-            if self.trade_action == Cons.ACTION_CLOSE_LONG:
+            if self.trade_action == Cons.ACTION_CLOSE_LONG and self.history.cr_obj.direction == Cons.DIRECTION_UP:
                 if tick.current < last_cd.low:
                     return True
-            elif self.trade_action == Cons.ACTION_CLOSE_SHORT:
+            elif self.trade_action == Cons.ACTION_CLOSE_SHORT and self.history.cr_obj.direction == Cons.DIRECTION_DOWN:
                 if tick.current > last_cd.high:
                     return True
         return False
