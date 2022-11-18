@@ -35,7 +35,10 @@ class Tick:
     def open_a_price_by_agreement(direction, extremum_d, agreement_extremum_d, last_cd, tick):
         if extremum_d is None or agreement_extremum_d is None:
             return False
-        
+        # 如果协定D的tag是false就不开仓
+        if not agreement_extremum_d.tag:
+            return False
+
         if direction == Constants.DIRECTION_UP:
             if tick.current >= last_cd.low:
                 return False

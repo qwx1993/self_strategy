@@ -298,6 +298,7 @@ class Minute:
             self.agreement_extremum_d = deepcopy(self.extremum_d)
             self.agreement_extremum_d.price = self.extremum_d_price
             self.agreement_extremum_d.appoint_datetime = dn.datetime
+            self.agreement_extremum_d.tag = False
     """
     D刷新后重置L
     """
@@ -590,11 +591,49 @@ class Minute:
         self.handle_max_ir_by_cr(cd)
         # 处理ir
         self.handle_current_ir()
+
+        # 处理协定D的tag
+        self.handle_agreement_extremum_d_tag_by_cr()
+
         # 处理出现最大的幅度情况
         self.handle_max_amplitude(cd)
 
         # 处理方向的逻辑
         self.handle_direction(cd)
+
+    """
+    标定协定D的特性
+    """
+    def handle_agreement_extremum_d_tag_by_cr_or_ir(self):
+        if self.agreement_extremum_d is not None and not self.agreement_extremum_d.tag:
+            if self.cr_obj.direction == self.breakthrough_direction:
+                max_price = max(self.cr_obj.start_price, self.cr_obj.end_price)
+                min_price = min(self.cr_obj.start_price, self.cr_obj.end_price)
+
+                ir_max_price = max(self.current_ir.start_price, self.current_ir.end_price)
+                ir_min_price = min(self.current_ir.start_price, self.current_ir.end_price)
+
+                if (max_price >= self.agreement_extremum_d.price >= min_price) and self.cr_obj.length > 30 * self.unit_value:
+                    self.agreement_extremum_d.tag = True
+                elif (ir_max_price >= self.agreement_extremum_d.price >= ir_min_price) and self.current_ir.length > 10 * self.unit_value:
+                    self.agreement_extremum_d.tag = True
+    
+    """
+    标定协定D的特性
+    """
+    def handle_agreement_extremum_d_tag_by_cr(self):
+        if self.agreement_extremum_d is not None and not self.agreement_extremum_d.tag:
+            if self.cr_obj.direction == self.breakthrough_direction:
+                max_price = max(self.cr_obj.start_price, self.cr_obj.end_price)
+                min_price = min(self.cr_obj.start_price, self.cr_obj.end_price)
+
+                # ir_max_price = max(self.max_ir_by_cr.start, self.max_ir_by_cr.end)
+                # ir_min_price = min(self.current_ir.start_price, self.current_ir.end_price)
+
+                if (max_price >= self.agreement_extremum_d.price >= min_price) and self.cr_obj.length > 30 * self.unit_value and self.max_ir_by_cr.length > 10 * self.unit_value:
+                    self.agreement_extremum_d.tag = True
+                # elif (ir_max_price >= self.agreement_extremum_d.price >= ir_min_price) and self.current_ir.length > 10 * self.unit_value:
+                #     self.agreement_extremum_d.tag = True
 
     """
     方向处理
@@ -1511,9 +1550,13 @@ class Minute:
                 if self.cr_obj is None:
                     self.cr_obj = SimpleNamespace()
                 if temp_direciton == Constants.DIRECTION_UP:
+                    self.cr_obj.start_price = temp_start_cd.low
+                    self.cr_obj.end_price = temp_end_cd.high
                     self.cr_obj.length = abs(temp_end_cd.high - temp_start_cd.low)
                     self.cr_obj.direction = temp_direciton
                 elif temp_direciton == Constants.DIRECTION_DOWN:
+                    self.cr_obj.start_price = temp_start_cd.high
+                    self.cr_obj.end_price = temp_end_cd.low
                     self.cr_obj.length = abs(temp_start_cd.high - temp_end_cd.low)
                     self.cr_obj.direction = temp_direciton
                 if self.cr_obj is not None and (self.max_cr_obj is None or self.cr_obj.length > self.max_cr_obj.length):
