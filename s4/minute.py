@@ -63,7 +63,7 @@ class Minute:
 
 
     #---------------------
-    d_minute_count_limit = 30 # 协定D刷新的间隔分钟数
+    d_minute_count_limit = 5 # 协定D刷新的间隔分钟数
 
     refresh_h_minute_count = 0 # 协定H刷新的间隔分钟数
     h_minute_count_limit = 5 # 协定H最小间隔限制

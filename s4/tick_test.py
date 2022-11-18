@@ -296,11 +296,11 @@ class TickTest():
                 self.interval_datetime = None
                 self.allow_open_by_agreement_d = True # 刷新新的时候允许开仓
 
-            # # 通过current_ir 刷新平仓价
-            # self.refresh_close_by_current_ir(cd)
-            # # 通过cr_list 刷新平仓价
-            # self.get_close_price_by_cr_list()
-            self.get_close_price_by_cr_list_and_max_ir()
+            # 通过current_ir 刷新平仓价
+            self.refresh_close_by_current_ir(cd)
+            # 通过cr_list 刷新平仓价
+            self.get_close_price_by_cr_list()
+            # self.get_close_price_by_cr_list_and_max_ir()
 
         elif self.instance_1 is not None:
             # 新程序开仓
@@ -686,7 +686,7 @@ class TickTest():
     """
     def get_close_price_by_cr_list_and_max_ir(self):
         if self.trade_action is not None and self.history.cr_obj is not None:
-            if self.history.cr_obj.length > 40 * self.unit_value and self.history.max_ir_by_cr.length > 15 * self.unit_value:
+            if self.history.cr_obj.length > 30 * self.unit_value and self.history.max_ir_by_cr.length > 10 * self.unit_value:
                 first_cd = self.history.cr_list[0]
                 first_cd_ptime = Logic.ptime(first_cd.datetime)
                 if first_cd_ptime > self.open_price_tick.datetime:
