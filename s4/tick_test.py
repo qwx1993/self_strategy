@@ -138,20 +138,21 @@ class TickTest():
                 direction = self.history.breakthrough_direction
                 # and self.allow_open_by_agreement_d
                 # and self.history.open_status == Cons.OPEN_STATUS_OF_TOP
-                if (not self.d_win_flag) and self.allow_open_by_agreement_d and S4Tick.open_a_price_by_agreement(direction, self.history.extremum_d, self.history.agreement_extremum_d, self.history.last_cd, tick_obj) and self.has_change_direction_number() and self.is_allow_open():
+                if (not self.d_win_flag) and self.allow_open_by_agreement_d and S4Tick.open_a_price_by_agreement_cr(direction, self.history.agreement_cr_list, tick_obj) and self.is_allow_open():
                     # 时间间隔起点
+                    last_cr_cd = self.history.agreement_cr_list[-1]
                     if self.interval_datetime is None:
-                        self.interval_datetime = self.history.agreement_extremum_d.appoint_datetime
+                        self.interval_datetime = last_cr_cd.datetime
                     if Logic.within_minutes(self.interval_minutes, self.interval_datetime, minute_cd.datetime) and self.has_opportunity(Cons.OPEN_BY_D):
                         if self.history.breakthrough_direction == Cons.DIRECTION_UP:
                             # result = self.short(tick.current, self.hand_number)
                             self.add_action(tick, Cons.ACTION_OPEN_SHORT, tick.current - self.unit_value)
                             self.open_price = tick.current - self.unit_value
                             self.open_price_tick = tick
-                            logging.info(f"vt_symbol:{self.vt_symbol} => direction:short_by_d => max_amplitude:{self.history.max_amplitude} =>  tick:{tick.current} => l: {self.history.extremum_l} => l_price:{self.history.extremum_l_price} => last_cd:{self.history.last_cd} => history_dirction:{self.history.breakthrough_direction} agreement_extremum_d => {self.history.agreement_extremum_d} d=> {self.history.extremum_d} opportunity => {self.opportunity_number} change_direction_number => {self.history.change_direction_number} max_cr_list => {self.history.max_cr_list} max_cr_obj => {self.history.max_cr_obj}")
+                            logging.info(f"vt_symbol:{self.vt_symbol} => direction:short_by_d => max_amplitude:{self.history.max_amplitude} =>  tick:{tick.current} => l: {self.history.extremum_l} => l_price:{self.history.extremum_l_price} => last_cd:{self.history.last_cd} => history_dirction:{self.history.breakthrough_direction} agreement_extremum_d => {self.history.agreement_extremum_d} d=> {self.history.extremum_d} opportunity => {self.opportunity_number} change_direction_number => {self.history.change_direction_number} agreement_cr_list => {self.history.agreement_cr_list} agreement_cr_obj => {self.history.agreement_cr_obj}")
                             self.trade_action = Cons.ACTION_CLOSE_SHORT
-                            self.close_price = self.history.extremum_d_price
-                            self.close_price_by_lose = self.history.extremum_d_price
+                            self.close_price = last_cr_cd.high
+                            self.close_price_by_lose = last_cr_cd.high
                             self.open_type = Cons.OPEN_BY_D
                             self.last_open_d_datetime = self.history.extremum_d.datetime
                             self.last_open_d = self.history.extremum_d
@@ -162,12 +163,12 @@ class TickTest():
                             self.add_action(tick, Cons.ACTION_OPEN_LONG, tick.current + self.unit_value)
                             self.open_price = tick.current + self.unit_value
                             self.open_price_tick = tick
-                            logging.info(f"vt_symbol:{self.vt_symbol} => direction:long_by_d => max_amplitude:{self.history.max_amplitude} =>  tick:{tick.current} => l: {self.history.extremum_l} => l_price:{self.history.extremum_l_price} => last_cd:{self.history.last_cd} => history_dirction:{self.history.breakthrough_direction} agreement_extremum_d => {self.history.agreement_extremum_d}  d=> {self.history.extremum_d} opportunity => {self.opportunity_number} change_direction_number => {self.history.change_direction_number} max_cr_list => {self.history.max_cr_list} max_cr_obj => {self.history.max_cr_obj}")
+                            logging.info(f"vt_symbol:{self.vt_symbol} => direction:long_by_d => max_amplitude:{self.history.max_amplitude} =>  tick:{tick.current} => l: {self.history.extremum_l} => l_price:{self.history.extremum_l_price} => last_cd:{self.history.last_cd} => history_dirction:{self.history.breakthrough_direction} agreement_extremum_d => {self.history.agreement_extremum_d}  d=> {self.history.extremum_d} opportunity => {self.opportunity_number} change_direction_number => {self.history.change_direction_number} agreement_cr_list => {self.history.agreement_cr_list} agreement_cr_obj => {self.history.agreement_cr_obj}")
                             self.trade_action = Cons.ACTION_CLOSE_LONG 
                             # 使用l_price作为平仓价
-                            self.close_price = self.history.extremum_d_price
+                            self.close_price = last_cr_cd.low
                             # 使用l_price作为平仓价  
-                            self.close_price_by_lose = self.history.extremum_d_price
+                            self.close_price_by_lose = last_cr_cd.low
                             self.open_type = Cons.OPEN_BY_D
                             self.last_open_d_datetime = self.history.extremum_d.datetime
                             self.last_open_d = self.history.extremum_d
@@ -642,12 +643,12 @@ class TickTest():
     刷新是否可以开仓
     """
     def refresh_allow_open(self, tick):
-        if (not self.d_win_flag) and not self.allow_open_by_agreement_d and self.trade_action is None:
+        if (not self.d_win_flag) and not self.allow_open_by_agreement_d and self.trade_action is None and self.history.agreement_cr_obj is not None: 
             if self.history.breakthrough_direction == Cons.DIRECTION_UP:
-                if tick.current > self.history.agreement_extremum_d.price:
+                if tick.current > self.history.agreement_cr_list[-1].low:
                     self.allow_open_by_agreement_d = True
             elif self.history.breakthrough_direction == Cons.DIRECTION_DOWN:
-                if tick.current < self.history.agreement_extremum_d.price:
+                if tick.current < self.history.agreement_cr_list[-1].high:
                     self.allow_open_by_agreement_d = True
     
     """

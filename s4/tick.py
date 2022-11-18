@@ -55,6 +55,26 @@ class Tick:
                 return True
         
         return False
+
+    """
+    方向向上时，在接下来的一分钟内低于协定d的价格开仓
+    方向向下时，在接下来的一分钟内高于协定d的价格开仓
+    """
+    def open_a_price_by_agreement_cr(direction, agreement_cr_list, tick):
+        if len(agreement_cr_list) == 0:
+            return False
+
+        last_cd = agreement_cr_list[-1]
+
+        if direction == Constants.DIRECTION_UP:
+            if tick.current < last_cd.low:
+                return True
+        elif direction == Constants.DIRECTION_DOWN:
+            if tick.current > last_cd.high:
+                return True
+        
+        return False
+
     
     """
     方向向上时，在接下来的一分钟内高于协定l的价格开仓

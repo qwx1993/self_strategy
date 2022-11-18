@@ -79,6 +79,10 @@ class Minute:
     last_min_price = None # 前一个交易日的最小价格
     cr_list = [] # 连续趋势的统计
     cr_obj = None # 连续趋势的幅度 默认为0
+
+    agreement_cr_list = [] # 协定cr_list
+    agreement_cr_obj = None # 协定cr_obj
+
     max_cr_list = [] # 最大的连续趋势区间
     max_cr_obj = None # 最大的区间幅度
 
@@ -92,6 +96,7 @@ class Minute:
     allow_open = True # 允许开仓
     max_ir_by_cr = None
     current_ir = None # 当前的ir
+
 
     """
     初始化
@@ -600,6 +605,26 @@ class Minute:
 
         # 处理方向的逻辑
         self.handle_direction(cd)
+
+        # 处理协定cr
+        self.hanle_agreement_cr(cd)
+
+    """
+    协定cr
+    """
+    def hanle_agreement_cr(self, cd):
+        if self.is_equal_d_price(cd):
+            if self.cr_obj.length > 30 * self.unit_value and  (self.max_ir_by_cr.length > 10 * self.unit_value):
+                self.agreement_cr_list = deepcopy(self.cr_list)
+                self.agreement_cr_obj = deepcopy(self.cr_obj)
+    
+    """
+    重置协定cr
+    """
+    def reset_agreement_cr(self):
+        if self.agreement_cr_obj is not None:
+            self.agreement_cr_list = []
+            self.agreement_cr_obj = None
 
     """
     标定协定D的特性
@@ -1310,6 +1335,20 @@ class Minute:
                 return True
             else:
                 return False
+    
+    """
+    等于D的价格
+    """
+    def is_equal_d_price(self, cd):
+        if self.breakthrough_direction == Constants.DIRECTION_UP:
+            if cd.high == self.extremum_d_price:
+                return True
+        elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
+            if cd.low == self.extremum_d_price:
+                return True
+        
+        return False
+        
 
     """
     处于逆趋势中
