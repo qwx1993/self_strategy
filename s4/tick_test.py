@@ -694,7 +694,7 @@ class TickTest():
                 if first_cd_ptime > self.open_price_tick.datetime:
                     if self.trade_action == Cons.ACTION_CLOSE_LONG and self.history.cr_obj.direction == Cons.DIRECTION_UP:
                         self.close_price = max(self.close_price, last_cd.low)
-                        logging.info(f"refresh_close_price_by_cr_list_and_max_ir => trade_action => {self.trade_action} => old_close_price:{self.close_price}  current_close_price =>{self.close_price} => first_cd => {first_cd} cr_list => {self.history.cr_list} open_price_tick.datetime => {self.open_price_tick.datetime} max_ir_by_cr => {self.history.max_ir_by_cr}")
+                        logging.info(f"refresh_close_price_by_cr_list_and_max_ir => trade_action => {self.trade_action} => old_close_price:{self.close_price}  current_close_price =>{self.close_price} => first_cd => {first_cd} cr_list => {self.history.cr_list} open_price_tick.datetime => {self.open_price_tick.datetime} max_ir_by_cr => {self.history.max_ir_by_cr} ")
                     elif self.trade_action == Cons.ACTION_CLOSE_SHORT and self.history.cr_obj.direction == Cons.DIRECTION_DOWN:
                         self.close_price = min(self.close_price, last_cd.high)
                         logging.info(f"refresh_close_price_by_cr_list_and_max_ir => trade_action => {self.trade_action} => old_close_price:{self.close_price}  current_close_price =>{self.close_price} => first_cd => {first_cd} cr_list => {self.history.cr_list} open_price_tick.datetime => {self.open_price_tick.datetime} max_ir_by_cr => {self.history.max_ir_by_cr}")
