@@ -891,6 +891,21 @@ class Logic:
 		return False
 	
 	"""
+	获取中间cd的起点价
+	"""
+	def get_middle_price_for_cr_list(direction, ad_price, list):
+		if len(list) == 0:
+			return ad_price
+		for cd in reversed(list):
+			if cd.high >= ad_price >= cd.low:
+				if direction == Constants.DIRECTION_UP:
+					return cd.low
+				elif direction == Constants.DIRECTION_DOWN:
+					return cd.high
+		return ad_price
+
+	
+	"""
 	计算胜率和赔率
 	"""
 	def calculate_rate(actions_list, filename):

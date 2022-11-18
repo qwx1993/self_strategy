@@ -632,6 +632,7 @@ class Minute:
 
                 if (max_price >= self.agreement_extremum_d.price >= min_price) and self.cr_obj.length > 30 * self.unit_value and self.max_ir_by_cr.length > 10 * self.unit_value:
                     self.agreement_extremum_d.tag = True
+                    self.agreement_extremum_d.open_price = Logic.get_middle_price_for_cr_list(self.breakthrough_direction, self.agreement_extremum_d.price, self.cr_list)
                 # elif (ir_max_price >= self.agreement_extremum_d.price >= ir_min_price) and self.current_ir.length > 10 * self.unit_value:
                 #     self.agreement_extremum_d.tag = True
 
@@ -640,47 +641,35 @@ class Minute:
     """
     def handle_direction(self, cd):
       # 判断方向是否改变
-        current_change = False
-        # if self.yesterday_close_price is not None:
-            # if self.breakthrough_direction == Constants.DIRECTION_UP and cd.low < min(self.yesterday_close_price, self.start_cd.open):
-            #     self.breakthrough_direction == Constants.DIRECTION_DOWN
-            #     self.on_direction_change(cd)
-            #     current_change = True
-            # elif self.breakthrough_direction == Constants.DIRECTION_DOWN and cd.high > max(self.yesterday_close_price, self.start_cd.open):
-            #     self.breakthrough_direction = Constants.DIRECTION_UP
-            #     self.on_direction_change(cd)
-            #     current_change = True
+        if self.max_cr_obj.length == self.cr_obj.length:
+            if not self.breakthrough_direction == self.cr_obj.direction:
+                self.breakthrough_direction = self.cr_obj.direction
+                self.on_direction_change(cd)
             
-        if not current_change:
-            if self.max_cr_obj.length == self.cr_obj.length:
-                if not self.breakthrough_direction == self.cr_obj.direction:
-                    self.breakthrough_direction = self.cr_obj.direction
-                    self.on_direction_change(cd)
-                
-                if self.cr_obj.length > 30 * self.unit_value and  (self.max_ir_by_cr.length > 10 * self.unit_value):
-                    self.change_direction_number += 1
-                    # 刷新cr，允许开仓
-                    self.handle_allow_open_by_cr_refresh()
-                    # if self.last_history is not None:
-                    #     print(f"cr幅度突破 direction => {self.breakthrough_direction} => cd => {cd} cr_obj => {self.cr_obj} cr_list => {self.cr_list} max_cr_list => {self.max_cr_list} max_cr_obj {self.max_cr_obj} max_ir_by_cr => {self.max_ir_by_cr}")
-                current_change = True
-                # self.last_max_amplitude = deepcopy(self.max_amplitude)
-            else:
-                if Logic.is_exceed_max_rc_start_price(self.breakthrough_direction, self.max_cr_obj, self.max_cr_list[0], cd):
-                    self.reverse_direct_by_max_cr()
-                    self.on_direction_change(cd)
-                    # 设置成不能开仓状态
-                    self.handle_allow_open_by_cr_refresh()
-                    self.reset_max_cr()
-                    self.reset_change_direction_number()
-                    # if self.last_history is not None:
-                    #     print(f"回到cr的起点 => {cd} 方向 => {self.breakthrough_direction} 起点 => {self.max_cr_list} max_cr_obj => {self.max_cr_obj}")
-                elif Logic.is_exceed_max_rc_end_price(self.breakthrough_direction, self.max_cr_obj, self.max_cr_list[-1], cd):
-                    self.set_direction_by_max_cr()
-                    self.on_direction_change(cd)
-                    # if self.last_history is not None:
-                    #     print(f"回到cr的终点 => {cd} 方向 => {self.breakthrough_direction} 终点 => {self.max_cr_list[0]} max_cr_obj => {self.max_cr_obj} {self.max_cr_list}")
-    
+            if self.cr_obj.length > 30 * self.unit_value and  (self.max_ir_by_cr.length > 10 * self.unit_value):
+                self.change_direction_number += 1
+                # 刷新cr，允许开仓
+                self.handle_allow_open_by_cr_refresh()
+                # if self.last_history is not None:
+                #     print(f"cr幅度突破 direction => {self.breakthrough_direction} => cd => {cd} cr_obj => {self.cr_obj} cr_list => {self.cr_list} max_cr_list => {self.max_cr_list} max_cr_obj {self.max_cr_obj} max_ir_by_cr => {self.max_ir_by_cr}")
+            current_change = True
+            # self.last_max_amplitude = deepcopy(self.max_amplitude)
+        else:
+            if Logic.is_exceed_max_rc_start_price(self.breakthrough_direction, self.max_cr_obj, self.max_cr_list[0], cd):
+                self.reverse_direct_by_max_cr()
+                self.on_direction_change(cd)
+                # 设置成不能开仓状态
+                self.handle_allow_open_by_cr_refresh()
+                self.reset_max_cr()
+                self.reset_change_direction_number()
+                # if self.last_history is not None:
+                #     print(f"回到cr的起点 => {cd} 方向 => {self.breakthrough_direction} 起点 => {self.max_cr_list} max_cr_obj => {self.max_cr_obj}")
+            elif Logic.is_exceed_max_rc_end_price(self.breakthrough_direction, self.max_cr_obj, self.max_cr_list[-1], cd):
+                self.set_direction_by_max_cr()
+                self.on_direction_change(cd)
+                # if self.last_history is not None:
+                #     print(f"回到cr的终点 => {cd} 方向 => {self.breakthrough_direction} 终点 => {self.max_cr_list[0]} max_cr_obj => {self.max_cr_obj} {self.max_cr_list}")
+
     """
     跌落起点，不允许开仓
     """

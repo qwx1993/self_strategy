@@ -39,19 +39,19 @@ class Tick:
         if not agreement_extremum_d.tag:
             return False
 
-        if direction == Constants.DIRECTION_UP:
-            if tick.current >= last_cd.low:
-                return False
-        elif direction == Constants.DIRECTION_DOWN:
-            if tick.current <= last_cd.high:
-                return False
+        # if direction == Constants.DIRECTION_UP:
+        #     if tick.current >= last_cd.low:
+        #         return False
+        # elif direction == Constants.DIRECTION_DOWN:
+        #     if tick.current <= last_cd.high:
+        #         return False
         # todo 等下可以简化
         # if not Logic.within_minutes(30, extremum_d.datetime, agreement_extremum_d.datetime):
         if direction == Constants.DIRECTION_UP:
-            if tick.current < agreement_extremum_d.price:
+            if tick.current < agreement_extremum_d.open_price:
                 return True
         elif direction == Constants.DIRECTION_DOWN:
-            if tick.current > agreement_extremum_d.price:
+            if tick.current > agreement_extremum_d.open_price:
                 return True
         
         return False
