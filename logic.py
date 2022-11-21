@@ -903,7 +903,16 @@ class Logic:
 				elif direction == Constants.DIRECTION_DOWN:
 					return cd.high
 		return ad_price
-
+	
+	"""
+	获取cr中最后满足条件条件的ir
+	"""
+	def get_effective_ir_by_cr_list(list, compare_length):
+		if len(list) > 0:
+			for cd in reversed(list):
+				if abs(cd.high - cd.low) > compare_length:
+					return cd
+		return None
 	
 	"""
 	计算胜率和赔率

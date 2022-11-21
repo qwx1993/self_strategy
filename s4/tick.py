@@ -60,17 +60,15 @@ class Tick:
     方向向上时，在接下来的一分钟内低于协定d的价格开仓
     方向向下时，在接下来的一分钟内高于协定d的价格开仓
     """
-    def open_a_price_by_agreement_cr(direction, agreement_cr_list, tick):
-        if len(agreement_cr_list) == 0:
+    def open_a_price_by_agreement_cr(direction, effective_ir, tick):
+        if effective_ir is None:
             return False
 
-        last_cd = agreement_cr_list[-1]
-
         if direction == Constants.DIRECTION_UP:
-            if tick.current < last_cd.low:
+            if tick.current < effective_ir.low:
                 return True
         elif direction == Constants.DIRECTION_DOWN:
-            if tick.current > last_cd.high:
+            if tick.current > effective_ir.high:
                 return True
         
         return False

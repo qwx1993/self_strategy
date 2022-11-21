@@ -611,6 +611,7 @@ class Minute:
 
     """
     协定cr
+    当前cr的最后一分钟是D，且满足cr的长度大于30单位，并且cr中的最大的ir大于十个单位就设置为协定cr
     """
     def hanle_agreement_cr(self, cd):
         if self.is_equal_d_price(cd):
@@ -663,6 +664,9 @@ class Minute:
 
     """
     方向处理
+    当出现最大的CRmax时，调整方向跟最大的CRmax一致
+    当回归到CRmax的起点时，改变方向跟CRmax方向相反
+    当方向跟CRmax方向相反时，回到CRmax的终点时调整方向跟CRmax方向一致
     """
     def handle_direction(self, cd):
       # 判断方向是否改变
@@ -675,10 +679,6 @@ class Minute:
                 self.change_direction_number += 1
                 # 刷新cr，允许开仓
                 self.handle_allow_open_by_cr_refresh()
-                # if self.last_history is not None:
-                #     print(f"cr幅度突破 direction => {self.breakthrough_direction} => cd => {cd} cr_obj => {self.cr_obj} cr_list => {self.cr_list} max_cr_list => {self.max_cr_list} max_cr_obj {self.max_cr_obj} max_ir_by_cr => {self.max_ir_by_cr}")
-            current_change = True
-            # self.last_max_amplitude = deepcopy(self.max_amplitude)
         else:
             if Logic.is_exceed_max_rc_start_price(self.breakthrough_direction, self.max_cr_obj, self.max_cr_list[0], cd):
                 self.reverse_direct_by_max_cr()
