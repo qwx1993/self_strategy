@@ -84,6 +84,8 @@ class TickTest():
     # ------------------------------------------------------- 
     statistic_history = None
     is_close_by_current_ir = False  # 是否可以根据当前的ir进行止盈
+    # -------------------------------------------------------
+    afer_open_max_ir = None # 开仓后最大的ir
 
     # 添加参数和变量名到对应的列表
     def __init__(self, 
@@ -150,7 +152,7 @@ class TickTest():
                             self.add_action(tick, Cons.ACTION_OPEN_SHORT, tick.current - self.unit_value)
                             self.open_price = tick.current - self.unit_value
                             self.open_price_tick = tick
-                            logging.info(f"vt_symbol => {self.vt_symbol} \ntrade_type => short_by_d \ndirction => {self.history.breakthrough_direction} \ntick => {tick.current} \nl => {self.history.extremum_l} \nl_price => {self.history.extremum_l_price} \nlast_cd => {self.history.last_cd} \nd => {self.history.extremum_d}  \nchange_direction_number => {self.history.change_direction_number} \nagreement_cr_list => {self.history.agreement_cr_list} \nagreement_cr_obj => {self.history.agreement_cr_obj} \neffective_ir => {effective_ir}")
+                            logging.info(f"vt_symbol => {self.vt_symbol} \ntrade_type => short_by_d \ndirction => {self.history.breakthrough_direction} \ntick => {tick.current} \nl => {self.history.extremum_l} \nl_price => {self.history.extremum_l_price} \nlast_cd => {self.history.last_cd} \nd => {self.history.extremum_d}  \nchange_direction_number => {self.history.change_direction_number} \nagreement_cr_list => {self.history.agreement_cr_list} \nagreement_cr_obj => {self.history.agreement_cr_obj} \neffective_ir => {effective_ir} \n close_price_by_lose => {self.history.extremum_d_price}")
                             self.trade_action = Cons.ACTION_CLOSE_SHORT
                             self.close_price = self.history.extremum_d_price
                             self.close_price_by_lose = self.history.extremum_d_price
@@ -164,7 +166,7 @@ class TickTest():
                             self.add_action(tick, Cons.ACTION_OPEN_LONG, tick.current + self.unit_value)
                             self.open_price = tick.current + self.unit_value
                             self.open_price_tick = tick
-                            logging.info(f"vt_symbol => {self.vt_symbol} \ntrade_type => long_by_d \ndirction => {self.history.breakthrough_direction} \ntick => {tick.current} \nl => {self.history.extremum_l} \nl_price => {self.history.extremum_l_price} \nlast_cd => {self.history.last_cd} \nd => {self.history.extremum_d}  \nchange_direction_number => {self.history.change_direction_number} \nagreement_cr_list => {self.history.agreement_cr_list} \nagreement_cr_obj => {self.history.agreement_cr_obj} \neffective_ir => {effective_ir}")
+                            logging.info(f"vt_symbol => {self.vt_symbol} \ntrade_type => long_by_d \ndirction => {self.history.breakthrough_direction} \ntick => {tick.current} \nl => {self.history.extremum_l} \nl_price => {self.history.extremum_l_price} \nlast_cd => {self.history.last_cd} \nd => {self.history.extremum_d}  \nchange_direction_number => {self.history.change_direction_number} \nagreement_cr_list => {self.history.agreement_cr_list} \nagreement_cr_obj => {self.history.agreement_cr_obj} \neffective_ir => {effective_ir} \n close_price_by_lose => {self.history.extremum_d_price}")
                             self.trade_action = Cons.ACTION_CLOSE_LONG 
                             # 使用l_price作为平仓价
                             self.close_price = self.history.extremum_d_price
@@ -300,7 +302,8 @@ class TickTest():
             # self.refresh_close_by_current_ir(cd)
             # # 通过cr_list 刷新平仓价
             # self.get_close_price_by_cr_list()
-            self.get_close_price_by_cr_list_and_max_ir()
+            # self.get_close_price_by_cr_list_and_max_ir()
+            self.get_close_price_by_max_ir()
 
         elif self.instance_1 is not None:
             # 新程序开仓
@@ -699,6 +702,27 @@ class TickTest():
                         self.close_price = min(self.close_price, last_cd.high)
                         logging.info(f"refresh_close_price_by_cr_list_and_max_ir => trade_action => {self.trade_action} => old_close_price:{self.close_price}  current_close_price =>{self.close_price} => first_cd => {first_cd} cr_list => {self.history.cr_list} open_price_tick.datetime => {self.open_price_tick.datetime} max_ir_by_cr => {self.history.max_ir_by_cr}")
     
+    """
+    通过开仓后最大的max_ir刷新开仓价格
+    如果是平多，则max_ir方向向上
+    如果是平多，则max_ir方向向下
+    """
+    def get_close_price_by_max_ir(self):
+        if self.trade_action is not None and self.history.current_ir is not None:
+            ir_ptime = Logic.ptime(self.history.current_ir.datetime)
+            if ir_ptime > self.open_price_tick.datetime:
+                if self.trade_action == Cons.ACTION_CLOSE_LONG and self.history.current_ir.direction == Cons.DIRECTION_UP:  
+                    if self.afer_open_max_ir is None or self.history.current_ir.length > self.afer_open_max_ir.length:
+                        self.afer_open_max_ir = deepcopy(self.history.current_ir)
+                        old_close_price = self.close_price
+                        self.close_price = max(self.close_price, self.afer_open_max_ir.start_price -1*self.unit_value)
+                        logging.info(f"get_close_price_by_max_ir => close_long \n trade_action => {self.trade_action} \n old_close_price => {old_close_price} \n current_close_price => {self.close_price} \n afer_open_max_ir => {self.afer_open_max_ir} \n open_price_tick.datetime => {self.open_price_tick.datetime}")
+                elif self.trade_action == Cons.ACTION_CLOSE_SHORT and self.history.current_ir == Cons.DIRECTION_DOWN:
+                    if self.afer_open_max_ir is None or self.history.current_ir.length > self.afer_open_max_ir.length:
+                        self.afer_open_max_ir = deepcopy(self.history.current_ir)
+                        self.close_price = min(self.close_price, self.afer_open_max_ir.start_price + 1*self.unit_value)
+                        logging.info(f"get_close_price_by_max_ir => close_short \n trade_action => {self.trade_action} \n old_close_price => {old_close_price} \n current_close_price => {self.close_price} \n afer_open_max_ir => {self.afer_open_max_ir} \n open_price_tick.datetime => {self.open_price_tick.datetime}")
+
 
     """
     是否回到cr的起点
@@ -724,12 +748,12 @@ class TickTest():
                     if self.history.current_ir.direction == Cons.DIRECTION_UP and self.history.current_ir.length > 10 * self.unit_value:
                         self.is_close_by_current_ir = True
                         self.close_price = max(self.close_price, self.history.current_ir.start_price)
-                        logging.info(f"refresh close price by ir => trade_action => {self.trade_action} => old_close_price:{self.close_price} => start_price => {self.history.current_ir.start_price} => current_ir:{self.history.current_ir} cd => {cd} open_price_tick.datetime => {self.open_price_tick.datetime}")
+                        logging.info(f"refresh close price by ir \n trade_action => {self.trade_action}  \n old_close_price => {self.close_price} \n start_price => {self.history.current_ir.start_price} \n current_ir:{self.history.current_ir} cd \n {cd} open_price_tick.datetime => {self.open_price_tick.datetime}")
                 elif self.trade_action == Cons.ACTION_CLOSE_SHORT:
                     if self.history.current_ir.direction == Cons.DIRECTION_DOWN and self.history.current_ir.length > 10 * self.unit_value:
                         self.is_close_by_current_ir = True
                         self.close_price = min(self.close_price, self.history.current_ir.start_price)
-                        logging.info(f"refresh close price by ir => trade_action => {self.trade_action} => old_close_price:{self.close_price} => start_price => {self.history.current_ir.start_price} => current_ir:{self.history.current_ir} cd => {cd} open_price_tick.datetime => {self.open_price_tick.datetime}")
+                        logging.info(f"refresh close price by ir \n trade_action => {self.trade_action}  \n old_close_price => {self.close_price} \n start_price => {self.history.current_ir.start_price} \n current_ir:{self.history.current_ir} cd \n {cd} open_price_tick.datetime => {self.open_price_tick.datetime}")
 
 
         

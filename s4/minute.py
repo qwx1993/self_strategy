@@ -1071,6 +1071,7 @@ class Minute:
             self.set_extremum_l(cd)
 
         # 记录下当前的max_l_to_d
+        max_l_to_d_obj.datetime = cd.datetime
         self.current_max_l_to_d_interval = max_l_to_d_obj
         # 记录最大的max_l_to_d
         self.set_max_l_to_d_interval_obj(max_l_to_d_obj)
@@ -1215,6 +1216,8 @@ class Minute:
                     else:
                         max_len = Logic.max_amplitude_length(cd)
                         max_r_obj = self.amplitude_obj(cd.low, cd.high)
+        # 添加一个时间
+        max_r_obj.datetime = cd.datetime
         self.set_max_r(max_r_obj) 
         self.current_max_r = max_r_obj
 
