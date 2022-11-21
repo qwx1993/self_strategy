@@ -712,13 +712,13 @@ class TickTest():
             ir_ptime = Logic.ptime(self.history.current_ir.datetime)
             if ir_ptime > self.open_price_tick.datetime:
                 if self.trade_action == Cons.ACTION_CLOSE_LONG and self.history.current_ir.direction == Cons.DIRECTION_UP:  
-                    if self.afer_open_max_ir is None or self.history.current_ir.length > self.afer_open_max_ir.length:
+                    if self.afer_open_max_ir is None or (self.history.current_ir.length > self.afer_open_max_ir.length and self.history.current_ir.length > 0 * self.unit_value):
                         self.afer_open_max_ir = deepcopy(self.history.current_ir)
                         old_close_price = self.close_price
                         self.close_price = max(self.close_price, self.afer_open_max_ir.start_price -1*self.unit_value)
                         logging.info(f"get_close_price_by_max_ir => close_long \n trade_action => {self.trade_action} \n old_close_price => {old_close_price} \n current_close_price => {self.close_price} \n afer_open_max_ir => {self.afer_open_max_ir} \n open_price_tick.datetime => {self.open_price_tick.datetime}")
                 elif self.trade_action == Cons.ACTION_CLOSE_SHORT and self.history.current_ir == Cons.DIRECTION_DOWN:
-                    if self.afer_open_max_ir is None or self.history.current_ir.length > self.afer_open_max_ir.length:
+                    if self.afer_open_max_ir is None or (self.history.current_ir.length > self.afer_open_max_ir.length and self.history.current_ir.length > 0 * self.unit_value):
                         self.afer_open_max_ir = deepcopy(self.history.current_ir)
                         self.close_price = min(self.close_price, self.afer_open_max_ir.start_price + 1*self.unit_value)
                         logging.info(f"get_close_price_by_max_ir => close_short \n trade_action => {self.trade_action} \n old_close_price => {old_close_price} \n current_close_price => {self.close_price} \n afer_open_max_ir => {self.afer_open_max_ir} \n open_price_tick.datetime => {self.open_price_tick.datetime}")
