@@ -133,7 +133,7 @@ class TickTest():
             self.on_bar(last_minute_cd)
         if minute_cd is not None:
             # 统计是否上去
-            self.refresh_allow_open(tick)
+            # self.refresh_allow_open(tick)
             if self.trade_action is None and trade.simulation_can_open_a_position(self.vt_symbol, tick):
                 # 出现ml并且当前一分钟没有刷新l
                 direction = self.history.breakthrough_direction
@@ -141,7 +141,7 @@ class TickTest():
 
                 # and self.allow_open_by_agreement_d
                 # and self.history.open_status == Cons.OPEN_STATUS_OF_TOP
-                if (not self.d_win_flag) and self.allow_open_by_agreement_d and S4Tick.open_a_price_by_agreement_cr(direction, effective_ir, tick_obj) and self.is_allow_open():
+                if (not self.d_win_flag) and S4Tick.open_a_price_by_agreement_cr(direction, self.history.agreement_cr_obj, effective_ir, tick_obj) and self.is_allow_open():
                     # 时间间隔起点
                     # last_cr_cd = self.history.agreement_cr_list[-1]
                     if self.interval_datetime is None:
@@ -157,8 +157,6 @@ class TickTest():
                             self.close_price = self.history.extremum_d_price
                             self.close_price_by_lose = self.history.extremum_d_price
                             self.open_type = Cons.OPEN_BY_D
-                            self.last_open_d_datetime = self.history.extremum_d.datetime
-                            self.last_open_d = self.history.extremum_d
                             self.increase_opportunity_number()
                             self.after_open_a_position()
                         elif self.history.breakthrough_direction == Cons.DIRECTION_DOWN:
@@ -173,8 +171,6 @@ class TickTest():
                             # 使用l_price作为平仓价  
                             self.close_price_by_lose = self.history.extremum_d_price
                             self.open_type = Cons.OPEN_BY_D
-                            self.last_open_d_datetime = self.history.extremum_d.datetime
-                            self.last_open_d = self.history.extremum_d
                             self.increase_opportunity_number()
                             self.after_open_a_position()
                 elif False and self.d_win_flag and self.instance_1 is not None  and self.has_opportunity_by_instance_1_win() and self.instance_1.allow_open:
@@ -635,11 +631,14 @@ class TickTest():
         return False
     
     """
-    开仓时间
+    开仓后触发的处理
+    将需要回到D设置为False
+    将协定cr的tag设置为False,必须重新刷新协定cr才允许开仓
     """
     def after_open_a_position(self):
-        self.complete_start_list = deepcopy(self.start_list)
+        # self.complete_start_list = deepcopy(self.start_list)
         self.allow_open_by_agreement_d = False
+        self.history.agreement_cr_obj.tag = False
  
     """
     刷新是否可以开仓
@@ -709,16 +708,17 @@ class TickTest():
     """
     def get_close_price_by_max_ir(self):
         if self.trade_action is not None and self.history.current_ir is not None:
+            unit_value_limit = 10 * self.unit_value
             ir_ptime = Logic.ptime(self.history.current_ir.datetime)
             if ir_ptime > self.open_price_tick.datetime:
                 if self.trade_action == Cons.ACTION_CLOSE_LONG and self.history.current_ir.direction == Cons.DIRECTION_UP:  
-                    if self.afer_open_max_ir is None or (self.history.current_ir.length > self.afer_open_max_ir.length and self.history.current_ir.length > 0 * self.unit_value):
+                    if self.afer_open_max_ir is None or (self.history.current_ir.length > self.afer_open_max_ir.length and self.history.current_ir.length > unit_value_limit):
                         self.afer_open_max_ir = deepcopy(self.history.current_ir)
                         old_close_price = self.close_price
                         self.close_price = max(self.close_price, self.afer_open_max_ir.start_price -1*self.unit_value)
                         logging.info(f"get_close_price_by_max_ir => close_long \n trade_action => {self.trade_action} \n old_close_price => {old_close_price} \n current_close_price => {self.close_price} \n afer_open_max_ir => {self.afer_open_max_ir} \n open_price_tick.datetime => {self.open_price_tick.datetime}")
                 elif self.trade_action == Cons.ACTION_CLOSE_SHORT and self.history.current_ir == Cons.DIRECTION_DOWN:
-                    if self.afer_open_max_ir is None or (self.history.current_ir.length > self.afer_open_max_ir.length and self.history.current_ir.length > 0 * self.unit_value):
+                    if self.afer_open_max_ir is None or (self.history.current_ir.length > self.afer_open_max_ir.length and self.history.current_ir.length > unit_value_limit):
                         self.afer_open_max_ir = deepcopy(self.history.current_ir)
                         self.close_price = min(self.close_price, self.afer_open_max_ir.start_price + 1*self.unit_value)
                         logging.info(f"get_close_price_by_max_ir => close_short \n trade_action => {self.trade_action} \n old_close_price => {old_close_price} \n current_close_price => {self.close_price} \n afer_open_max_ir => {self.afer_open_max_ir} \n open_price_tick.datetime => {self.open_price_tick.datetime}")

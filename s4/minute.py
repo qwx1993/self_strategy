@@ -618,6 +618,8 @@ class Minute:
             if self.cr_obj.length > 30 * self.unit_value and  (self.max_ir_by_cr.length > 10 * self.unit_value):
                 self.agreement_cr_list = deepcopy(self.cr_list)
                 self.agreement_cr_obj = deepcopy(self.cr_obj)
+                # 增加一个开仓tag 
+                self.agreement_cr_obj.tag = True
     
     """
     重置协定cr

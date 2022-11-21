@@ -60,7 +60,10 @@ class Tick:
     方向向上时，在接下来的一分钟内低于协定d的价格开仓
     方向向下时，在接下来的一分钟内高于协定d的价格开仓
     """
-    def open_a_price_by_agreement_cr(direction, effective_ir, tick):
+    def open_a_price_by_agreement_cr(direction, agreement_cr_obj, effective_ir, tick):
+        if agreement_cr_obj is None or (not agreement_cr_obj.tag):
+            return False
+
         if effective_ir is None:
             return False
 
