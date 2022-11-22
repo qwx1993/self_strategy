@@ -615,7 +615,7 @@ class Minute:
     """
     def hanle_agreement_cr(self, cd):
         if self.is_equal_d_price(cd):
-            if self.cr_obj.length > 30 * self.unit_value and  (self.max_ir_by_cr.length > 10 * self.unit_value):
+            if self.cr_obj.length > 50 * self.unit_value and  (self.max_ir_by_cr.length > 10 * self.unit_value):
                 self.agreement_cr_list = deepcopy(self.cr_list)
                 self.agreement_cr_obj = deepcopy(self.cr_obj)
                 # 增加一个开仓tag 
@@ -671,13 +671,12 @@ class Minute:
     当方向跟CRmax方向相反时，回到CRmax的终点时调整方向跟CRmax方向一致
     """
     def handle_direction(self, cd):
-      # 判断方向是否改变
+        # 刷新CRmax
         if self.max_cr_obj.length == self.cr_obj.length:
             if not self.breakthrough_direction == self.cr_obj.direction:
                 self.breakthrough_direction = self.cr_obj.direction
                 self.on_direction_change(cd)
-            
-            if self.cr_obj.length > 30 * self.unit_value and  (self.max_ir_by_cr.length > 10 * self.unit_value):
+            if self.cr_obj.length > 50 * self.unit_value and  (self.max_ir_by_cr.length > 10 * self.unit_value):
                 self.change_direction_number += 1
                 # 刷新cr，允许开仓
                 self.handle_allow_open_by_cr_refresh()
@@ -686,7 +685,7 @@ class Minute:
                 self.reverse_direct_by_max_cr()
                 self.on_direction_change(cd)
                 # 设置成不能开仓状态
-                self.handle_allow_open_by_cr_refresh()
+                self.handle_allow_open_by_rc_start_cd()
                 self.reset_max_cr()
                 self.reset_change_direction_number()
                 # if self.last_history is not None:

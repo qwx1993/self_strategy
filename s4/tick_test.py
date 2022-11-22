@@ -141,7 +141,7 @@ class TickTest():
 
                 # and self.allow_open_by_agreement_d
                 # and self.history.open_status == Cons.OPEN_STATUS_OF_TOP
-                if (not self.d_win_flag) and S4Tick.open_a_price_by_agreement_cr(direction, self.history.agreement_cr_obj, effective_ir, tick_obj) and self.is_allow_open():
+                if S4Tick.open_a_price_by_agreement_cr(direction, self.history.agreement_cr_obj, effective_ir, tick_obj):
                     # 时间间隔起点
                     # last_cr_cd = self.history.agreement_cr_list[-1]
                     if self.interval_datetime is None:
@@ -539,7 +539,7 @@ class TickTest():
                     #         self.d_win_flag = True
                             # self.init_history1_by_win(self.trade_action)
                 else:
-                    if self.opportunity_number < self.opportunity_number_limit: # 一共两次机会
+                    if self.opportunity_number < self.opportunity_number_limit:
                         self.interval_minutes = self.second_interval_minutes
                         self.interval_datetime = str(tick.datetime)
                     else:
