@@ -113,6 +113,8 @@ class Minute:
         self.init_max_cr() # 将昨日max_cr相关参数赋给今天参数
         self.max_ir_by_cr = None # cr_list区间中最大的ir
         self.current_ir = None # 当前的ir
+        self.agreement_cr_list = [] # 协定cr的列表
+        self.agreement_cr_obj = None # 协定cr对象
 
 
     """
