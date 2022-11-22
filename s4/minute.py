@@ -3,11 +3,7 @@ main.py
 读取data文件夹中的所有csv文件，针对每个文件计算出该交易策略的胜率和赚钱点数
 """
 from copy import deepcopy
-import os
-from re import L
-import sys
 from self_strategy.constants import Constants
-from self_strategy.constants_s3 import ConstantsS3 as S3_Cons
 from self_strategy.logic import Logic
 from types import SimpleNamespace
 
@@ -100,7 +96,6 @@ class Minute:
         # 昨日收盘价
         self.yesterday_close_price = yesterday_close_price
         self.unit_value = unit_value
-        # print(f"昨日开盘价 => {self.yesterday_open_price} 昨日收盘价 => {self.yesterday_close_price} unit_value => {self.unit_value} last_max_price => {last_max_price} last_min_price=>{last_min_price} yesterday_direction => {self.yesterday_direction}") 
         # 所有的list跟dict需要重置
         self.max_l_to_d_interval = None
         self.max_r = None
@@ -161,7 +156,6 @@ class Minute:
     """
     设置最大的l_to_d间隔数据
     """
-
     def set_max_l_to_d_interval_obj(self, obj):
         if (self.max_l_to_d_interval is None) or (obj.length > self.max_l_to_d_interval.length):
             self.max_l_to_d_interval = obj
@@ -544,16 +538,13 @@ class Minute:
         self.history_statistic_max_l_to_d(cd)
         # 统计r
         self.history_statistic_max_r(cd)
-        # 处理ir
+        # 处理max_ir_by_cr
         self.handle_max_ir_by_cr(cd)
         # 处理ir
         self.handle_current_ir()
 
-        # 处理协定D的tag
-        self.handle_agreement_extremum_d_tag_by_cr()
-
-        # 处理出现最大的幅度情况
-        self.handle_max_amplitude(cd)
+        # 处理出现最大的幅度情况（之前的Rmax）
+        # self.handle_max_amplitude(cd)
 
         # 处理方向的逻辑
         self.handle_direction(cd)
@@ -563,7 +554,7 @@ class Minute:
 
     """
     协定cr
-    当前cr的最后一分钟是D，且满足cr的长度大于30单位，并且cr中的最大的ir大于十个单位就设置为协定cr
+    当前cr的最后一分钟是D，且满足cr的长度大于指定单位，并且cr中的最大的ir大于十个单位就设置为协定cr
     """
     def hanle_agreement_cr(self, cd):
         if self.is_equal_d_price(cd):
@@ -584,37 +575,32 @@ class Minute:
     """
     标定协定D的特性
     """
-    def handle_agreement_extremum_d_tag_by_cr_or_ir(self):
-        if self.agreement_extremum_d is not None and not self.agreement_extremum_d.tag:
-            if self.cr_obj.direction == self.breakthrough_direction:
-                max_price = max(self.cr_obj.start_price, self.cr_obj.end_price)
-                min_price = min(self.cr_obj.start_price, self.cr_obj.end_price)
+    # def handle_agreement_extremum_d_tag_by_cr_or_ir(self):
+    #     if self.agreement_extremum_d is not None and not self.agreement_extremum_d.tag:
+    #         if self.cr_obj.direction == self.breakthrough_direction:
+    #             max_price = max(self.cr_obj.start_price, self.cr_obj.end_price)
+    #             min_price = min(self.cr_obj.start_price, self.cr_obj.end_price)
 
-                ir_max_price = max(self.current_ir.start_price, self.current_ir.end_price)
-                ir_min_price = min(self.current_ir.start_price, self.current_ir.end_price)
+    #             ir_max_price = max(self.current_ir.start_price, self.current_ir.end_price)
+    #             ir_min_price = min(self.current_ir.start_price, self.current_ir.end_price)
 
-                if (max_price >= self.agreement_extremum_d.price >= min_price) and self.cr_obj.length > 30 * self.unit_value:
-                    self.agreement_extremum_d.tag = True
-                elif (ir_max_price >= self.agreement_extremum_d.price >= ir_min_price) and self.current_ir.length > 10 * self.unit_value:
-                    self.agreement_extremum_d.tag = True
+    #             if (max_price >= self.agreement_extremum_d.price >= min_price) and self.cr_obj.length > 30 * self.unit_value:
+    #                 self.agreement_extremum_d.tag = True
+    #             elif (ir_max_price >= self.agreement_extremum_d.price >= ir_min_price) and self.current_ir.length > 10 * self.unit_value:
+    #                 self.agreement_extremum_d.tag = True
     
     """
     标定协定D的特性
     """
-    def handle_agreement_extremum_d_tag_by_cr(self):
-        if self.agreement_extremum_d is not None and not self.agreement_extremum_d.tag:
-            if self.cr_obj.direction == self.breakthrough_direction:
-                max_price = max(self.cr_obj.start_price, self.cr_obj.end_price)
-                min_price = min(self.cr_obj.start_price, self.cr_obj.end_price)
-
-                # ir_max_price = max(self.max_ir_by_cr.start, self.max_ir_by_cr.end)
-                # ir_min_price = min(self.current_ir.start_price, self.current_ir.end_price)
-
-                if (max_price >= self.agreement_extremum_d.price >= min_price) and self.cr_obj.length > 30 * self.unit_value and self.max_ir_by_cr.length > 10 * self.unit_value:
-                    self.agreement_extremum_d.tag = True
-                    self.agreement_extremum_d.open_price = Logic.get_middle_price_for_cr_list(self.breakthrough_direction, self.agreement_extremum_d.price, self.cr_list)
-                # elif (ir_max_price >= self.agreement_extremum_d.price >= ir_min_price) and self.current_ir.length > 10 * self.unit_value:
-                #     self.agreement_extremum_d.tag = True
+    # def handle_agreement_extremum_d_tag_by_cr(self):
+    #     if self.agreement_extremum_d is not None and not self.agreement_extremum_d.tag:
+    #         if self.cr_obj.direction == self.breakthrough_direction:
+    #             max_price = max(self.cr_obj.start_price, self.cr_obj.end_price)
+    #             min_price = min(self.cr_obj.start_price, self.cr_obj.end_price)
+    #             if (max_price >= self.agreement_extremum_d.price >= min_price) and self.cr_obj.length > 30 * self.unit_value and self.max_ir_by_cr.length > 10 * self.unit_value:
+    #                 self.agreement_extremum_d.tag = True
+    #                 self.agreement_extremum_d.open_price = Logic.get_middle_price_for_cr_list(self.breakthrough_direction, self.agreement_extremum_d.price, self.cr_list)
+    
 
     """
     方向处理
@@ -1454,32 +1440,3 @@ class Minute:
         self.last_cd = Logic.handle_last_cd(self.last_cd, cd)
         self.refresh_d_minute_count += 1
         self.refresh_h_minute_count += 1
-
-    """
-    历史行情数据分析
-    """
-    def analysis(self, vt_symbol, frequent=1):
-        try:
-           data_file = open(Constants.STRATEGIES_DATA_PATH + f"{vt_symbol}_{frequent}m.csv", 'r')
-        except Exception as e:
-            print(f"无法打开{vt_symbol}_{frequent}m.csv文件", e)
-            data_file.close()
-            os._exit(0)
-        while True:
-            line = data_file.readline()
-            if not line:
-                break
-
-            temp_array = line.split(',')
-            if len(temp_array) > 0:
-                try:
-                    cd = Logic.history_price_to_data_object(temp_array, line)  # 当前时间单位的相关数据
-                except Exception as e:
-                    continue
-                if self.history_status == Constants.HISTORY_STATUS_OF_NONE: 
-                    self.histoty_status_none(cd)
-                elif self.history_status == Constants.HISTORY_STATUS_OF_TREND:  # 趋势分析中
-                    self.statistic(cd)
-            # 判断是否需要合并,当当前分钟为直线时考虑
-            self.last_cd = Logic.handle_last_cd(self.last_cd, cd)
-        data_file.close()
