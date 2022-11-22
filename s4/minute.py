@@ -111,6 +111,7 @@ class Minute:
         self.last_history = last_history
         self.last_history_direction = last_history_direction # 昨日方向
         self.init_max_cr() # 将昨日max_cr相关参数赋给今天参数
+        self.init_extremum_d() # 将昨日的d赋值给今天
         self.max_ir_by_cr = None # cr_list区间中最大的ir
         self.current_ir = None # 当前的ir
         self.agreement_cr_list = [] # 协定cr的列表
@@ -277,6 +278,7 @@ class Minute:
             self.agreement_extremum_d.price = self.extremum_d_price
             self.agreement_extremum_d.appoint_datetime = dn.datetime
             self.agreement_extremum_d.tag = False
+
     """
     D刷新后重置L
     """
@@ -481,17 +483,7 @@ class Minute:
         # self.init_max_l_to_d_interval_obj(cd)
         # 初始化最大的下降幅度
         self.max_r = None
-        # self.init_max_r_obj(cd)
-        # 设置极限d_price
-        # 将D的相关参数初始化为昨日的D
-        if self.last_history is not None and self.last_history.breakthrough_direction == self.breakthrough_direction:
-            self.extremum_d_price = self.last_history.extremum_d_price
-            self.extremum_d = self.last_history.extremum_d
-            # print(f"初始化设置的D => {self.extremum_d} {self.extremum_d_price}")
-        else:
-            self.extremum_d_price = None
-            self.extremum_d = None
-
+        # 设置d
         self.set_extremum_d(cd)
         # 设置rrn
         self.rrn = None
@@ -1389,6 +1381,14 @@ class Minute:
         if self.last_history is not None and self.max_cr_obj is None:
             self.max_cr_list = deepcopy(self.last_history.max_cr_list)
             self.max_cr_obj = deepcopy(self.last_history.max_cr_obj)
+
+    """
+    将昨日的d设置到程序中
+    """ 
+    def init_extremum_d(self):
+        if self.last_history is not None and self.last_history.extremum_d is not None:
+            self.extremum_d = deepcopy(self.last_history.extremum_d)
+            self.extremum_d_price = self.last_history.extremum_d_price
 
     """
     处理连续行情数据
