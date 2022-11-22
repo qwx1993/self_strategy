@@ -25,7 +25,6 @@ class FixedMinute:
 
     current_status = Constants.STATUS_NONE  # 当前状态，目前就无状态跟非加速振荡
 
-    counter_trend_status = Constants.STATUS_COUNTER_TREND_NO  # 逆趋势状态，默认非逆趋势状态
     sub_status = S3_Cons.SUB_STATUS_OF_NONE # 策略三的子状态
 
     actions = []  # 记录所有的动作，包括开空，开多，逆开空，逆开多，注意：逆趋势下是两倍仓位
@@ -118,13 +117,6 @@ class FixedMinute:
     """
     def set_sub_status(self, sub_status):
         self.sub_status = sub_status
-
-    """
-    设置当前是否为逆趋势中， 包括两种状态，逆趋势状态、非逆趋势状态
-    """
-
-    def set_counter_trend_status(self, status):
-        self.counter_trend_status = status
 
     """
     设置最大的l_to_d间隔数据
@@ -1146,16 +1138,6 @@ class FixedMinute:
                 return False
 
     """
-    处于逆趋势中
-    """
-
-    def in_a_counter_trend(self):
-        if self.counter_trend_status == Constants.STATUS_COUNTER_TREND_YES:
-            return True
-        else:
-            return False
-
-    """
     改变方向
     """
 
@@ -1193,7 +1175,6 @@ class FixedMinute:
         self.breakthrough_direction = None  # 突破的方向 -1 向下 1 向上
         self.max_l_to_d_interval = None  # 最大上涨的间隔
         self.current_status = Constants.STATUS_NONE  # 当前状态
-        self.counter_trend_status = Constants.STATUS_COUNTER_TREND_NO  # 逆趋势状态
         self.need_check_oscillation_status = Constants.NEED_CHECK_OSCILLATION_STATUS_NO  # 振荡检测
         self.max_r = None
         self.rrn = None 

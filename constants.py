@@ -71,10 +71,6 @@ class Constants:
     ACTIONS_INDEX_TWO = 2 # 情况二
 
     # 是否在逆趋势中
-    STATUS_COUNTER_TREND_NO = 0  # 非逆趋势状态中
-    STATUS_COUNTER_TREND_YES = 1  # 逆趋势状态中
-
-    # 是否在逆趋势中
     NEED_CHECK_OSCILLATION_STATUS_NO = 0  # 不需要检测振荡
     NEED_CHECK_OSCILLATION_STATUS_YES = 1  # 需要检测振荡
 

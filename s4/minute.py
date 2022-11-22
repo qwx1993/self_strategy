@@ -23,17 +23,13 @@ class Minute:
 
     current_status = Constants.STATUS_NONE  # 当前状态，目前就无状态跟非加速振荡
 
-    counter_trend_status = Constants.STATUS_COUNTER_TREND_NO  # 逆趋势状态，默认非逆趋势状态
-    sub_status = S3_Cons.SUB_STATUS_OF_NONE # 策略三的子状态
-
     actions = []  # 记录所有的动作，包括开空，开多，逆开空，逆开多，注意：逆趋势下是两倍仓位
-    test_need_statistic = False # 测试是否需要统计   
     extremum_d_price = None  # 极致d的price
     extremum_d = None  # 极值点D
-    agreement_extremum_d = None # 协议D,标定开仓信号
+    agreement_extremum_d = None # todo 协议D,标定开仓信号 暂时不用了
     extremum_l_price = None # 极值点l的price
     extremum_l = None # 极值点l
-    agreement_extremum_l = None # 协定L
+    agreement_extremum_l = None # 协定L 暂时不用了
 
     h_price = None # h点，表示比仅次于d点第二高点
     h_cd = None
@@ -43,24 +39,21 @@ class Minute:
     last_cd = None # 上一点
     max_amplitude = None # 最大幅度对象
     last_max_amplitude = None # 上一个Rmax
-    change_direction_number = 0 # Rmax改变方向的次数
+    change_direction_number = 0 # rc改变方向的次数
     h_price_max = None # h的极值
     trade_action = None
-    ml = None # 出现小级别逆趋势后的低点，需比L的值大
-    ml_1_price  = None # 用于止盈
+    # ml = None # 出现小级别逆趋势后的低点，需比L的值大
+    # ml_1_price  = None # 用于止盈
     m_max_r = None  # 小级别r
     M_MAX_R = None  # 小级别R
-    agreement_close_price = None # 预估平仓价
-    close_price = None # 平仓价
     unit_value = 0 # 单位值
-    max_limit = 1 # 满足开仓条件后
+    # max_limit = 1 # 最大开仓次数限制 todo 暂时无使用
     has_open_a_position_times = 0 # 已开仓次数
     l_start_cd = None # l开仓起点
     h_start_cd = None # h开仓起点
     d_start_cd = None # d开仓起点
     interval_minutes = 10
     refresh_d_minute_count = 0 # 协定D刷新的间隔分钟数
-
 
     #---------------------
     d_minute_count_limit = 5 # 协定D刷新的间隔分钟数
@@ -70,7 +63,7 @@ class Minute:
 
     yesterday_open_price = None # 昨日开盘价格
     yesterday_close_price = None # 昨日收盘价格
-    yesterday_direction = None # 上一个交易日的方向
+    # yesterday_direction = None # 上一个交易日的方向  以昨日开仓跟收盘价定方向
 
     start_cd = None # 当日的起点
 
@@ -86,7 +79,7 @@ class Minute:
     max_cr_list = [] # 最大的连续趋势区间
     max_cr_obj = None # 最大的区间幅度
 
-    open_status = None # 开仓状态 0:找顶 1:找底
+    # open_status = None # 开仓状态 0:找顶 1:找底
     fictitious_cd = None
     # -------------------------------------
     last_history  = None 
@@ -94,9 +87,8 @@ class Minute:
 
     #-------------------------------------1116
     allow_open = True # 允许开仓
-    max_ir_by_cr = None
+    max_ir_by_cr = None # 从cr_list中统计出最大的ir
     current_ir = None # 当前的ir
-
 
     """
     初始化
@@ -107,8 +99,6 @@ class Minute:
         self.yesterday_open_price = yesterday_open_price
         # 昨日收盘价
         self.yesterday_close_price = yesterday_close_price
-        # 设置昨日方向
-        self.set_yesterday_direction()
         self.unit_value = unit_value
         # print(f"昨日开盘价 => {self.yesterday_open_price} 昨日收盘价 => {self.yesterday_close_price} unit_value => {self.unit_value} last_max_price => {last_max_price} last_min_price=>{last_min_price} yesterday_direction => {self.yesterday_direction}") 
         # 所有的list跟dict需要重置
@@ -133,12 +123,12 @@ class Minute:
     """
     根据昨日的开盘跟收盘价定昨日方向
     """
-    def set_yesterday_direction(self):
-        if self.yesterday_open_price is not None and self.yesterday_close_price is not None:
-            if self.yesterday_close_price > self.yesterday_open_price:
-                self.yesterday_direction = Constants.DIRECTION_UP
-            else:
-                self.yesterday_direction = Constants.DIRECTION_DOWN
+    # def set_yesterday_direction(self):
+    #     if self.yesterday_open_price is not None and self.yesterday_close_price is not None:
+    #         if self.yesterday_close_price > self.yesterday_open_price:
+    #             self.yesterday_direction = Constants.DIRECTION_UP
+    #         else:
+    #             self.yesterday_direction = Constants.DIRECTION_DOWN
 
     """
     添加对应的动作，目前包括开空、平空、开多、平多
@@ -167,19 +157,6 @@ class Minute:
     """
     def set_status(self, status):
         self.current_status = status
-    
-    """
-    设置子状态
-    """
-    def set_sub_status(self, sub_status):
-        self.sub_status = sub_status
-
-    """
-    设置当前是否为逆趋势中， 包括两种状态，逆趋势状态、非逆趋势状态
-    """
-
-    def set_counter_trend_status(self, status):
-        self.counter_trend_status = status
 
     """
     设置最大的l_to_d间隔数据
@@ -341,8 +318,6 @@ class Minute:
                     # 如果是L状态，就设置为逆趋势状态
                     if self.extremum_l_price is not None:
                         self.set_h_price(ln)
-                        if self.sub_status == S3_Cons.SUB_STATUS_OF_L:
-                            self.set_sub_status(S3_Cons.SUB_STATUS_OF_TREND_COUNTER)
             else:
                 if (self.extremum_l_price is None) or ln.high > self.extremum_l_price:
                     self.before_set_extremum_l()
@@ -352,8 +327,6 @@ class Minute:
                 else:
                     if self.extremum_l_price is not None:
                         self.set_h_price(ln)
-                        if self.sub_status == S3_Cons.SUB_STATUS_OF_L:
-                            self.set_sub_status(S3_Cons.SUB_STATUS_OF_TREND_COUNTER)
     
     """
     在设置新的L之前刷新协定L
@@ -369,8 +342,6 @@ class Minute:
     """
     def after_set_extremum_l(self):
         # 设置L为最新的状态
-        self.set_sub_status(S3_Cons.SUB_STATUS_OF_L)
-        self.ml = None
         self.l_start_cd = None
         self.reset_h_price()
         # 出现新的l刷新开仓次数
@@ -384,8 +355,6 @@ class Minute:
         self.extremum_l = None
         self.extremum_l_price = None
         self.l_start_cd = None
-        self.ml = None
-        self.sub_status = S3_Cons.SUB_STATUS_OF_NONE
         # 重置开盘次数
         self.has_open_a_position_times = 0
         # 重置h
@@ -452,25 +421,8 @@ class Minute:
     """
     重新设置ml_1_price为None
     """
-    def reset_ml_1_price(self):
-        self.ml_1_price = None
-
-    """
-    出现ml1就开仓，否则不开仓
-    """ 
-    def handle_open_a_price(self, cd):
-        if self.find_open_a_price(cd):
-            self.set_open_trade_action()
-            self.set_sub_status(S3_Cons.SUB_STATUS_OF_ML_ONE)
-
-            # 分钟测试时才需要的代码
-            if self.trade_action == Constants.ACTION_OPEN_LONG:
-                open_a_price = self.last_cd.high + self.unit_value
-                self.close_price = self.last_cd.low
-            elif self.trade_action == Constants.ACTION_OPEN_SHORT:
-                open_a_price = self.last_cd.low - self.unit_value
-                self.close_price = self.last_cd.high
-            self.add_action(cd, self.trade_action, open_a_price)
+    # def reset_ml_1_price(self):
+    #     self.ml_1_price = None
 
     """
     设置开仓状态
@@ -484,15 +436,15 @@ class Minute:
     """
     出现ml1
     """
-    def find_open_a_price(self, cd):
-        if self.ml is not None:
-            if self.breakthrough_direction == Constants.DIRECTION_UP:
-                if cd.high > self.last_cd.high:
-                    return True
-            elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
-                if cd.low < self.last_cd.low:
-                    return True
-        return False
+    # def find_open_a_price(self, cd):
+    #     if self.ml is not None:
+    #         if self.breakthrough_direction == Constants.DIRECTION_UP:
+    #             if cd.high > self.last_cd.high:
+    #                 return True
+    #         elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
+    #             if cd.low < self.last_cd.low:
+    #                 return True
+    #     return False
 
     """
     如果当前的R比M_MAX_R 还大就结束统计，重新开始统计逆趋势
@@ -733,30 +685,6 @@ class Minute:
         else:
             return False
 
-
-    """
-    平仓通过上一分钟的最低价
-    """
-    def close_a_price_by_last_cd_low_price(self, cd):
-        if self.trade_action == Constants.ACTION_OPEN_LONG:
-            if self.close_price > cd.low:
-                self.trade_action = Constants.ACTION_CLOSE_LONG
-                # 临时使用
-                if self.test_need_statistic:
-                    self.add_action(cd, self.trade_action, self.close_price - self.unit_value)
-                # print(f"平仓1 => {cd.datetime} {self.close_price - self.unit_value}")
-                if self.sub_status == S3_Cons.SUB_STATUS_OF_ML_ONE:
-                    self.reset_params_by_close_a_price()
-        elif self.trade_action == Constants.ACTION_OPEN_SHORT:
-            if self.close_price < cd.high:
-                # print(f"平仓2 => {cd.datetime} 平仓价格 => {self.close_price + self.unit_value}")
-                self.trade_action = Constants.ACTION_CLOSE_SHORT
-                # 临时使用
-                if self.test_need_statistic:
-                    self.add_action(cd, self.trade_action, self.close_price + self.unit_value)
-                if self.sub_status == S3_Cons.SUB_STATUS_OF_ML_ONE:
-                    self.reset_params_by_close_a_price()
-    
     """
     开多情况，如果比上一分钟的低点低为真
     开空情况，如果比上一分钟的高点高为真
@@ -782,77 +710,6 @@ class Minute:
             if cd.low < self.last_cd.low:
                 return True
         return False
-    
-    """
-    设置开仓协定价格
-    """
-    def set_close_price_by_agreement(self):
-        if self.agreement_close_price is not None:
-            self.close_price = self.agreement_close_price
-            self.agreement_close_price = None
-
-    def set_agreement_close_price(self, cd):
-        if self.trade_action == Constants.ACTION_OPEN_LONG:
-            if self.agreement_close_price is None or cd.low < self.agreement_close_price:
-                self.agreement_close_price = cd.low
-        elif self.trade_action == Constants.ACTION_OPEN_SHORT:
-            if self.agreement_close_price is None or cd.high > self.agreement_close_price:
-                self.agreement_close_price = cd.high
-
-
-    """
-    平仓
-    """
-    def close_a_price(self, cd):
-        if self.trade_action == Constants.ACTION_OPEN_LONG:
-            if cd.low < self.close_price:
-                return True
-        elif self.trade_action == Constants.ACTION_OPEN_SHORT:
-            if cd.high > self.close_price:
-                return True
-        return False
-
-    """
-    判断当前价是否超过止盈价位，如果超过就平仓
-    """
-    def close_a_price_by_ml_1_price(self, cd):
-        if self.trade_action == Constants.ACTION_OPEN_LONG:
-            if self.ml_1_price > cd.low:
-                self.trade_action = Constants.ACTION_CLOSE_LONG
-                # print(f"平仓 => {cd.datetime} 平仓价格 => {self.ml_1_price}")
-                self.reset_ml_1_price()
-                if self.sub_status == S3_Cons.SUB_STATUS_OF_ML_ONE:
-                    self.reset_params_by_close_a_price()
-        elif self.trade_action == Constants.ACTION_OPEN_SHORT:
-            if self.ml_1_price < cd.high:
-                # print(f"平仓 => {cd.datetime} 平仓价格 => {self.ml_1_price}")
-                self.trade_action = Constants.ACTION_CLOSE_SHORT
-                self.reset_ml_1_price()
-                if self.sub_status == S3_Cons.SUB_STATUS_OF_ML_ONE:
-                    self.reset_params_by_close_a_price()
-    
-    """
-    判断当前价是否超过止盈价位，如果超过就平仓
-    """
-    def close_a_price_by_ml(self, cd):
-        if self.trade_action == Constants.ACTION_OPEN_LONG:
-            if self.ml > cd.low:
-                self.trade_action = Constants.ACTION_CLOSE_LONG
-                # print(f"平仓 => {cd.datetime} 平仓价格 => {self.ml_1_price}")
-                if self.sub_status == S3_Cons.SUB_STATUS_OF_ML_ONE:
-                    self.reset_params_by_close_a_price()
-        elif self.trade_action == Constants.ACTION_OPEN_SHORT:
-            if self.ml < cd.high:
-                # print(f"平仓 => {cd.datetime} 平仓价格 => {self.ml_1_price}")
-                self.trade_action = Constants.ACTION_CLOSE_SHORT
-                if self.sub_status == S3_Cons.SUB_STATUS_OF_ML_ONE:
-                    self.reset_params_by_close_a_price()
-    
-    """
-    平仓之后重新设置参数
-    """ 
-    def reset_params_by_close_a_price(self):
-        self.set_sub_status(S3_Cons.SUB_STATUS_OF_ML)
 
     """
     处理最大的幅度区间Rmax
@@ -1352,17 +1209,6 @@ class Minute:
                 return True
         
         return False
-        
-
-    """
-    处于逆趋势中
-    """
-
-    def in_a_counter_trend(self):
-        if self.counter_trend_status == Constants.STATUS_COUNTER_TREND_YES:
-            return True
-        else:
-            return False
 
     """
     改变方向
@@ -1417,7 +1263,6 @@ class Minute:
         self.breakthrough_direction = None  # 突破的方向 -1 向下 1 向上
         self.max_l_to_d_interval = None  # 最大上涨的间隔
         self.current_status = Constants.STATUS_NONE  # 当前状态
-        self.counter_trend_status = Constants.STATUS_COUNTER_TREND_NO  # 逆趋势状态
         self.need_check_oscillation_status = Constants.NEED_CHECK_OSCILLATION_STATUS_NO  # 振荡检测
         self.max_r = None
         self.rrn = None 
@@ -1496,7 +1341,7 @@ class Minute:
         self.refresh_d_minute_count += 1
         self.refresh_h_minute_count += 1
         # 处理状态
-        self.handle_open_status()
+        # self.handle_open_status()
 
     """
     在没有进入行情的时候处理ir
@@ -1556,7 +1401,6 @@ class Minute:
         if self.last_history is not None and self.max_cr_obj is None:
             self.max_cr_list = deepcopy(self.last_history.max_cr_list)
             self.max_cr_obj = deepcopy(self.last_history.max_cr_obj)
-            # print(f"初始化数据到今天 => max_cr_list : {self.max_cr_list} max_cr_obj => {self.max_cr_obj}")
 
     """
     处理连续行情数据
