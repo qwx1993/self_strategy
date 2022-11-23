@@ -294,7 +294,7 @@ class TickTest():
             # # 通过cr_list 刷新平仓价
             # self.get_close_price_by_cr_list()
             # self.get_close_price_by_cr_list_and_max_ir()
-            self.get_close_price_by_max_ir()
+            self.get_close_price_by_current_ir()
 
         elif self.instance_1 is not None:
             # 新程序开仓
@@ -709,11 +709,33 @@ class TickTest():
                         old_close_price = self.close_price
                         self.close_price = max(self.close_price, self.afer_open_max_ir.start_price -1*self.unit_value)
                         self.log_obj.info(f"get_close_price_by_max_ir => close_long \n trade_action => {self.trade_action} \n old_close_price => {old_close_price} \n current_close_price => {self.close_price} \n afer_open_max_ir => {self.afer_open_max_ir} \n open_price_tick.datetime => {self.open_price_tick.datetime}")
-                elif self.trade_action == Cons.ACTION_CLOSE_SHORT and self.history.current_ir == Cons.DIRECTION_DOWN:
+                elif self.trade_action == Cons.ACTION_CLOSE_SHORT and self.history.current_ir.direction == Cons.DIRECTION_DOWN:
                     if self.afer_open_max_ir is None or (self.history.current_ir.length > self.afer_open_max_ir.length and self.history.current_ir.length > unit_value_limit):
                         self.afer_open_max_ir = deepcopy(self.history.current_ir)
+                        old_close_price = self.close_price
                         self.close_price = min(self.close_price, self.afer_open_max_ir.start_price + 1*self.unit_value)
                         self.log_obj.info(f"get_close_price_by_max_ir => close_short \n trade_action => {self.trade_action} \n old_close_price => {old_close_price} \n current_close_price => {self.close_price} \n afer_open_max_ir => {self.afer_open_max_ir} \n open_price_tick.datetime => {self.open_price_tick.datetime}")
+
+    """
+    通过开仓后最近的current_ir且current_ir的长度大于10单位
+    如果是平多，则current_ir方向向上
+    如果是平多，则current_ir方向向下
+    """
+    def get_close_price_by_current_ir(self):
+        if self.trade_action is not None and self.history.current_ir is not None:
+            unit_value_limit = 10 * self.unit_value
+            ir_ptime = Logic.ptime(self.history.current_ir.datetime)
+            if ir_ptime > self.open_price_tick.datetime:
+                if self.trade_action == Cons.ACTION_CLOSE_LONG and self.history.current_ir.direction == Cons.DIRECTION_UP:  
+                    if self.history.current_ir.length > unit_value_limit:
+                        old_close_price = self.close_price
+                        self.close_price = max(self.close_price, self.history.current_ir.start_price -1*self.unit_value)
+                        self.log_obj.info(f"get_close_price_by_current_ir => close_long \n trade_action => {self.trade_action} \n old_close_price => {old_close_price} \n current_close_price => {self.close_price} \n current_ir => {self.history.current_ir} \n open_price_tick.datetime => {self.open_price_tick.datetime}")
+                elif self.trade_action == Cons.ACTION_CLOSE_SHORT and self.history.current_ir.direction == Cons.DIRECTION_DOWN:
+                    if self.history.current_ir.length > unit_value_limit:
+                        old_close_price = self.close_price
+                        self.close_price = min(self.close_price, self.history.current_ir.start_price + 1*self.unit_value)
+                        self.log_obj.info(f"get_close_price_by_current_ir => close_short \n trade_action => {self.trade_action} \n old_close_price => {old_close_price} \n current_close_price => {self.close_price} \n current_ir => {self.history.current_ir} \n open_price_tick.datetime => {self.open_price_tick.datetime}")
 
 
     """
