@@ -86,6 +86,10 @@ class Minute:
     max_ir_by_cr = None # 从cr_list中统计出最大的ir
     current_ir = None # 当前的ir
 
+    agreement_ir = None # 协定ir
+
+
+
     """
     初始化
     """
@@ -544,7 +548,7 @@ class Minute:
         self.handle_direction(cd)
 
         # 处理协定cr
-        self.hanle_agreement_cr(cd)
+        self.handle_agreement_ir(cd)
 
     """
     协定cr
@@ -565,6 +569,16 @@ class Minute:
         if self.agreement_cr_obj is not None:
             self.agreement_cr_list = []
             self.agreement_cr_obj = None
+    
+    """
+    协定ir
+    当ir的长度大于指定单位，并且突破d时
+    """
+    def handle_agreement_ir(self, cd):
+        if self.is_equal_d_price(cd):
+            if self.current_ir.length > 20*self.unit_value and self.current_ir.direction == self.breakthrough_direction:
+                self.agreement_ir = deepcopy(self.current_ir)
+                self.agreement_ir.tag = True
 
     """
     标定协定D的特性

@@ -75,6 +75,22 @@ class Tick:
                 return True
         
         return False
+    
+    """
+    方向向上，tick的价格比协议ir的起点价低开仓
+    方向向下，tick的价格比协议ir的起点价高开仓
+    """
+    def open_a_price_by_agreement_ir(direction, agreement_ir, tick):
+        if agreement_ir is None or (not agreement_ir.tag):
+            return False
+        
+        if direction == Constants.DIRECTION_UP:
+            if tick.current < agreement_ir.start_price:
+                return True
+        elif direction == Constants.DIRECTION_DOWN:
+            if tick.current > agreement_ir.start_price:
+                return True
+        return False
 
     
     """
@@ -141,6 +157,8 @@ class Tick:
     通过tick进行平仓
     """
     def close_a_price(trade_action, close_price, tick):
+        if close_price is None:
+            return False
 
         if trade_action == Constants.ACTION_CLOSE_LONG:
             if tick.current < close_price:
