@@ -22,6 +22,9 @@ class Minute:
     actions = []  # 记录所有的动作，包括开空，开多，逆开空，逆开多，注意：逆趋势下是两倍仓位
     extremum_d_price = None  # 极致d的price
     extremum_d = None  # 极值点D
+    effective_extremum_d_price = None # 有效D的价格
+    effective_extremum_d = None # 有效D
+
     agreement_extremum_d = None # todo 协议D,标定开仓信号 暂时不用了
     # effective_extremum_d = None # 有效D 
     extremum_l_price = None # 极值点l的price
@@ -81,8 +84,14 @@ class Minute:
     allow_open = True # 允许开仓
     max_ir_by_cr = None # 从cr_list中统计出最大的ir
     current_ir = None # 当前的ir
+    ir_last = None # 用于判断有效突破的
+    effective_ir_last = None # 有效ir_last
 
     agreement_ir = None # 协定ir
+
+    #---------------------------------------1128
+    effective_cr_list = [] # 有效cr_list
+    effective_cr_obj = None # 有效cr_obj
 
     """
     初始化
@@ -108,6 +117,8 @@ class Minute:
         self.current_ir = None # 当前的ir
         self.agreement_cr_list = [] # 协定cr的列表
         self.agreement_cr_obj = None # 协定cr对象
+        self.effective_cr_list = [] # 有效cr_list
+        self.effective_cr_obj = None # 有效cr_obj
 
     """
     添加对应的动作，目前包括开空、平空、开多、平多
@@ -239,13 +250,11 @@ class Minute:
     def set_extremum_d(self, dn):
         if self.breakthrough_direction == Constants.DIRECTION_UP:
             if (self.extremum_d_price is None) or dn.high >= self.extremum_d_price:
-                self.before_set_extremum_d(dn)
                 self.extremum_d_price = dn.high
                 self.extremum_d = dn
                 self.after_set_extremum_d()
         else:
             if (self.extremum_d_price is None) or dn.low <= self.extremum_d_price:
-                self.before_set_extremum_d(dn)
                 self.extremum_d_price = dn.low
                 self.extremum_d = dn
                 self.after_set_extremum_d()
@@ -505,6 +514,7 @@ class Minute:
                 max_r_obj = self.amplitude_obj(cd.low, cd.close)
         self.max_r = max_r_obj
 
+    
     """
     分析统计R、r、rrn
     """
@@ -527,6 +537,83 @@ class Minute:
         # 处理协定cr
         self.handle_agreement_ir(cd)
 
+        # 有效趋势
+        self.handle_effective_trend()
+
+        # 标定有效D
+        self.handle_effective_extremum_d(cd)
+
+        # 有效突破跟非有效突破
+        self.handle_break_through(cd)
+        
+    
+    """
+    当CR大于50单位，且其中IR大于10单位设置为有效趋势
+    """
+    def handle_effective_trend(self):
+        if self.cr_obj.length > 50 * self.unit_value and  (self.max_ir_by_cr.length > 10 * self.unit_value):
+            if self.breakthrough_direction == self.cr_obj.direction:
+                self.effective_cr_list = deepcopy(self.cr_list)
+                self.effective_cr_obj = deepcopy(self.cr_obj) 
+                self.set_ir_last(effective=True)
+        else:
+            self.set_ir_last()
+    
+    """
+    设置有效D
+    """
+    def handle_effective_extremum_d(self, cd):
+        if self.effective_cr_obj is not None:
+            if not self.exceed_extremum_d(cd):
+                if self.effective_extremum_d is None:
+                    if self.breakthrough_direction == Constants.DIRECTION_UP:
+                        if cd.close < self.extremum_d.low:
+                            self.effective_extremum_d = deepcopy(self.extremum_d)
+                            self.effective_extremum_d_price = deepcopy(self.extremum_d_price)
+                    elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
+                        if cd.close > self.extremum_d.high:
+                            self.effective_extremum_d = deepcopy(self.extremum_d)
+                            self.effective_extremum_d_price = deepcopy(self.extremum_d_price)
+                            
+    """
+    有效突破，当IR突破d_price时，IR > ir_last,就是有效突破，否则就是无效突破
+    无效突破后如果能够有效回归就可以开仓
+    """
+    def handle_break_through(self):
+        if self.effective_extremum_d_price is not None and self.breakthrough_direction == self.current_ir.direction:
+            if self.breakthrough_direction == Constants.DIRECTION_UP:
+                if self.current_ir.end_price > self.effective_extremum_d_price > self.current_ir.start_price:
+                    if self.current_ir.length > self.effective_ir_last.length:
+                        print("有效突破")
+                        self.reset_effective_extremum_d()
+                    else:
+                        print("无效突破")
+            elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
+                if self.current_ir.start_price > self.effective_extremum_d_price > self.current_ir.end_price:
+                    if self.current_ir.length > self.effective_ir_last.length:
+                        print("有效突破")
+                        self.reset_effective_extremum_d()
+                    else:
+                        print("无效突破")
+
+    """
+    重置有效D
+    """
+    def reset_effective_extremum_d(self):
+        self.effective_extremum_d = None
+        self.effective_extremum_d_price = None
+
+    """
+    设置ir_last
+    """
+    def set_ir_last(self, effective=False):
+        # 设置ir_last
+        if self.current_ir.direction == self.breakthrough_direction and self.current_ir.length > 10*self.unit_value:
+            self.ir_last = self.current_ir
+        # 讲ir_last设置为有效ir_last
+        if effective:
+            self.effective_ir_last = self.ir_last
+        
     """
     协定cr
     当前cr的最后一分钟是D，且满足cr的长度大于指定单位，并且cr中的最大的ir大于十个单位就设置为协定cr
@@ -538,6 +625,14 @@ class Minute:
                 self.agreement_cr_obj = deepcopy(self.cr_obj)
                 # 增加一个开仓tag 
                 self.agreement_cr_obj.tag = True
+
+
+
+
+
+
+
+
     
     """
     重置协定cr
@@ -599,10 +694,6 @@ class Minute:
             if not self.breakthrough_direction == self.cr_obj.direction:
                 self.breakthrough_direction = self.cr_obj.direction
                 self.on_direction_change(cd)
-            if self.cr_obj.length > 50 * self.unit_value and  (self.max_ir_by_cr.length > 10 * self.unit_value):
-                self.change_direction_number += 1
-                # 刷新cr，允许开仓
-                self.handle_allow_open_by_cr_refresh()
         else:
             if Logic.is_exceed_max_rc_start_price(self.breakthrough_direction, self.max_cr_obj, self.max_cr_list[0], cd):
                 self.reverse_direct_by_max_cr()
@@ -1306,10 +1397,6 @@ class Minute:
             self.statistic(cd)
         # 判断是否需要合并,当当前分钟为直线时考虑
         self.last_cd = Logic.handle_last_cd(self.last_cd, cd)
-        self.refresh_d_minute_count += 1
-        self.refresh_h_minute_count += 1
-        # 处理状态
-        # self.handle_open_status()
 
     """
     在没有进入行情的时候处理ir
