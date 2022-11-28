@@ -167,3 +167,19 @@ class Tick:
             if tick.current > close_price:
                 return True
         return False
+
+
+    """
+    通过收盘价进行平仓
+    """
+    def close_a_price_by_cd(trade_action, close_price, cd):
+        if close_price is None:
+            return False
+
+        if trade_action == Constants.ACTION_CLOSE_LONG:
+            if cd.close < close_price:
+                return True
+        elif trade_action == Constants.ACTION_CLOSE_SHORT:
+            if cd.close > close_price:
+                return True
+        return False

@@ -47,8 +47,6 @@ class TickTest():
     last_tick_list = []
     actions = [] # 交易动作
     unit_value = None
-    last_max_price = None # 前一个交易日的最大价格
-    last_min_price = None # 后一个交易日的最小价格
     yesterday_close_price = None # 昨日收盘价格 
     yesterday_open_price = None # 昨日开盘价格
     open_type = 1 # 开仓类型
@@ -97,15 +95,10 @@ class TickTest():
         yesterday_open_price,
         yesterday_close_price,
         win_number_limit,
-        last_max_price,
-        last_min_price,
-        last_history:History
            ):
         """"""
         self.vt_symbol = vt_symbol
         self.unit_value = unit_value
-        self.last_max_price = last_max_price
-        self.last_min_price = last_min_price
         self.yesterday_open_price = yesterday_open_price
         self.yesterday_close_price = yesterday_close_price
         self.instance_1_open_win_number_limit = win_number_limit
@@ -114,12 +107,7 @@ class TickTest():
         初始化日志
         """
         self.log_obj = file.get_logger(self.vt_symbol)
-        if last_history is not None:
-            last_history_direction = last_history.breakthrough_direction
-        else:
-            last_history_direction = None
-        self.history = History(self.yesterday_open_price, self.yesterday_close_price, self.unit_value, last_max_price, last_min_price, last_history, last_history_direction)
-        self.statistic_history = History(self.yesterday_open_price, self.yesterday_close_price, self.unit_value, last_max_price, last_min_price, None, last_history_direction)
+        self.history = History(self.yesterday_open_price, self.yesterday_close_price, self.unit_value)
         self.tick_list = []
         self.last_tick_list = []
         self.actions = []
@@ -201,7 +189,7 @@ class TickTest():
                             self.close_price = self.instance_1.extremum_l_price
                             self.close_price_by_lose = self.instance_1.extremum_l_price
                             self.increase_opportunity_number_by_instance_1()
-            elif self.trade_action == Cons.ACTION_CLOSE_LONG:
+            elif self.trade_action == Cons.ACTION_CLOSE_LONG and False:
                 # if self.close_by_same_minute(tick):
                 #     if S4Tick.close_a_price(self.trade_action, self.close_price_by_lose, tick_obj):
                 #         self.add_action(tick, Cons.ACTION_CLOSE_LONG, tick.current - self.unit_value)
@@ -220,7 +208,7 @@ class TickTest():
                 #     self.set_close_price_by_agreement()
 
                     # logging.info(f"vt_symbol:{self.vt_symbol} => set_close_price_by_agreement => tick_last_price:{tick.current} => close_price => {self.close_price} => agreement_close_price:{self.agreement_close_price} => last_cd:{self.history.last_cd}")
-            elif self.trade_action == Cons.ACTION_CLOSE_SHORT:
+            elif self.trade_action == Cons.ACTION_CLOSE_SHORT and False:
                 # if self.close_by_same_minute(tick):
                 #     if S4Tick.close_a_price(self.trade_action, self.close_price_by_lose, tick_obj):
                 #         self.add_action(tick, Cons.ACTION_CLOSE_SHORT, tick.current + self.unit_value)
@@ -257,9 +245,7 @@ class TickTest():
                 d_last_extremum_datetime = self.history.extremum_d.datetime
 
             self.history.realtime_analysis_for_cd(cd)
-
-            self.statistic_history.realtime_analysis_for_cd(cd) # 只做统计
-
+            
             if self.history.extremum_d is not None:
                 d_current_extremum_datetime = self.history.extremum_d.datetime
             
@@ -284,6 +270,19 @@ class TickTest():
 
             # 检查是否刷新了协定ir
             self.handle_need_close_by_refresh_agreement_ir()
+
+            # 用分钟级别平仓
+            if self.trade_action == Cons.ACTION_CLOSE_LONG:
+                if S4Tick.close_a_price_by_cd(self.trade_action, self.close_price, cd) or trade.simulation_need_close_position(self.vt_symbol, cd, type='minute') or self.close_by_refresh_agreement_ir:
+                    # result = self.sell(tick.current, self.hand_number)
+                    self.add_action(cd, Cons.ACTION_CLOSE_LONG, cd.close - self.unit_value)
+                    self.log_obj.info(f"vt_symbol => {self.vt_symbol} \nclose_direction:long \nclose_price => {self.close_price} \ncd_close => {cd.close} \nagreement_close_price => {self.agreement_close_price} \nclose_by_refresh_agreement_ir => {self.close_by_refresh_agreement_ir}")
+                    self.after_close_for_cd(cd)
+            elif self.trade_action == Cons.ACTION_CLOSE_SHORT:
+                if S4Tick.close_a_price_by_cd(self.trade_action, self.close_price, cd) or trade.simulation_need_close_position(self.vt_symbol, cd, type='minute') or self.close_by_refresh_agreement_ir:
+                    self.add_action(cd, Cons.ACTION_CLOSE_SHORT, cd.close + self.unit_value)
+                    self.log_obj.info(f"vt_symbol => {self.vt_symbol} \nclose_direction => short \nclose_price:{self.close_price} \ncd_close => {cd.close} \nagreement_close_price => {self.agreement_close_price}  \nclose_by_refresh_agreement_ir => {self.close_by_refresh_agreement_ir}")
+                    self.after_close_for_cd(cd)
 
         elif self.instance_1 is not None:
             # 新程序开仓
@@ -529,6 +528,16 @@ class TickTest():
         else:
             self.after_close_by_instance_1(tick)
 
+        self.reset_price()
+        self.trade_action = None
+        self.complete_start_list = []
+        self.is_close_by_current_ir = False
+        self.close_by_refresh_agreement_ir = False # 平仓后设置为False
+
+    """
+    使用分钟级别去平仓
+    """
+    def after_close_for_cd(self, cd):
         self.reset_price()
         self.trade_action = None
         self.complete_start_list = []

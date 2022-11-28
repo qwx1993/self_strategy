@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 from datetime import timedelta
 import sys
+from self_strategy.logic import Logic
 
 
 
@@ -82,10 +83,15 @@ def need_close_position(vt_symbol):
 """
 模拟是否需要平仓
 """
-def simulation_need_close_position(vt_symbol, tick):
+def simulation_need_close_position(vt_symbol, obj, type='tick'):
     vt_symbol = vt_symbol.upper()
-    hour = tick.datetime.hour
-    minute = tick.datetime.minute
+    if type == 'tick':
+        hour = obj.datetime.hour
+        minute = obj.datetime.minute
+    elif type == 'minute':
+        minute_ptime = Logic.ptime(obj.datetime)
+        hour = minute_ptime.hour
+        minute = minute_ptime.minute
     # 23点平仓
     twenty_three_list = [
         'SA_DOMINANT_180_TICK',

@@ -23,6 +23,7 @@ class Minute:
     extremum_d_price = None  # 极致d的price
     extremum_d = None  # 极值点D
     agreement_extremum_d = None # todo 协议D,标定开仓信号 暂时不用了
+    # effective_extremum_d = None # 有效D 
     extremum_l_price = None # 极值点l的price
     extremum_l = None # 极值点l
     agreement_extremum_l = None # 协定L 暂时不用了
@@ -74,12 +75,7 @@ class Minute:
 
     max_cr_list = [] # 最大的连续趋势区间
     max_cr_obj = None # 最大的区间幅度
-
-    # open_status = None # 开仓状态 0:找顶 1:找底
     fictitious_cd = None
-    # -------------------------------------
-    last_history  = None 
-    last_history_direction = None
 
     #-------------------------------------1116
     allow_open = True # 允许开仓
@@ -88,13 +84,11 @@ class Minute:
 
     agreement_ir = None # 协定ir
 
-
-
     """
     初始化
     """
 
-    def __init__(self, yesterday_open_price, yesterday_close_price, unit_value, last_max_price, last_min_price, last_history, last_history_direction):
+    def __init__(self, yesterday_open_price, yesterday_close_price, unit_value):
         # 昨日收盘价格
         self.yesterday_open_price = yesterday_open_price
         # 昨日收盘价
@@ -110,27 +104,10 @@ class Minute:
         self.last_max_amplitude = None
         self.m_max_r = None  # 小级别r
         self.M_MAX_R = None  # 小级别R
-        self.last_max_price = last_max_price # 前一个交易日的最大价格
-        self.last_min_price = last_min_price # 前一个交易日的最小价格
-        self.last_history = last_history
-        self.last_history_direction = last_history_direction # 昨日方向
-        self.init_max_cr() # 将昨日max_cr相关参数赋给今天参数
-        self.init_extremum_d() # 将昨日的d赋值给今天
         self.max_ir_by_cr = None # cr_list区间中最大的ir
         self.current_ir = None # 当前的ir
         self.agreement_cr_list = [] # 协定cr的列表
         self.agreement_cr_obj = None # 协定cr对象
-
-
-    """
-    根据昨日的开盘跟收盘价定昨日方向
-    """
-    # def set_yesterday_direction(self):
-    #     if self.yesterday_open_price is not None and self.yesterday_close_price is not None:
-    #         if self.yesterday_close_price > self.yesterday_open_price:
-    #             self.yesterday_direction = Constants.DIRECTION_UP
-    #         else:
-    #             self.yesterday_direction = Constants.DIRECTION_DOWN
 
     """
     添加对应的动作，目前包括开空、平空、开多、平多
@@ -1293,9 +1270,6 @@ class Minute:
                 cd.direction = self.last_cd.direction
  
         if self.history_status == Constants.HISTORY_STATUS_OF_NONE: 
-            # 初始定方向
-            if self.last_history_direction is not None:
-                self.breakthrough_direction = self.last_history_direction
             # 初始化起点
             if self.start_cd is None:
                 self.start_cd = cd
@@ -1368,14 +1342,15 @@ class Minute:
             self.fictitious_cd.datetime = self.start_cd.datetime # 用开始的一分钟时间 
             if self.start_cd.open > self.yesterday_close_price:
                 self.fictitious_cd.direction = Constants.DIRECTION_UP
-                # self.breakthrough_direction = Constants.DIRECTION_UP
+                self.breakthrough_direction = Constants.DIRECTION_UP
             elif self.start_cd.open < self.yesterday_close_price:
                 self.fictitious_cd.direction = Constants.DIRECTION_DOWN
-                # self.breakthrough_direction = Constants.DIRECTION_DOWN
+                self.breakthrough_direction = Constants.DIRECTION_DOWN
             else:
                 self.fictitious_cd.direction = Constants.DIRECTION_NONE
             if self.breakthrough_direction is None:
                 self.breakthrough_direction = self.fictitious_cd.direction
+            print(f"初始化 => {self.fictitious_cd} direction => {self.breakthrough_direction}")
 
     """
     设置开仓的状态，当前方向跟昨日方向不同，是找顶状态
