@@ -2,6 +2,7 @@ from operator import truediv
 import sys
 from self_strategy.constants import Constants
 from self_strategy.logic import Logic
+from self_strategy.quotation_logic import QuotationLogic
 
 class Tick:
 
@@ -91,7 +92,39 @@ class Tick:
             if tick.current > agreement_ir.start_price:
                 return True
         return False
+    
+    
+    """
+    有效突破的IRlast（IR>10）被Cr覆盖后，出现Tick突破有效D且IR＜IRlast（IR>10），Tick回归且Ir>10视为有效回归
+    """
+    def open_a_price_by_effective_regression(direction, effective_d, effective_ir_last, current_ir, cd, unit_value):
+        if effective_d is None or effective_ir_last is None or current_ir is None  or cd is None:
+            return False
 
+        # 非无效突破不开仓
+        if not effective_d.bk_type == Constants.BK_TYPE_OF_INEFFECTIVE:
+            return False
+        
+        if not effective_d.tag:
+            return False
+
+        # 当前ir跟主方向一致不开仓
+        if direction == current_ir.direction:
+            return False
+        # 当前current_ir的长度比有效ir_last的长度大结束,或者小于10结束
+        if current_ir.length > effective_ir_last.length or current_ir.length < 10*unit_value:
+            return False
+
+        if direction == Constants.DIRECTION_UP:
+            if current_ir.start_price > effective_d.low > current_ir.end_price:
+                if cd.close < effective_d.low:
+                    return True
+        elif direction == Constants.DIRECTION_DOWN:
+            if current_ir.end_price > effective_d.high > current_ir.start_price:
+                if cd.close > effective_d.high:
+                    return True
+        
+        return False
     
     """
     方向向上时，在接下来的一分钟内高于协定l的价格开仓
@@ -183,3 +216,34 @@ class Tick:
             if cd.close > close_price:
                 return True
         return False
+
+    """
+    平仓通过有效突破时间
+    """
+    def close_a_price_by_effective_breakthrough(breakthrough_datetime, cd):
+        if breakthrough_datetime == cd.datetime:
+            return True
+        return False
+
+    """
+    Tick>10突破最近的Ir>10
+    """
+    def close_a_price_by_breakthrough_ir_last(trade_action, current_ir, ir_last, unit_value):
+        if current_ir is None or ir_last is None:
+            return False
+
+        if current_ir.direction == ir_last.direction:
+            return False
+        
+        if current_ir.length < 10*unit_value:
+            return False
+        
+        if trade_action == Constants.ACTION_CLOSE_LONG:
+            if current_ir.end_price < ir_last.start_price:
+                return True
+        elif trade_action == Constants.ACTION_CLOSE_SHORT:
+            if current_ir.end_price > ir_last.start_price:
+                return True
+        return False
+
+

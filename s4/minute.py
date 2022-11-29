@@ -5,6 +5,7 @@ main.py
 from copy import deepcopy
 from self_strategy.constants import Constants
 from self_strategy.logic import Logic
+from self_strategy.quotation_logic import QuotationLogic
 from types import SimpleNamespace
 
 from datetime import datetime
@@ -92,6 +93,8 @@ class Minute:
     #---------------------------------------1128
     effective_cr_list = [] # 有效cr_list
     effective_cr_obj = None # 有效cr_obj
+
+    effective_break_through_datetime = None # 有效突破时间
 
     """
     初始化
@@ -290,6 +293,8 @@ class Minute:
         self.refresh_d_minute_count = 0
         # 重置L
         self.reset_extremum_l()
+        # 重置有效D
+        self.reset_effective_extremum_d()
 
     """
     设置l的相关值
@@ -526,7 +531,7 @@ class Minute:
         # 处理max_ir_by_cr
         self.handle_max_ir_by_cr(cd)
         # 处理ir
-        self.handle_current_ir()
+        self.handle_current_ir(cd)
 
         # 处理出现最大的幅度情况（之前的Rmax）
         # self.handle_max_amplitude(cd)
@@ -551,16 +556,20 @@ class Minute:
     当CR大于50单位，且其中IR大于10单位设置为有效趋势
     """
     def handle_effective_trend(self):
-        if self.cr_obj.length > 50 * self.unit_value and  (self.max_ir_by_cr.length > 10 * self.unit_value):
-            if self.breakthrough_direction == self.cr_obj.direction:
-                self.effective_cr_list = deepcopy(self.cr_list)
-                self.effective_cr_obj = deepcopy(self.cr_obj) 
-                self.set_ir_last(effective=True)
-        else:
-            self.set_ir_last()
+        if self.cr_obj is not None and self.max_ir_by_cr is not None and self.current_ir is not None:
+            if self.cr_obj.length > 50 * self.unit_value and  (self.max_ir_by_cr.length > 10 * self.unit_value):
+                if self.breakthrough_direction == self.cr_obj.direction:
+                    self.effective_cr_list = deepcopy(self.cr_list)
+                    self.effective_cr_obj = deepcopy(self.cr_obj) 
+                    self.set_ir_last(effective=True)
+                    # 如果有效D存在就重置
+                    if self.effective_extremum_d_price is not None:
+                        self.reset_effective_extremum_d()
+            else:
+                self.set_ir_last()
     
     """
-    设置有效D
+    设置有效D,初始bk_type=-1
     """
     def handle_effective_extremum_d(self, cd):
         if self.effective_cr_obj is not None:
@@ -569,32 +578,38 @@ class Minute:
                     if self.breakthrough_direction == Constants.DIRECTION_UP:
                         if cd.close < self.extremum_d.low:
                             self.effective_extremum_d = deepcopy(self.extremum_d)
-                            self.effective_extremum_d_price = deepcopy(self.extremum_d_price)
+                            self.effective_extremum_d.bk_type = Constants.BK_TYPE_OF_NONE
+                            self.effective_extremum_d.tag = True
+                            self.effective_extremum_d_price = self.extremum_d_price
                     elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
                         if cd.close > self.extremum_d.high:
                             self.effective_extremum_d = deepcopy(self.extremum_d)
-                            self.effective_extremum_d_price = deepcopy(self.extremum_d_price)
+                            self.effective_extremum_d.bk_type = Constants.BK_TYPE_OF_NONE
+                            self.effective_extremum_d.tag = True
+                            self.effective_extremum_d_price = self.extremum_d_price
                             
     """
-    有效突破，当IR突破d_price时，IR > ir_last,就是有效突破，否则就是无效突破
+    有效突破，当IR突破d_price时，IR > ir_last, 就是有效突破，否则就是无效突破
     无效突破后如果能够有效回归就可以开仓
     """
-    def handle_break_through(self):
+    def handle_break_through(self, cd):
         if self.effective_extremum_d_price is not None and self.breakthrough_direction == self.current_ir.direction:
             if self.breakthrough_direction == Constants.DIRECTION_UP:
                 if self.current_ir.end_price > self.effective_extremum_d_price > self.current_ir.start_price:
                     if self.current_ir.length > self.effective_ir_last.length:
-                        print("有效突破")
+                        # 去掉有效D
                         self.reset_effective_extremum_d()
+                        self.effective_break_through_datetime = cd.datetime
                     else:
-                        print("无效突破")
+                        # 给有效D打上无效突破的标记
+                        self.effective_extremum_d.bk_type = Constants.BK_TYPE_OF_INEFFECTIVE
             elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
                 if self.current_ir.start_price > self.effective_extremum_d_price > self.current_ir.end_price:
                     if self.current_ir.length > self.effective_ir_last.length:
-                        print("有效突破")
                         self.reset_effective_extremum_d()
+                        self.effective_break_through_datetime = cd.datetime
                     else:
-                        print("无效突破")
+                        self.effective_extremum_d.bk_type = Constants.BK_TYPE_OF_INEFFECTIVE
 
     """
     重置有效D
@@ -625,11 +640,6 @@ class Minute:
                 self.agreement_cr_obj = deepcopy(self.cr_obj)
                 # 增加一个开仓tag 
                 self.agreement_cr_obj.tag = True
-
-
-
-
-
 
 
 
@@ -830,7 +840,7 @@ class Minute:
     """
     设置当前的ir,比较 current_max_l_to_d_interval 跟 current_max_r的大小，大者为当前ir
     """
-    def handle_current_ir(self):
+    def handle_current_ir(self, cd):
         if self.current_max_l_to_d_interval is not None and self.current_max_r is not None:
             if self.current_max_l_to_d_interval.length >= self.current_max_r.length:
                 self.current_ir = self.current_max_l_to_d_interval
@@ -840,6 +850,10 @@ class Minute:
             self.current_ir = self.current_max_l_to_d_interval
         elif self.current_max_l_to_d_interval is None and self.current_max_r is not None:
             self.current_ir = self.current_max_r
+        
+        # result = QuotationLogic.get_current_ir(self.breakthrough_direction, self.last_cd, cd)
+        # print(f"local => {self.current_ir} QuotationLogic => {result}")
+
 
     """
     通过max_l_to_d_interval设置ir
@@ -1369,11 +1383,14 @@ class Minute:
                 self.histoty_status_none(self.fictitious_cd)
                 self.handle_cr_list(self.fictitious_cd)
                 self.handle_ir_by_histoty_status_none(self.fictitious_cd)
+                self.init_current_ir(self.fictitious_cd)
+                self.handle_effective_trend()
             if self.history_status == Constants.HISTORY_STATUS_OF_NONE:
                 self.histoty_status_none(cd)
                 # 统计连续的幅度
                 self.handle_cr_list(cd)
                 self.handle_ir_by_histoty_status_none(cd)
+                self.handle_effective_trend()
             elif self.history_status == Constants.HISTORY_STATUS_OF_TREND:
                 # 统计连续的幅度
                 self.handle_cr_list(cd)
@@ -1397,6 +1414,13 @@ class Minute:
             self.statistic(cd)
         # 判断是否需要合并,当当前分钟为直线时考虑
         self.last_cd = Logic.handle_last_cd(self.last_cd, cd)
+
+    def init_current_ir(self, fictitious_cd):
+        self.current_ir = SimpleNamespace()
+        self.current_ir.start_price = fictitious_cd.open
+        self.current_ir.end_price = fictitious_cd.close
+        self.current_ir.length = abs(fictitious_cd.open - fictitious_cd.close)
+        self.current_ir.direction = self.breakthrough_direction
 
     """
     在没有进入行情的时候处理ir
@@ -1437,17 +1461,16 @@ class Minute:
                 self.fictitious_cd.direction = Constants.DIRECTION_NONE
             if self.breakthrough_direction is None:
                 self.breakthrough_direction = self.fictitious_cd.direction
-            print(f"初始化 => {self.fictitious_cd} direction => {self.breakthrough_direction}")
 
-    """
-    设置开仓的状态，当前方向跟昨日方向不同，是找顶状态
-    当前方向跟昨日方向相同，是找底状态
-    """
-    def handle_open_status(self):
-        if self.breakthrough_direction == self.yesterday_direction:
-            self.open_status = Constants.OPEN_STATUS_OF_LOW
-        else:
-            self.open_status = Constants.OPEN_STATUS_OF_TOP
+    # """
+    # 设置开仓的状态，当前方向跟昨日方向不同，是找顶状态
+    # 当前方向跟昨日方向相同，是找底状态
+    # """
+    # def handle_open_status(self):
+    #     if self.breakthrough_direction == self.yesterday_direction:
+    #         self.open_status = Constants.OPEN_STATUS_OF_LOW
+    #     else:
+    #         self.open_status = Constants.OPEN_STATUS_OF_TOP
 
 
     """
