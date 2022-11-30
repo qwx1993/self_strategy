@@ -597,6 +597,7 @@ class Minute:
                         # 去掉有效D
                         self.reset_effective_extremum_d()
                         self.effective_break_through_datetime = cd.datetime
+                        self.set_ir_last(effective=True)
                     else:
                         # 给有效D打上无效突破的标记
                         self.effective_extremum_d.bk_type = Constants.BK_TYPE_OF_INEFFECTIVE
@@ -605,6 +606,7 @@ class Minute:
                     if self.current_ir.length > self.effective_ir_last.length:
                         self.reset_effective_extremum_d()
                         self.effective_break_through_datetime = cd.datetime
+                        self.set_ir_last(effective=True)
                     else:
                         self.effective_extremum_d.bk_type = Constants.BK_TYPE_OF_INEFFECTIVE
 
