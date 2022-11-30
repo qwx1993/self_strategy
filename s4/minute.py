@@ -491,9 +491,9 @@ class Minute:
     def init_max_l_to_d_interval_obj(self, cd):
         self.max_l_to_d_interval = None
         if cd.direction == Constants.DIRECTION_UP:
-            max_l_to_d_obj = self.amplitude_obj(cd.low, cd.high)
+            max_l_to_d_obj = QuotationLogic.amplitude_obj(cd.low, cd.high)
         else:
-            max_l_to_d_obj = self.amplitude_obj(cd.high, cd.low)
+            max_l_to_d_obj = QuotationLogic.amplitude_obj(cd.high, cd.low)
         self.max_l_to_d_interval = max_l_to_d_obj
 
     """
@@ -506,17 +506,17 @@ class Minute:
             end_len = abs(cd.high - cd.close)
 
             if len > end_len:
-                max_r_obj = self.amplitude_obj(cd.open, cd.low)
+                max_r_obj = QuotationLogic.amplitude_obj(cd.open, cd.low)
             else:
-                max_r_obj = self.amplitude_obj(cd.high, cd.close)
+                max_r_obj = QuotationLogic.amplitude_obj(cd.high, cd.close)
         else:
             len = abs(cd.high - cd.open)
             end_len = abs(cd.close - cd.low)
 
             if len > end_len:
-                max_r_obj = self.amplitude_obj(cd.open, cd.high)
+                max_r_obj = QuotationLogic.amplitude_obj(cd.open, cd.high)
             else:
-                max_r_obj = self.amplitude_obj(cd.low, cd.close)
+                max_r_obj = QuotationLogic.amplitude_obj(cd.low, cd.close)
         self.max_r = max_r_obj
 
     
@@ -526,15 +526,15 @@ class Minute:
     def statistic(self, cd):
         # 统计R、统计rrn
         self.history_statistic_max_l_to_d(cd)
+
         # 统计r
         self.history_statistic_max_r(cd)
+
         # 处理max_ir_by_cr
         self.handle_max_ir_by_cr(cd)
+
         # 处理ir
         self.handle_current_ir(cd)
-
-        # 处理出现最大的幅度情况（之前的Rmax）
-        # self.handle_max_amplitude(cd)
 
         # 处理方向的逻辑
         self.handle_direction(cd)
@@ -895,95 +895,7 @@ class Minute:
     趋势分析
     """
     def history_statistic_max_l_to_d(self, cd):
-        if self.breakthrough_direction == Constants.DIRECTION_UP:
-            # 方向相同统计R
-            if self.is_same_direction(cd):
-                if Logic.is_same_direction_by_two_point(self.last_cd, cd): 
-                    if self.last_cd.high == self.last_cd.close and cd.open == cd.low and cd.open >= self.last_cd.close:
-                        # 此处已经测试
-                        max_l_to_d_obj = self.amplitude_obj(self.last_cd.low, cd.high)
-                        # print(f"此时跑到这里 {max_l_to_d_obj}")
-                    else:  
-                        max_l_to_d_obj = self.amplitude_obj(cd.low, cd.high)
-                else:
-                    if self.last_cd.close > self.last_cd.low and cd.open == cd.low and cd.open >= self.last_cd.close:
-                        # max_l_to_d = abs(cd.high - self.last_cd.low)
-                        max_l_to_d_obj = self.amplitude_obj(self.last_cd.low, cd.high)
-                    else:
-                        max_l_to_d_obj = self.amplitude_obj(cd.low, cd.high)
-
-            else:
-                if Logic.is_same_direction_by_two_point(self.last_cd, cd):
-                    if self.last_cd.close >= self.last_cd.low and cd.high >= cd.open and cd.open >= self.last_cd.close:
-                        len = abs(cd.high - self.last_cd.low)
-                        end_len = abs(cd.close - cd.low)
-                        if len > end_len:
-                            max_l_to_d_obj = self.amplitude_obj(self.last_cd.low, cd.high)
-                        else:
-                            max_l_to_d_obj = self.amplitude_obj(cd.low, cd.close)
-                    else:
-                        len = abs(cd.high - cd.open)
-                        end_len = abs(cd.close - cd.low)
-                        if len > end_len:
-                            max_l_to_d_obj = self.amplitude_obj(cd.open, cd.high)
-                        else:
-                            max_l_to_d_obj = self.amplitude_obj(cd.low, cd.close)
-                else:
-                    if self.last_cd.high == self.last_cd.close and cd.high > cd.open and cd.open >= self.last_cd.close:
-                        # 这里已经测试
-                        max_l_to_d_obj = self.amplitude_obj(self.last_cd.low, cd.high)
-                    else:
-                        len = abs(cd.high - cd.open)
-                        end_len = abs(cd.close - cd.low)
-                        if len > end_len:
-                            max_l_to_d_obj = self.amplitude_obj(cd.open, cd.high)
-                        else:
-                            max_l_to_d_obj = self.amplitude_obj(cd.low, cd.close)
-        else:
-            if self.is_same_direction(cd):
-                if Logic.is_same_direction_by_two_point(self.last_cd, cd):
-                    if self.last_cd.close == self.last_cd.low and cd.open == cd.high and cd.open <= self.last_cd.close:
-                        max_l_to_d_obj = self.amplitude_obj(self.last_cd.high, cd.low)
-                    else:
-                        max_l_to_d_obj = self.amplitude_obj(cd.high, cd.low)
-                else:
-                    if self.last_cd.close < self.last_cd.high and cd.open == cd.high and cd.open <= self.last_cd.close:
-                        max_l_to_d_obj = self.amplitude_obj(self.last_cd.high, cd.low)
-                    else:
-                        max_l_to_d_obj = self.amplitude_obj(cd.high, cd.low)
-            else:
-                if Logic.is_same_direction_by_two_point(self.last_cd, cd):
-                    if self.last_cd.close <= self.last_cd.high and cd.open >= cd.low and cd.open <= self.last_cd.close:
-                        len = abs(self.last_cd.high - cd.low)
-                        end_len = abs(cd.high - cd.close)
-                        if len > end_len:
-                            max_l_to_d_obj = self.amplitude_obj(self.last_cd.high, cd.low)                                                    
-                        else:
-                            max_l_to_d_obj = self.amplitude_obj(cd.high, cd.close)
-                    else:
-                        len = abs(cd.open - cd.low)
-                        end_len = abs(cd.high - cd.close)
-                        if len > end_len:
-                            max_l_to_d_obj = self.amplitude_obj(cd.open, cd.low) 
-                        else:
-                            max_l_to_d_obj = self.amplitude_obj(cd.high, cd.close)
-                else:
-                    if self.last_cd.close == self.last_cd.low and cd.open > cd.low and self.last_cd.close >= cd.open:
-                        len = abs(self.last_cd.high - cd.low)
-                        end_len = abs(cd.high - cd.close)
-                        if len > end_len:
-                            max_l_to_d_obj = self.amplitude_obj(self.last_cd.high, cd.low)
-                        else:
-                            max_l_to_d_obj = self.amplitude_obj(cd.high, cd.close)
-                    else:
-                        len = abs(cd.open - cd.low)
-                        end_len = abs(cd.high - cd.close)
-                        if len > end_len:
-                            max_l_to_d_obj = self.amplitude_obj(cd.open, cd.low) 
-                        else:
-                            max_l_to_d_obj = self.amplitude_obj(cd.high, cd.close) 
-
-
+        max_l_to_d_obj = QuotationLogic.get_max_l_to_d(self.breakthrough_direction, self.last_cd, cd)
         # 判断是否出现极值d点
         if self.exceed_extremum_d(cd):
             # 设置点D
@@ -1010,138 +922,21 @@ class Minute:
         obj = None
         if self.breakthrough_direction == Constants.DIRECTION_UP:
             if cd.direction == Constants.DIRECTION_UP:
-                obj = self.amplitude_obj(cd.low, cd.high)
+                obj = QuotationLogic.amplitude_obj(cd.low, cd.high)
             else:
-                obj = self.amplitude_obj(cd.low, cd.close)
+                obj = QuotationLogic.amplitude_obj(cd.low, cd.close)
         else:
             if cd.direction == Constants.DIRECTION_UP:
-                obj = self.amplitude_obj(cd.high, cd.close)
+                obj = QuotationLogic.amplitude_obj(cd.high, cd.close)
             else:
-                obj = self.amplitude_obj(cd.high, cd.low)
-        return obj
-
-    """
-    设置长度跟开始点价格、结束点价格
-    """
-    def amplitude_obj(self, start_price, end_price):
-        obj = SimpleNamespace()
-        obj.length = abs(start_price - end_price)
-        obj.start_price = start_price
-        obj.end_price = end_price
-        if start_price < end_price:
-            obj.direction = Constants.DIRECTION_UP
-        elif start_price > end_price:
-            obj.direction = Constants.DIRECTION_DOWN
-        else:
-            obj.direction = None
-
-
+                obj = QuotationLogic.amplitude_obj(cd.high, cd.low)
         return obj
 
     """
     分析统计最大的max_r
     """
     def history_statistic_max_r(self, cd): 
-        if self.breakthrough_direction == Constants.DIRECTION_UP:
-            if self.is_same_direction(cd):
-                if Logic.is_same_direction_by_two_point(self.last_cd, cd):
-                    if  self.last_cd.close <= self.last_cd.high and cd.open >= cd.low and self.last_cd.close >= cd.open:
-                        len = abs(self.last_cd.high - cd.low)
-                        end_len = abs(cd.high - cd.close)
-                        if len > end_len:
-                            max_r_obj = self.amplitude_obj(self.last_cd.high, cd.low)
-                        else:
-                            max_r_obj = self.amplitude_obj(cd.high, cd.close)
-                        max_len = max(abs(self.last_cd.high - cd.low), abs(cd.high - cd.close))
-                    else:
-                        len = abs(cd.open - cd.low)
-                        end_len = abs(cd.high - cd.close)
-                        if len > end_len:
-                            max_r_obj = self.amplitude_obj(cd.open, cd.low)
-                        else:
-                            max_r_obj = self.amplitude_obj(cd.high, cd.close)
-                        max_len = max(abs(cd.open - cd.low), abs(cd.high - cd.close))
-                else:
-                    if self.last_cd.close == self.last_cd.low and cd.open > cd.low and self.last_cd.close >= cd.open:
-                        max_len = max(abs(self.last_cd.high - cd.low), abs(cd.high - cd.close))
-                        len = abs(self.last_cd.high - cd.low)
-                        end_len = abs(cd.high - cd.close)
-                        if len > end_len:
-                            max_r_obj = self.amplitude_obj(self.last_cd.high, cd.low)
-                        else:
-                            max_r_obj = self.amplitude_obj(cd.high, cd.close)
-                    else:
-                        max_len = max(abs(cd.open - cd.low), abs(cd.high - cd.close))
-                        len = abs(cd.open - cd.low)
-                        end_len = abs(cd.high - cd.close)
-                        if len > end_len:
-                            max_r_obj = self.amplitude_obj(cd.open, cd.low)
-                        else:
-                            max_r_obj = self.amplitude_obj(cd.high, cd.close)
-            else:
-                if Logic.is_same_direction_by_two_point(self.last_cd, cd):
-                    if self.last_cd.close == self.last_cd.low and cd.open == cd.high and self.last_cd.close >= cd.open:
-                        # 已经测试
-                        max_len = abs(self.last_cd.high - cd.low)
-                        max_r_obj = self.amplitude_obj(self.last_cd.high, cd.low)
-                    else:
-                        max_len = Logic.max_amplitude_length(cd)
-                        max_r_obj = self.amplitude_obj(cd.high, cd.low)
-                else:
-                    if self.last_cd.high > self.last_cd.close and cd.open == cd.high and self.last_cd.close >= cd.open:
-                        max_len = abs(self.last_cd.high - cd.low)
-                        max_r_obj = self.amplitude_obj(self.last_cd.high, cd.low)
-                    else:
-                        # 已经测试
-                        max_len = Logic.max_amplitude_length(cd)
-                        max_r_obj = self.amplitude_obj(cd.high, cd.low)
-        else:
-            if self.is_same_direction(cd):
-                if Logic.is_same_direction_by_two_point(self.last_cd, cd):
-                    if self.last_cd.close >= self.last_cd.low and cd.open <= cd.high and cd.open >= self.last_cd.close:
-                        max_len = abs(cd.high - self.last_cd.low)
-                        max_r_obj = self.amplitude_obj(self.last_cd.low, cd.high)
-                    else:
-                        max_len = max(abs(cd.high - cd.open), abs(cd.close - cd.low))
-                        len = abs(cd.high - cd.open)
-                        end_len = abs(cd.close - cd.low)
-                        if len > end_len:
-                            max_r_obj = self.amplitude_obj(cd.open, cd.high)
-                        else:
-                            max_r_obj = self.amplitude_obj(cd.low, cd.close)
-                else:
-                    if self.last_cd.close == self.last_cd.high and cd.open < cd.high and cd.open >= self.last_cd.close:
-                        max_len = max(abs(cd.high - self.last_cd.low), abs(cd.close - cd.low)) 
-                        len = abs(cd.high - self.last_cd.low)
-                        end_len = abs(cd.close - cd.low)
-                        if len > end_len:
-                            max_r_obj = self.amplitude_obj(self.last_cd.low, cd.high)
-                        else:
-                            max_r_obj = self.amplitude_obj(cd.low, cd.close)
-                    else:
-                        max_len = max(abs(cd.high - cd.open), abs(cd.close - cd.low))
-                        len = abs(cd.high - cd.open)
-                        end_len = abs(cd.close - cd.low)
-                        if len > end_len:
-                            max_r_obj = self.amplitude_obj(cd.open, cd.high)
-                        else:
-                            max_r_obj = self.amplitude_obj(cd.low, cd.close)
-            else:
-                if Logic.is_same_direction_by_two_point(self.last_cd, cd):
-                    if self.last_cd.close == self.last_cd.high and cd.open == cd.high and cd.open >= self.last_cd.close:
-                        max_len = abs(cd.high - self.last_cd.low)
-                        max_r_obj = self.amplitude_obj(self.last_cd.low, cd.high)
-                    else:
-                        # 已测试
-                        max_len = Logic.max_amplitude_length(cd)
-                        max_r_obj = self.amplitude_obj(cd.low, cd.high)
-                else:
-                    if self.last_cd.close > self.last_cd.low and cd.open == cd.high and cd.open >= self.last_cd.close:
-                        max_len = abs(cd.high - self.last_cd.low)
-                        max_r_obj = self.amplitude_obj(self.last_cd.low, cd.high)
-                    else:
-                        max_len = Logic.max_amplitude_length(cd)
-                        max_r_obj = self.amplitude_obj(cd.low, cd.high)
+        max_r_obj = QuotationLogic.get_max_r(self.breakthrough_direction, self.last_cd, cd)
         # 添加一个时间
         max_r_obj.datetime = cd.datetime
         self.set_max_r(max_r_obj) 
