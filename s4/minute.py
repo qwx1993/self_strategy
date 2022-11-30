@@ -85,7 +85,7 @@ class Minute:
     allow_open = True # 允许开仓
     max_ir_by_cr = None # 从cr_list中统计出最大的ir
     current_ir = None # 当前的ir
-    ir_last = None # 用于判断有效突破的
+    ir_last = None # 用于判断有效突破的[同方向]
     effective_ir_last = None # 有效ir_last
 
     agreement_ir = None # 协定ir
@@ -539,13 +539,10 @@ class Minute:
         # 处理方向的逻辑
         self.handle_direction(cd)
 
-        # 处理协定cr
-        self.handle_agreement_ir(cd)
-
         # 有效趋势
         self.handle_effective_trend()
 
-        # 标定有效D
+        # 标定有效极致D
         self.handle_effective_extremum_d(cd)
 
         # 有效突破跟非有效突破
@@ -557,16 +554,16 @@ class Minute:
     """
     def handle_effective_trend(self):
         if self.cr_obj is not None and self.max_ir_by_cr is not None and self.current_ir is not None:
-            if self.cr_obj.length > 50 * self.unit_value and  (self.max_ir_by_cr.length > 10 * self.unit_value):
-                if self.breakthrough_direction == self.cr_obj.direction:
-                    self.effective_cr_list = deepcopy(self.cr_list)
-                    self.effective_cr_obj = deepcopy(self.cr_obj) 
-                    self.set_ir_last(effective=True)
-                    # 如果有效D存在就重置
-                    if self.effective_extremum_d_price is not None:
-                        self.reset_effective_extremum_d()
-            else:
-                self.set_ir_last()
+            if self.breakthrough_direction == self.cr_obj.direction:
+                if self.cr_obj.length > 50 * self.unit_value and  (self.max_ir_by_cr.length > 10 * self.unit_value):
+                        self.effective_cr_list = deepcopy(self.cr_list)
+                        self.effective_cr_obj = deepcopy(self.cr_obj) 
+                        self.set_ir_last(effective=True)
+                        # 如果有效D存在就重置
+                        if self.effective_extremum_d_price is not None:
+                            self.reset_effective_extremum_d()
+                else:
+                    self.set_ir_last()
     
     """
     设置有效D,初始bk_type=-1
@@ -589,8 +586,8 @@ class Minute:
                             self.effective_extremum_d_price = self.extremum_d_price
                             
     """
-    有效突破，当IR突破d_price时，IR > ir_last, 就是有效突破，否则就是无效突破
-    无效突破后如果能够有效回归就可以开仓
+    出现IR>IRlast（IR>10）突破D视为有效突破，有效突破后有效D随之变化，否则就是无效突破，
+    无效突破后续判断是否进入有效回归，如果满足有效回归就开车
     """
     def handle_break_through(self, cd):
         if self.effective_extremum_d_price is not None and self.breakthrough_direction == self.current_ir.direction:
@@ -712,13 +709,9 @@ class Minute:
                 self.handle_allow_open_by_rc_start_cd()
                 self.reset_max_cr()
                 self.reset_change_direction_number()
-                # if self.last_history is not None:
-                #     print(f"回到cr的起点 => {cd} 方向 => {self.breakthrough_direction} 起点 => {self.max_cr_list} max_cr_obj => {self.max_cr_obj}")
             elif Logic.is_exceed_max_rc_end_price(self.breakthrough_direction, self.max_cr_obj, self.max_cr_list[-1], cd):
                 self.set_direction_by_max_cr()
                 self.on_direction_change(cd)
-                # if self.last_history is not None:
-                #     print(f"回到cr的终点 => {cd} 方向 => {self.breakthrough_direction} 终点 => {self.max_cr_list[0]} max_cr_obj => {self.max_cr_obj} {self.max_cr_list}")
 
     """
     跌落起点，不允许开仓
@@ -841,17 +834,16 @@ class Minute:
     设置当前的ir,比较 current_max_l_to_d_interval 跟 current_max_r的大小，大者为当前ir
     """
     def handle_current_ir(self, cd):
-        if self.current_max_l_to_d_interval is not None and self.current_max_r is not None:
-            if self.current_max_l_to_d_interval.length >= self.current_max_r.length:
-                self.current_ir = self.current_max_l_to_d_interval
-            else:
-                self.current_ir = self.current_max_r
-        elif self.current_max_l_to_d_interval is not None and self.current_max_r is None:
-            self.current_ir = self.current_max_l_to_d_interval
-        elif self.current_max_l_to_d_interval is None and self.current_max_r is not None:
-            self.current_ir = self.current_max_r
-        
-        # result = QuotationLogic.get_current_ir(self.breakthrough_direction, self.last_cd, cd)
+        # if self.current_max_l_to_d_interval is not None and self.current_max_r is not None:
+        #     if self.current_max_l_to_d_interval.length >= self.current_max_r.length:
+        #         self.current_ir = self.current_max_l_to_d_interval
+        #     else:
+        #         self.current_ir = self.current_max_r
+        # elif self.current_max_l_to_d_interval is not None and self.current_max_r is None:
+        #     self.current_ir = self.current_max_l_to_d_interval
+        # elif self.current_max_l_to_d_interval is None and self.current_max_r is not None:
+        #     self.current_ir = self.current_max_r
+        self.current_ir = QuotationLogic.get_current_ir(self.breakthrough_direction, self.last_cd, cd)
         # print(f"local => {self.current_ir} QuotationLogic => {result}")
 
 
@@ -1416,11 +1408,7 @@ class Minute:
         self.last_cd = Logic.handle_last_cd(self.last_cd, cd)
 
     def init_current_ir(self, fictitious_cd):
-        self.current_ir = SimpleNamespace()
-        self.current_ir.start_price = fictitious_cd.open
-        self.current_ir.end_price = fictitious_cd.close
-        self.current_ir.length = abs(fictitious_cd.open - fictitious_cd.close)
-        self.current_ir.direction = self.breakthrough_direction
+        self.current_ir = QuotationLogic.amplitude_obj(fictitious_cd.open, fictitious_cd.close)
 
     """
     在没有进入行情的时候处理ir

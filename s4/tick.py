@@ -104,7 +104,7 @@ class Tick:
         # 非无效突破不开仓
         if not effective_d.bk_type == Constants.BK_TYPE_OF_INEFFECTIVE:
             return False
-        
+        # 已开仓的不再开仓
         if not effective_d.tag:
             return False
 
