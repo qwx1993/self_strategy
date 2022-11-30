@@ -1277,7 +1277,7 @@ class Minute:
     """
     处理连续行情数据
     """
-    def handle_cr_list(self, cd):
+    def handle_cr_list_old(self, cd):
         # 将昨日的max_cr相关初始化到今天
         if not Logic.is_crossing_starlike(cd):
             if len(self.cr_list) == 0:
@@ -1310,6 +1310,13 @@ class Minute:
                 if self.cr_obj is not None and (self.max_cr_obj is None or self.cr_obj.length > self.max_cr_obj.length):
                     self.max_cr_obj = deepcopy(self.cr_obj)
                     self.max_cr_list = deepcopy(self.cr_list)
+
+    """
+    处理连续行情数据
+    """
+    def handle_cr_list(self, cd):
+        current_cr_list, current_cr_obj = QuotationLogic.get_cr_information(self.cr_list, self.cr_obj)
+        pass
 
 
     """

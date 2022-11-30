@@ -138,7 +138,7 @@ class TickTest():
                      current_ir = QuotationLogic.get_current_ir(direction, self.history.last_cd, minute_cd)
                 else:
                     current_ir = None
-                if S4Tick.open_a_price_by_effective_regression(direction, self.history.effective_extremum_d, self.history.effective_ir_last, current_ir, minute_cd, self.unit_value):
+                if S4Tick.open_a_price_by_effective_regression(direction, self.history.effective_extremum_d, current_ir, minute_cd, self.unit_value):
                     # 时间间隔起点
                     if self.history.breakthrough_direction == Cons.DIRECTION_UP:
                         # result = self.short(tick.current, self.hand_number)
@@ -654,7 +654,7 @@ class TickTest():
     """
     def get_close_price_by_cr_list_and_max_ir(self):
         if self.trade_action is not None and self.history.cr_obj is not None:
-            if self.history.cr_obj.length > 30 * self.unit_value and self.history.max_ir_by_cr.length > 10 * self.unit_value:
+            if self.history.cr_obj.length > 50 * self.unit_value and self.history.max_ir_by_cr.length > 10 * self.unit_value:
                 first_cd = self.history.cr_list[0]
                 last_cd = self.history.cr_list[-1]
                 first_cd_ptime = Logic.ptime(first_cd.datetime)

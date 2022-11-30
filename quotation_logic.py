@@ -241,3 +241,81 @@ class QuotationLogic:
             obj.direction = None
 
         return obj
+    
+    # 连续一个方向且反方向未突破连续方向，此时D无效，若上涨区间，直到下跌收盘价突破前一分钟低点出现有效极值D
+    # capitalized 小写 uncapitalized
+    def get_cr_information(cd, l, cr_obj = None):
+        if len(l) == 0:
+            if not Logic.is_crossing_starlike(cd):
+                l = []
+                l.append(cd)
+                cr_obj = SimpleNamespace()
+                if cd.direction == Constants.DIRECTION_UP:
+                    cr_obj.start_price = cd.low
+                    cr_obj.end_price = cd.high
+                else:
+                    cr_obj.start_price = cd.high
+                    cr_obj.end_price = cd.low
+                cr_obj.length = abs(cd.high - cd.low)
+                cr_obj.direction = cd.direction
+
+            return l, cr_obj
+        
+        first_cd = l[0]
+        last_cd = l[-1]
+        direction = first_cd.direction
+        if direction == Constants.DIRECTION_UP:
+            if cd.close < last_cd.low:
+                return [], None
+        else:
+            if cd.close > last_cd.high:
+                return [], None
+        
+        # 没有突破就加入
+        l.append(cd)
+        # 更新cr_obj 
+        if direction == Constants.DIRECTION_UP:
+            if cd.high > cr_obj.end_price:
+                cr_obj.end_price = cd.high
+                cr_obj.length = abs(cr_obj.start_price - cr_obj.end_price)
+        else:
+            if cd.low < cr_obj.end_price:
+                cr_obj.end_price = cd.low
+                cr_obj.length = abs(cr_obj.start_price - cr_obj.end_price)
+        
+        return l, cr_obj
+
+    # def get_cr_obj()
+
+        
+        # if not Logic.is_crossing_starlike(cd):
+        #     if len(self.cr_list) == 0:
+        #         self.cr_list.append(cd)
+        #         # print(f"将开盘的幅度统计进去 {self.cr_list} yesterday_close_price => {self.yesterday_close_price} => cd => {cd}")
+        #     elif len(self.cr_list) > 0:
+        #         temp_last_cd = self.cr_list[-1]
+        #         if not cd.direction == temp_last_cd.direction:
+        #             self.cr_list = []
+        #             # 重置ir
+        #             self.max_ir_by_cr = None 
+        #         self.cr_list.append(cd)
+            
+        #     if len(self.cr_list) > 0:
+        #         temp_start_cd = self.cr_list[0]
+        #         temp_end_cd = self.cr_list[-1]
+        #         temp_direciton = temp_start_cd.direction
+        #         if self.cr_obj is None:
+        #             self.cr_obj = SimpleNamespace()
+        #         if temp_direciton == Constants.DIRECTION_UP:
+        #             self.cr_obj.start_price = temp_start_cd.low
+        #             self.cr_obj.end_price = temp_end_cd.high
+        #             self.cr_obj.length = abs(temp_end_cd.high - temp_start_cd.low)
+        #             self.cr_obj.direction = temp_direciton
+        #         elif temp_direciton == Constants.DIRECTION_DOWN:
+        #             self.cr_obj.start_price = temp_start_cd.high
+        #             self.cr_obj.end_price = temp_end_cd.low
+        #             self.cr_obj.length = abs(temp_start_cd.high - temp_end_cd.low)
+        #             self.cr_obj.direction = temp_direciton
+        #         if self.cr_obj is not None and (self.max_cr_obj is None or self.cr_obj.length > self.max_cr_obj.length):
+        #             self.max_cr_obj = deepcopy(self.cr_obj)
+        #             self.max_cr_list = deepcopy(self.cr_list)
