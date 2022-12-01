@@ -113,7 +113,7 @@ class Tick:
             return False
             
         # Tick回归有效D且Ir>10视为有效回归
-        if current_ir.length < 10*unit_value:
+        if current_ir.length <= 10*unit_value:
             return False
 
         if direction == Constants.DIRECTION_UP:

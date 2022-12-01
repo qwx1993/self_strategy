@@ -123,6 +123,7 @@ class Constants:
     BK_TYPE_OF_NONE = -1 # 默认
     BK_TYPE_OF_INEFFECTIVE = 0 # 无效突破
     BK_TYPE_OF_EFFECTIVE = 1 # 有效突破
+    BK_TYPE_OF_DISORDER = 2 # 有效无序
 
     STR_ACTIONS_AND_STATES = {
         OPEN_A_POSITION_ONE_LONG: {

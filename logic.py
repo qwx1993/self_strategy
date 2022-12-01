@@ -822,18 +822,15 @@ class Logic:
 	"""
 	超过最大幅度的起始价就改变方向、重置max_amplitude,R,r,rrn,max_r
 	"""
-	def is_exceed_max_rc_start_price(direction, max_rc_obj, start_cd, cd):
-		if max_rc_obj.direction == Constants.DIRECTION_UP:
-			start_price = start_cd.low
-		else:
-			start_price = start_cd.high
-		# if direction == max_rc_obj.direction:
-		if direction == Constants.DIRECTION_UP:
-			if cd.low < start_price:
-				return True
-		elif direction == Constants.DIRECTION_DOWN:
-			if cd.high > start_price:
-				return True
+	def is_exceed_max_cr_start_price(direction, max_cr_obj, cd):
+		if direction == max_cr_obj.direction:
+			start_price = max_cr_obj.start_price
+			if direction == Constants.DIRECTION_UP:
+				if cd.low < start_price:
+					return True
+			elif direction == Constants.DIRECTION_DOWN:
+				if cd.high > start_price:
+					return True
 		return False
 
 	"""
@@ -852,13 +849,9 @@ class Logic:
 	"""
 	超过最大幅度的起始价格改变方向后，又重新回落到最大幅度的结束价格后改变方向
 	""" 
-	def is_exceed_max_rc_end_price(direction, max_rc_obj, end_cd, cd):
-		if max_rc_obj.direction == Constants.DIRECTION_UP:
-			end_price = end_cd.high
-		else:
-			end_price = end_cd.low
-
+	def is_exceed_max_cr_end_price(direction, max_rc_obj, cd):
 		if not direction == max_rc_obj.direction:
+			end_price = max_rc_obj.end_price
 			if direction == Constants.DIRECTION_UP:
 				if cd.low < end_price:
 					return True

@@ -73,6 +73,8 @@ class Minute:
     last_min_price = None # 前一个交易日的最小价格
     cr_list = [] # 连续趋势的统计
     cr_obj = None # 连续趋势的幅度 默认为0
+    temp_cr_list = [] # 当前分钟的方向跟主cr_Obj不一致时
+    temp_cr_obj = None 
 
     agreement_cr_list = [] # 协定cr_list
     agreement_cr_obj = None # 协定cr_obj
@@ -122,6 +124,8 @@ class Minute:
         self.agreement_cr_obj = None # 协定cr对象
         self.effective_cr_list = [] # 有效cr_list
         self.effective_cr_obj = None # 有效cr_obj
+        self.temp_cr_list = [] # 当前分钟的方向跟主cr_Obj不一致时
+        self.temp_cr_obj = None  # 
 
     """
     添加对应的动作，目前包括开空、平空、开多、平多
@@ -548,6 +552,8 @@ class Minute:
         # 有效突破跟非有效突破
         self.handle_break_through(cd)
         
+        # 处理有效无序
+        self.handle_effective_disorder(cd)
     
     """
     当CR大于50单位，且其中IR大于10单位设置为有效趋势
@@ -562,31 +568,48 @@ class Minute:
                         # 如果有效D存在就重置
                         if self.effective_extremum_d_price is not None:
                             self.reset_effective_extremum_d()
+                        # print(f"有效趋势 => effective_cr_obj => {self.effective_cr_obj} \ncr_list => {self.effective_cr_list} \nextremum_d => {self.extremum_d} \n")
                 else:
                     self.set_ir_last()
     
     """
+    重置有效cr
+    """
+    def reset_effective_cr(self):
+            self.effective_cr_list = []
+            self.effective_cr_obj = None 
+            # 重置ed
+            self.reset_effective_extremum_d()
+            # 重置e_ir_last
+            self.effective_ir_last = None
+
+        
+    """
     设置有效D,初始bk_type=-1
     """
     def handle_effective_extremum_d(self, cd):
-        if self.effective_cr_obj is not None:
+        if self.effective_cr_obj is not None and self.effective_cr_obj.direction == self.breakthrough_direction:
             if not self.exceed_extremum_d(cd):
                 if self.effective_extremum_d is None:
                     if self.breakthrough_direction == Constants.DIRECTION_UP:
-                        if cd.close < self.extremum_d.low:
+                        # if cd.close < self.extremum_d.low:
+                        if cd.close < self.last_cd.low:
                             self.effective_extremum_d = deepcopy(self.extremum_d)
                             self.effective_extremum_d.bk_type = Constants.BK_TYPE_OF_NONE
                             self.effective_extremum_d.tag = True
                             self.effective_extremum_d_price = self.extremum_d_price
+                            # print(f"设置有效d => effective_cr_obj => {self.effective_cr_obj} \ncr_list => {self.effective_cr_list} \neffective_extremum_d => {self.effective_extremum_d} \ncd => {cd}")
                     elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
-                        if cd.close > self.extremum_d.high:
+                        # if cd.close > self.extremum_d.high:
+                        if cd.close > self.last_cd.high:
                             self.effective_extremum_d = deepcopy(self.extremum_d)
                             self.effective_extremum_d.bk_type = Constants.BK_TYPE_OF_NONE
                             self.effective_extremum_d.tag = True
                             self.effective_extremum_d_price = self.extremum_d_price
+                            # print(f"设置有效d => effective_cr_obj => {self.effective_cr_obj} \ncr_list => {self.effective_cr_list} \neffective_extremum_d => {self.effective_extremum_d} \ncd => {cd}")
                             
     """
-    出现IR>IRlast（IR>10）突破D视为有效突破，有效突破后有效D随之变化，否则就是无效突破，
+    出现IR>IRlast（IR>10）突破D视为有效突破，有效突破后有效D随之变化，否则就是无效突破
     无效突破后续判断是否进入有效回归，如果满足有效回归就开车
     """
     def handle_break_through(self, cd):
@@ -598,17 +621,34 @@ class Minute:
                         self.reset_effective_extremum_d()
                         self.effective_break_through_datetime = cd.datetime
                         self.set_ir_last(effective=True)
+                        # print(f"有效突破 cd => {cd} \neffective_cr_list => {self.effective_cr_list}")
                     else:
                         # 给有效D打上无效突破的标记
-                        self.effective_extremum_d.bk_type = Constants.BK_TYPE_OF_INEFFECTIVE
+                        if self.effective_extremum_d.bk_type == Constants.BK_TYPE_OF_NONE:
+                            self.effective_extremum_d.bk_type = Constants.BK_TYPE_OF_INEFFECTIVE
             elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
                 if self.current_ir.start_price > self.effective_extremum_d_price > self.current_ir.end_price:
                     if self.current_ir.length > self.effective_ir_last.length:
                         self.reset_effective_extremum_d()
                         self.effective_break_through_datetime = cd.datetime
                         self.set_ir_last(effective=True)
+                        # print(f"有效突破 cd => {cd} \neffective_cr_list => {self.effective_cr_list}")
                     else:
-                        self.effective_extremum_d.bk_type = Constants.BK_TYPE_OF_INEFFECTIVE
+                        if self.effective_extremum_d.bk_type == Constants.BK_TYPE_OF_NONE:
+                            self.effective_extremum_d.bk_type = Constants.BK_TYPE_OF_INEFFECTIVE
+    
+    """
+    有效无序
+    突破有效趋势起点视为无序，此时无有效加速
+    """
+    def handle_effective_disorder(self, cd):
+        if self.effective_cr_obj is not None:
+            if self.effective_cr_obj.direction == Constants.DIRECTION_UP:
+                if cd.low < self.effective_cr_obj.start_price:
+                    self.reset_effective_cr()
+            elif self.effective_cr_obj.direction == Constants.DIRECTION_DOWN:
+                if cd.high > self.effective_cr_obj.start_price:
+                    self.reset_effective_cr()
 
     """
     重置有效D
@@ -699,21 +739,24 @@ class Minute:
     """
     def handle_direction(self, cd):
         # 刷新CRmax
-        if self.max_cr_obj.length == self.cr_obj.length:
-            if not self.breakthrough_direction == self.cr_obj.direction:
-                self.breakthrough_direction = self.cr_obj.direction
-                self.on_direction_change(cd)
-        else:
-            if Logic.is_exceed_max_rc_start_price(self.breakthrough_direction, self.max_cr_obj, self.max_cr_list[0], cd):
-                self.reverse_direct_by_max_cr()
-                self.on_direction_change(cd)
-                # 设置成不能开仓状态
-                self.handle_allow_open_by_rc_start_cd()
-                self.reset_max_cr()
-                self.reset_change_direction_number()
-            elif Logic.is_exceed_max_rc_end_price(self.breakthrough_direction, self.max_cr_obj, self.max_cr_list[-1], cd):
-                self.set_direction_by_max_cr()
-                self.on_direction_change(cd)
+        if self.max_cr_obj is not None and self.cr_obj is not None: 
+            if self.max_cr_obj.length == self.cr_obj.length:
+                if not self.breakthrough_direction == self.cr_obj.direction:
+                    self.breakthrough_direction = self.cr_obj.direction
+                    self.on_direction_change(cd)
+            else:
+                if Logic.is_exceed_max_cr_start_price(self.breakthrough_direction, self.max_cr_obj, cd):
+                    self.reverse_direct_by_max_cr()
+                    self.on_direction_change(cd)
+                    # 设置成不能开仓状态
+                    self.handle_allow_open_by_rc_start_cd()
+                    # print(f"回落到起点 => cd => {cd} max_cr_obj => {self.max_cr_obj}")
+                    # self.reset_max_cr()
+                    self.reset_change_direction_number()
+                elif Logic.is_exceed_max_cr_end_price(self.breakthrough_direction, self.max_cr_obj, cd):
+                    self.set_direction_by_max_cr()
+                    self.on_direction_change(cd)
+                    # print(f"回落到起点 => cd => {cd} max_cr_obj => {self.max_cr_obj}")
 
     """
     跌落起点，不允许开仓
@@ -889,8 +932,8 @@ class Minute:
         self.reset_extremum_l()
         # 重置rrn
         self.rrn = None
-        # 增加转向次数
-        # self.change_direction_number += 1
+        # 重置有效cr
+        self.reset_effective_cr()
 
     
     """
@@ -1315,8 +1358,34 @@ class Minute:
     处理连续行情数据
     """
     def handle_cr_list(self, cd):
-        current_cr_list, current_cr_obj = QuotationLogic.get_cr_information(self.cr_list, self.cr_obj)
-        pass
+        # 初始化当前cr_obj
+        if self.cr_obj is None:
+            self.cr_list, self.cr_obj = QuotationLogic.get_cr_information(cd, [], None)
+        else:
+            if self.temp_cr_obj is None:
+                if not cd.direction == self.cr_obj.direction:
+                    self.temp_cr_list, self.temp_cr_obj = QuotationLogic.get_cr_information(cd, [], None)
+            else:
+                self.temp_cr_list, self.temp_cr_obj = QuotationLogic.get_cr_information(cd, self.temp_cr_list, self.temp_cr_obj)
+            # print(f"before => cr_list => {self.cr_list}  \ncr_obj => {self.cr_obj}  \ncd => {cd} \n")
+            self.cr_list, self.cr_obj = QuotationLogic.get_cr_information(cd, self.cr_list, self.cr_obj)
+            if self.cr_obj is None:
+                self.cr_list = deepcopy(self.temp_cr_list)
+                self.cr_obj = deepcopy(self.temp_cr_obj)
+                self.reset_temp_cr()
+                # print(f"after => cr_list => {self.cr_list}  \ncr_obj => {self.cr_obj}  \ncd => {cd} \n tmp_cr_list => {self.temp_cr_list} temp_cr_obj => {self.temp_cr_obj}")
+
+        # 设置最大的max_cr
+        if self.cr_obj is not None and (self.max_cr_obj is None or self.cr_obj.length > self.max_cr_obj.length):
+            self.max_cr_obj = deepcopy(self.cr_obj)
+            self.max_cr_list = deepcopy(self.cr_list)
+    
+    """
+    重置temp_cr
+    """
+    def reset_temp_cr(self):
+        self.temp_cr_list = []
+        self.temp_cr_obj = None
 
 
     """
