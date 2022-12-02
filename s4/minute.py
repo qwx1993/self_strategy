@@ -616,11 +616,11 @@ class Minute:
         if self.effective_extremum_d_price is not None and self.breakthrough_direction == self.current_ir.direction:
             if self.breakthrough_direction == Constants.DIRECTION_UP:
                 if self.current_ir.end_price > self.effective_extremum_d_price > self.current_ir.start_price:
-                    if self.current_ir.length > self.effective_ir_last.length:
+                    if self.current_ir.length < self.effective_ir_last.length:
                         # 去掉有效D
                         self.reset_effective_extremum_d()
                         self.effective_break_through_datetime = cd.datetime
-                        self.set_ir_last(effective=True)
+                        # self.set_ir_last(effective=True)
                         # print(f"有效突破 cd => {cd} \neffective_cr_list => {self.effective_cr_list}")
                     else:
                         # 给有效D打上无效突破的标记
@@ -628,10 +628,10 @@ class Minute:
                             self.effective_extremum_d.bk_type = Constants.BK_TYPE_OF_INEFFECTIVE
             elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
                 if self.current_ir.start_price > self.effective_extremum_d_price > self.current_ir.end_price:
-                    if self.current_ir.length > self.effective_ir_last.length:
+                    if self.current_ir.length < self.effective_ir_last.length:
                         self.reset_effective_extremum_d()
                         self.effective_break_through_datetime = cd.datetime
-                        self.set_ir_last(effective=True)
+                        # self.set_ir_last(effective=True)
                         # print(f"有效突破 cd => {cd} \neffective_cr_list => {self.effective_cr_list}")
                     else:
                         if self.effective_extremum_d.bk_type == Constants.BK_TYPE_OF_NONE:
