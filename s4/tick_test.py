@@ -139,7 +139,7 @@ class TickTest():
                      current_ir = QuotationLogic.get_current_ir(direction, self.history.last_cd, minute_cd)
                 else:
                     current_ir = None
-                if S4Tick.open_a_price_by_effective_regression(direction, self.history.effective_extremum_d, current_ir, minute_cd, self.unit_value):
+                if S4Tick.open_a_price_by_effective_lowercase_cr(direction, self.history.effective_lowercase_cr_obj, tick_obj):
                     # 时间间隔起点
                     if self.history.breakthrough_direction == Cons.DIRECTION_UP:
                         # result = self.short(tick.current, self.hand_number)
@@ -147,8 +147,8 @@ class TickTest():
                         self.open_price = tick.current - self.unit_value
                         self.open_price_tick = tick
                         # self.open_price_effective_extremum_d_price = self.history.effective_extremum_d_price
-                        self.close_price = self.history.extremum_d_price
-                        self.log_obj.info(f"vt_symbol => {self.vt_symbol} \ntrade_type => short_by_d \ndirction => {self.history.breakthrough_direction} \ntick => {tick.current} \neffective_extremum_d => {self.history.effective_extremum_d} \neffective_ir_last => {self.history.effective_ir_last} \nlast_cd => {self.history.last_cd} \nminute_cd => {minute_cd} \ncurrent_ir => {current_ir} \nunit_value => {self.unit_value} \neffective_cr_list => {self.history.effective_cr_list} \neffective_cr_obj => {self.history.effective_cr_obj}")
+                        self.close_price = self.history.effective_lowercase_cr_obj.start_price
+                        self.log_obj.info(f"vt_symbol => {self.vt_symbol} \ntrade_type => short_by_d \ndirction => {self.history.breakthrough_direction} \ntick => {tick.current} \neffective_lowercase_cr_obj => {self.history.effective_lowercase_cr_obj} \neffective_lowercase_cr_list => {self.history.effective_lowercase_cr_list} \nlast_cd => {self.history.last_cd}  \ncurrent_ir => {current_ir} \nunit_value => {self.unit_value} \neffective_cr_list => {self.history.effective_cr_list} \neffective_cr_obj => {self.history.effective_cr_obj}")
                         self.trade_action = Cons.ACTION_CLOSE_SHORT
                         self.open_type = Cons.OPEN_BY_D
                         self.increase_opportunity_number()
@@ -159,8 +159,8 @@ class TickTest():
                         self.open_price = tick.current + self.unit_value
                         self.open_price_tick = tick
                         # self.open_price_effective_extremum_d_price = self.history.effective_extremum_d_price
-                        self.close_price = self.history.extremum_d_price
-                        self.log_obj.info(f"vt_symbol => {self.vt_symbol} \ntrade_type => long_by_d \ndirction => {self.history.breakthrough_direction} \ntick => {tick.current} \neffective_extremum_d => {self.history.effective_extremum_d} \neffective_ir_last => {self.history.effective_ir_last} \nlast_cd => {self.history.last_cd} \nminute_cd => {minute_cd} \ncurrent_ir => {current_ir} \nunit_value => {self.unit_value} \neffective_cr_list => {self.history.effective_cr_list} \neffective_cr_obj => {self.history.effective_cr_obj}")
+                        self.close_price = self.history.effective_lowercase_cr_obj.start_price
+                        self.log_obj.info(f"vt_symbol => {self.vt_symbol} \ntrade_type => long_by_d \ndirction => {self.history.breakthrough_direction} \ntick => {tick.current} \neffective_lowercase_cr_obj => {self.history.effective_lowercase_cr_obj} \neffective_lowercase_cr_list => {self.history.effective_lowercase_cr_list} \nlast_cd => {self.history.last_cd}  \ncurrent_ir => {current_ir} \nunit_value => {self.unit_value} \neffective_cr_list => {self.history.effective_cr_list} \neffective_cr_obj => {self.history.effective_cr_obj}")
                         self.trade_action = Cons.ACTION_CLOSE_LONG 
                         self.open_type = Cons.OPEN_BY_D
                         self.increase_opportunity_number()
@@ -606,9 +606,8 @@ class TickTest():
     将协定cr的tag设置为False,必须重新刷新协定cr才允许开仓
     """
     def after_open_a_position(self):
-        # self.complete_start_list = deepcopy(self.start_list)
         self.allow_open_by_agreement_d = False
-        self.history.effective_extremum_d.tag = False
+        self.history.effective_lowercase_cr_obj.tag = False
  
     """
     刷新是否可以开仓

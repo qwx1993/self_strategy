@@ -98,6 +98,10 @@ class Minute:
 
     effective_break_through_datetime = None # 有效突破时间
 
+    #-----------------------------------------1202
+    effective_lowercase_cr_list = []
+    effective_lowercase_cr_obj = None 
+
     """
     初始化
     """
@@ -126,6 +130,8 @@ class Minute:
         self.effective_cr_obj = None # 有效cr_obj
         self.temp_cr_list = [] # 当前分钟的方向跟主cr_Obj不一致时
         self.temp_cr_obj = None  # 
+        
+        self.reset_effective_lowercase_cr()
 
     """
     添加对应的动作，目前包括开空、平空、开多、平多
@@ -548,7 +554,10 @@ class Minute:
 
         # 标定有效极致D
         self.handle_effective_extremum_d(cd)
-
+        
+        # 设置有效小R
+        self.handle_effective_lowercase_cr(cd)
+        
         # 有效突破跟非有效突破
         self.handle_break_through(cd)
         
@@ -567,7 +576,9 @@ class Minute:
                         self.set_ir_last(effective=True)
                         # 如果有效D存在就重置
                         if self.effective_extremum_d_price is not None:
-                            self.reset_effective_extremum_d()
+                            self.reset_effective_extremum_d()    
+                        if self.effective_lowercase_cr_obj is not None:
+                            self.reset_effective_lowercase_cr()
                         # print(f"有效趋势 => effective_cr_obj => {self.effective_cr_obj} \ncr_list => {self.effective_cr_list} \nextremum_d => {self.extremum_d} \n")
                 else:
                     self.set_ir_last()
@@ -582,6 +593,49 @@ class Minute:
             self.reset_effective_extremum_d()
             # 重置e_ir_last
             self.effective_ir_last = None
+            # 重置有效小cr
+            self.reset_effective_lowercase_cr()
+    
+    """
+    有效趋势后寻找有效小cr
+    """
+    def handle_effective_lowercase_cr(self, cd):
+        if self.effective_cr_obj is not None:
+            # 小cr_obj不存在
+            if self.effective_lowercase_cr_obj is None:
+                if  self.cr_obj is not None and (not self.cr_obj.direction == self.effective_cr_obj.direction):
+                    if self.cr_obj.length > 10 * self.unit_value and  (self.max_ir_by_cr.length > 10 * self.unit_value):
+                        self.effective_lowercase_cr_list = deepcopy(self.cr_list)
+                        self.effective_lowercase_cr_obj = deepcopy(self.cr_obj)
+                        self.effective_lowercase_cr_obj.finish = False
+            else:
+                if not self.effective_lowercase_cr_obj.finish:
+                    if self.cr_obj is not None:
+                        if self.effective_lowercase_cr_obj.direction == self.cr_obj.direction:
+                            self.effective_lowercase_cr_list = deepcopy(self.cr_list)
+                            self.effective_lowercase_cr_obj = deepcopy(self.cr_obj)
+                            self.effective_lowercase_cr_obj.finish = False
+                        else:
+                            self.effective_lowercase_cr_obj.finish = True
+                            self.effective_lowercase_cr_obj.tag = True
+                        # print(f"完成设置有效 lowercase_cr_obj => {self.effective_lowercase_cr_obj} \neffective_lowercase_cr_list =>{self.effective_lowercase_cr_list} \neffective_cr_obj => {self.effective_cr_obj} \ncr_list => {self.cr_list}")
+            
+                if self.effective_lowercase_cr_obj.finish:
+                    if self.effective_lowercase_cr_obj.direction == Constants.DIRECTION_UP:
+                        if cd.low < self.effective_lowercase_cr_obj.start_price:
+                            self.reset_effective_lowercase_cr()
+                            # print(f"重置有效小cr")
+                    elif self.effective_lowercase_cr_obj.direction == Constants.DIRECTION_DOWN:
+                        if cd.high > self.effective_lowercase_cr_obj.start_price:
+                            self.reset_effective_lowercase_cr()
+                            # print(f"重置有效小cr")
+    
+    """
+    重置有效小cr
+    """
+    def reset_effective_lowercase_cr(self):
+        self.effective_lowercase_cr_list =[]
+        self.effective_lowercase_cr_obj = None
 
         
     """

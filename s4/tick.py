@@ -126,6 +126,33 @@ class Tick:
                     return True
         
         return False
+
+    """
+    根据小cr开仓
+    """
+    def open_a_price_by_effective_lowercase_cr(direction, effective_lowercase_cr, tick):
+        if effective_lowercase_cr is None or (not effective_lowercase_cr.finish):
+            return False
+
+        """
+        跟小cr的方向一致不开仓
+        """
+        if direction ==  effective_lowercase_cr.direction:
+            return False
+   
+        # 已开仓的不再开仓
+        if not effective_lowercase_cr.tag:
+            return False
+
+        if direction == Constants.DIRECTION_UP:
+            if tick.current < effective_lowercase_cr.end_price:
+                return True
+        elif direction == Constants.DIRECTION_DOWN:
+            if tick.current > effective_lowercase_cr.end_price:
+                return True
+        
+        return False
+
     
     """
     方向向上时，在接下来的一分钟内高于协定l的价格开仓
