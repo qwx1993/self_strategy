@@ -5,6 +5,7 @@ from datetime import datetime
 from datetime import timedelta
 from self_strategy.constants import Constants
 from self_strategy.logic import Logic
+from copy import deepcopy
 
 class QuotationLogic:
 
@@ -285,37 +286,41 @@ class QuotationLogic:
         
         return l, cr_obj
 
-    # def get_cr_obj()
 
-        
-        # if not Logic.is_crossing_starlike(cd):
-        #     if len(self.cr_list) == 0:
-        #         self.cr_list.append(cd)
-        #         # print(f"将开盘的幅度统计进去 {self.cr_list} yesterday_close_price => {self.yesterday_close_price} => cd => {cd}")
-        #     elif len(self.cr_list) > 0:
-        #         temp_last_cd = self.cr_list[-1]
-        #         if not cd.direction == temp_last_cd.direction:
-        #             self.cr_list = []
-        #             # 重置ir
-        #             self.max_ir_by_cr = None 
-        #         self.cr_list.append(cd)
-            
-        #     if len(self.cr_list) > 0:
-        #         temp_start_cd = self.cr_list[0]
-        #         temp_end_cd = self.cr_list[-1]
-        #         temp_direciton = temp_start_cd.direction
-        #         if self.cr_obj is None:
-        #             self.cr_obj = SimpleNamespace()
-        #         if temp_direciton == Constants.DIRECTION_UP:
-        #             self.cr_obj.start_price = temp_start_cd.low
-        #             self.cr_obj.end_price = temp_end_cd.high
-        #             self.cr_obj.length = abs(temp_end_cd.high - temp_start_cd.low)
-        #             self.cr_obj.direction = temp_direciton
-        #         elif temp_direciton == Constants.DIRECTION_DOWN:
-        #             self.cr_obj.start_price = temp_start_cd.high
-        #             self.cr_obj.end_price = temp_end_cd.low
-        #             self.cr_obj.length = abs(temp_start_cd.high - temp_end_cd.low)
-        #             self.cr_obj.direction = temp_direciton
-        #         if self.cr_obj is not None and (self.max_cr_obj is None or self.cr_obj.length > self.max_cr_obj.length):
-        #             self.max_cr_obj = deepcopy(self.cr_obj)
-        #             self.max_cr_list = deepcopy(self.cr_list)
+    """
+    在cr_obj转变后需要处理的初始最大ir,方向跟cr_obj一致
+    """
+    def get_max_ir_by_cr_list(l):
+        if len(l) == 0:
+            return None
+        elif len(l) == 1:
+            cd = l[0]
+            if cd.direction == Constants.DIRECTION_UP:
+                start_price = cd.low
+                end_price = cd.high
+                max_ir_by_cr = QuotationLogic.amplitude_obj(start_price, end_price)
+                max_ir_by_cr.datetime = cd.datetime
+            elif cd.direction == Constants.DIRECTION_DOWN:
+                start_price = cd.high
+                end_price = cd.low
+                max_ir_by_cr = QuotationLogic.amplitude_obj(start_price, end_price)
+                max_ir_by_cr.datetime = cd.datetime
+            else:
+                max_ir_by_cr = None
+            return max_ir_by_cr
+        else:
+            l_len = len(l)
+            max_ir_by_cr = None
+            i = 0
+            direction = l[0].direction
+            max_ir_by_cr = None
+            while i < (l_len-1):
+                last_cd = l[i]
+                cd = l[i+1]
+                i += 1
+                current_ir = QuotationLogic.get_current_ir(direction, last_cd, cd)
+                if current_ir.direction == direction:
+                    if max_ir_by_cr is None or (current_ir.length > max_ir_by_cr.length):
+                        max_ir_by_cr = deepcopy(current_ir)
+            return max_ir_by_cr
+

@@ -7,6 +7,7 @@ from self_strategy.constants import Constants
 from self_strategy.logic import Logic
 from self_strategy.quotation_logic import QuotationLogic
 from types import SimpleNamespace
+import sys
 
 from datetime import datetime
 # 
@@ -86,6 +87,7 @@ class Minute:
     #-------------------------------------1116
     allow_open = True # 允许开仓
     max_ir_by_cr = None # 从cr_list中统计出最大的ir
+    max_lowercase_ir_by_cr = None # 从cr_list中获取最大的小ir
     current_ir = None # 当前的ir
     ir_last = None # 用于判断有效突破的[同方向]
     effective_ir_last = None # 有效ir_last
@@ -124,8 +126,8 @@ class Minute:
         self.M_MAX_R = None  # 小级别R
         self.max_ir_by_cr = None # cr_list区间中最大的ir
         self.current_ir = None # 当前的ir
-        self.agreement_cr_list = [] # 协定cr的列表
-        self.agreement_cr_obj = None # 协定cr对象
+        # self.agreement_cr_list = [] # 协定cr的列表
+        # self.agreement_cr_obj = None # 协定cr对象
         self.effective_cr_list = [] # 有效cr_list
         self.effective_cr_obj = None # 有效cr_obj
         self.temp_cr_list = [] # 当前分钟的方向跟主cr_Obj不一致时
@@ -540,11 +542,11 @@ class Minute:
         # 统计r
         self.history_statistic_max_r(cd)
 
-        # 处理max_ir_by_cr
-        self.handle_max_ir_by_cr(cd)
-
         # 处理ir
         self.handle_current_ir(cd)
+
+        # 处理max_ir_by_cr
+        self.handle_max_ir_by_cr()
 
         # 处理方向的逻辑
         self.handle_direction(cd)
@@ -603,8 +605,9 @@ class Minute:
         if self.effective_cr_obj is not None:
             # 小cr_obj不存在
             if self.effective_lowercase_cr_obj is None:
-                if  self.cr_obj is not None and (not self.cr_obj.direction == self.effective_cr_obj.direction):
-                    if self.cr_obj.length > 10 * self.unit_value and  (self.max_ir_by_cr.length > 10 * self.unit_value):
+                if self.cr_obj is not None and (not self.cr_obj.direction == self.effective_cr_obj.direction):
+                    if self.cr_obj.length > 10 * self.unit_value and (self.max_ir_by_cr is not None and self.max_ir_by_cr.length > 10 * self.unit_value): 
+                        # print(f"这里开始设置 => cr_obj => {self.cr_obj} max_ir_by_cr => {self.max_ir_by_cr}")
                         self.effective_lowercase_cr_list = deepcopy(self.cr_list)
                         self.effective_lowercase_cr_obj = deepcopy(self.cr_obj)
                         self.effective_lowercase_cr_obj.finish = False
@@ -618,8 +621,7 @@ class Minute:
                         else:
                             self.effective_lowercase_cr_obj.finish = True
                             self.effective_lowercase_cr_obj.tag = True
-                        # print(f"完成设置有效 lowercase_cr_obj => {self.effective_lowercase_cr_obj} \neffective_lowercase_cr_list =>{self.effective_lowercase_cr_list} \neffective_cr_obj => {self.effective_cr_obj} \ncr_list => {self.cr_list}")
-            
+                            # print(f"完成设置有效 lowercase_cr_obj => {self.effective_lowercase_cr_obj} \neffective_lowercase_cr_list =>{self.effective_lowercase_cr_list} \nmax_ir_by_cr => {self.max_ir_by_cr} \neffective_cr_obj => {self.effective_cr_obj} \ncr_list => {self.cr_list} \n cr_obj => {self.cr_obj}")
                 if self.effective_lowercase_cr_obj.finish:
                     if self.effective_lowercase_cr_obj.direction == Constants.DIRECTION_UP:
                         if cd.low < self.effective_lowercase_cr_obj.start_price:
@@ -721,30 +723,7 @@ class Minute:
         # 讲ir_last设置为有效ir_last
         if effective:
             self.effective_ir_last = self.ir_last
-        
-    """
-    协定cr
-    当前cr的最后一分钟是D，且满足cr的长度大于指定单位，并且cr中的最大的ir大于十个单位就设置为协定cr
-    """
-    def hanle_agreement_cr(self, cd):
-        if self.is_equal_d_price(cd):
-            if self.cr_obj.length > 50 * self.unit_value and  (self.max_ir_by_cr.length > 10 * self.unit_value):
-                self.agreement_cr_list = deepcopy(self.cr_list)
-                self.agreement_cr_obj = deepcopy(self.cr_obj)
-                # 增加一个开仓tag 
-                self.agreement_cr_obj.tag = True
 
-
-
-    
-    """
-    重置协定cr
-    """
-    def reset_agreement_cr(self):
-        if self.agreement_cr_obj is not None:
-            self.agreement_cr_list = []
-            self.agreement_cr_obj = None
-    
     """
     协定ir
     当ir的长度大于指定单位，并且突破d时
@@ -916,61 +895,20 @@ class Minute:
         #         self.on_direction_change(cd)
     
     """
-    处理最大的ir
+    统计cr_list区间最大的
+    目前统计的都是跟cr_obj同一个方向
     """
-    def handle_max_ir_by_cr(self, cd):
-        if self.current_max_l_to_d_interval is not None and self.current_max_r is not None:
-            if self.current_max_l_to_d_interval.length >= self.current_max_r.length:
-                self.set_max_ir_by_max_l_to_d_interval(cd)
-            else:
-                self.set_max_ir_by_max_r(cd)
-        elif self.current_max_l_to_d_interval is not None and self.current_max_r is None:
-            self.set_max_ir_by_max_l_to_d_interval(cd)
-        elif self.current_max_l_to_d_interval is None and self.current_max_r is not None:
-            self.set_max_ir_by_max_r(cd)
+    def handle_max_ir_by_cr(self):
+        if self.current_ir is not None and self.cr_obj is not None:
+            if self.current_ir.direction == self.cr_obj.direction:
+                if self.max_ir_by_cr is None or (self.current_ir.length > self.max_ir_by_cr.length):
+                    self.max_ir_by_cr = deepcopy(self.current_ir)
     
     """
     设置当前的ir,比较 current_max_l_to_d_interval 跟 current_max_r的大小，大者为当前ir
     """
     def handle_current_ir(self, cd):
-        # if self.current_max_l_to_d_interval is not None and self.current_max_r is not None:
-        #     if self.current_max_l_to_d_interval.length >= self.current_max_r.length:
-        #         self.current_ir = self.current_max_l_to_d_interval
-        #     else:
-        #         self.current_ir = self.current_max_r
-        # elif self.current_max_l_to_d_interval is not None and self.current_max_r is None:
-        #     self.current_ir = self.current_max_l_to_d_interval
-        # elif self.current_max_l_to_d_interval is None and self.current_max_r is not None:
-        #     self.current_ir = self.current_max_r
         self.current_ir = QuotationLogic.get_current_ir(self.breakthrough_direction, self.last_cd, cd)
-        # print(f"local => {self.current_ir} QuotationLogic => {result}")
-
-
-    """
-    通过max_l_to_d_interval设置ir
-    """
-    def set_max_ir_by_max_l_to_d_interval(self, cd):
-          if self.max_ir_by_cr is None or self.current_max_l_to_d_interval.length > self.max_ir_by_cr.length:
-            self.max_ir_by_cr = SimpleNamespace()
-            self.max_ir_by_cr.direction = self.current_max_l_to_d_interval.direction
-            self.max_ir_by_cr.real_direction = self.breakthrough_direction
-            self.max_ir_by_cr.start = self.current_max_l_to_d_interval.start_price            
-            self.max_ir_by_cr.end = self.current_max_l_to_d_interval.end_price
-            self.max_ir_by_cr.length = abs(self.current_max_l_to_d_interval.start_price - self.current_max_l_to_d_interval.end_price)
-            self.max_ir_by_cr.datetime = cd.datetime
-
-    """
-    通过max_r设置ir
-    """
-    def set_max_ir_by_max_r(self, cd):
-        if self.max_ir_by_cr is None or self.current_max_r.length > self.max_ir_by_cr.length:
-            self.max_ir_by_cr = SimpleNamespace()
-            self.max_ir_by_cr.direction = self.current_max_r.direction 
-            self.max_ir_by_cr.real_direction = self.breakthrough_direction
-            self.max_ir_by_cr.start = self.current_max_r.start_price
-            self.max_ir_by_cr.end = self.current_max_r.end_price
-            self.max_ir_by_cr.length = abs(self.current_max_r.start_price - self.current_max_r.end_price)
-            self.max_ir_by_cr.datetime = cd.datetime
                 
     """
     方向改变执行的动作
@@ -1040,6 +978,7 @@ class Minute:
         max_r_obj.datetime = cd.datetime
         self.set_max_r(max_r_obj) 
         self.current_max_r = max_r_obj
+        # self.set_max_lowercase_ir_by_max_r(cd)
 
     """
     设置走势方向
@@ -1309,18 +1248,15 @@ class Minute:
     """
     def handle_ir_by_histoty_status_none(self, cd):
         if self.breakthrough_direction is not None and not Logic.is_crossing_starlike(cd):
-                self.max_ir_by_cr = SimpleNamespace()
-                self.max_ir_by_cr.direction = cd.direction
-                self.max_ir_by_cr.real_direction = self.breakthrough_direction
                 if cd.direction == Constants.DIRECTION_UP:
                     start_price = cd.low
                     end_price = cd.high
+                    self.max_ir_by_cr = QuotationLogic.amplitude_obj(start_price, end_price)
                 else:
                     start_price = cd.high
                     end_price = cd.low
-                self.max_ir_by_cr.start = start_price         
-                self.max_ir_by_cr.end = end_price
-                self.max_ir_by_cr.length = abs(start_price - end_price)
+                    self.max_ir_by_cr = QuotationLogic.amplitude_obj(start_price, end_price)
+  
                 self.max_ir_by_cr.datetime = cd.datetime
     
 
@@ -1427,6 +1363,8 @@ class Minute:
                 self.cr_list = deepcopy(self.temp_cr_list)
                 self.cr_obj = deepcopy(self.temp_cr_obj)
                 self.reset_temp_cr()
+                # todo 设置max_ir_by_cr 为None
+                self.max_ir_by_cr = QuotationLogic.get_max_ir_by_cr_list(self.cr_list)
                 # print(f"after => cr_list => {self.cr_list}  \ncr_obj => {self.cr_obj}  \ncd => {cd} \n tmp_cr_list => {self.temp_cr_list} temp_cr_obj => {self.temp_cr_obj}")
 
         # 设置最大的max_cr
