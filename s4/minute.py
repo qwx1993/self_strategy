@@ -739,36 +739,6 @@ class Minute:
                 self.agreement_ir.tag = True
 
     """
-    标定协定D的特性
-    """
-    # def handle_agreement_extremum_d_tag_by_cr_or_ir(self):
-    #     if self.agreement_extremum_d is not None and not self.agreement_extremum_d.tag:
-    #         if self.cr_obj.direction == self.breakthrough_direction:
-    #             max_price = max(self.cr_obj.start_price, self.cr_obj.end_price)
-    #             min_price = min(self.cr_obj.start_price, self.cr_obj.end_price)
-
-    #             ir_max_price = max(self.current_ir.start_price, self.current_ir.end_price)
-    #             ir_min_price = min(self.current_ir.start_price, self.current_ir.end_price)
-
-    #             if (max_price >= self.agreement_extremum_d.price >= min_price) and self.cr_obj.length > 30 * self.unit_value:
-    #                 self.agreement_extremum_d.tag = True
-    #             elif (ir_max_price >= self.agreement_extremum_d.price >= ir_min_price) and self.current_ir.length > 10 * self.unit_value:
-    #                 self.agreement_extremum_d.tag = True
-    
-    """
-    标定协定D的特性
-    """
-    # def handle_agreement_extremum_d_tag_by_cr(self):
-    #     if self.agreement_extremum_d is not None and not self.agreement_extremum_d.tag:
-    #         if self.cr_obj.direction == self.breakthrough_direction:
-    #             max_price = max(self.cr_obj.start_price, self.cr_obj.end_price)
-    #             min_price = min(self.cr_obj.start_price, self.cr_obj.end_price)
-    #             if (max_price >= self.agreement_extremum_d.price >= min_price) and self.cr_obj.length > 30 * self.unit_value and self.max_ir_by_cr.length > 10 * self.unit_value:
-    #                 self.agreement_extremum_d.tag = True
-    #                 self.agreement_extremum_d.open_price = Logic.get_middle_price_for_cr_list(self.breakthrough_direction, self.agreement_extremum_d.price, self.cr_list)
-    
-
-    """
     方向处理
     当出现最大的CRmax时，调整方向跟最大的CRmax一致
     当回归到CRmax的起点时，改变方向跟CRmax方向相反
@@ -872,7 +842,6 @@ class Minute:
                 self.max_amplitude.length = abs(self.max_amplitude.start - self.max_amplitude.end)
                 self.max_amplitude.datetime = cd.datetime
                 appear = True
-                # print(f"相同方向设置最大的max_amplitude00000000000000000000000000000000000000 => {cd.datetime} => {self.max_amplitude} 方向 => {self.breakthrough_direction}")
         else:
             if self.max_r.length > self.max_amplitude.length:
                 self.max_amplitude.direction = self.max_r.direction 
@@ -882,21 +851,11 @@ class Minute:
                 self.max_amplitude.length = abs(self.max_amplitude.start - self.max_amplitude.end)
                 self.max_amplitude.datetime = cd.datetime
                 appear = True
-                # 暂时改成只有幅度变化转向才生效
-                # print(f"不同方向设置最大的max_amplitudeooooooooooooooooooooooooooooooooooooooo => {cd.datetime} => {self.max_amplitude} 方向 => {self.breakthrough_direction}")
         if appear:
             # 重置R
             self.max_l_to_d_interval = None
             # 重置r
             self.max_r = None
-        # else:
-        #     if Logic.is_exceed_max_amplitude_start_price(self.breakthrough_direction, self.max_amplitude, cd):
-        #         self.reverse_direct_by_max_amplitude()
-        #         self.on_direction_change(cd)
-        #         # print(f"突破max_amplitude的起始价格@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ => {cd.datetime}")
-        #     elif Logic.is_exceed_max_amplitude_end_price(self.breakthrough_direction, self.max_amplitude, cd):
-        #         self.set_direction_by_max_amplitude()
-        #         self.on_direction_change(cd)
     
     """
     统计cr_list区间最大的
@@ -1283,17 +1242,6 @@ class Minute:
                 self.fictitious_cd.direction = Constants.DIRECTION_NONE
             if self.breakthrough_direction is None:
                 self.breakthrough_direction = self.fictitious_cd.direction
-
-    # """
-    # 设置开仓的状态，当前方向跟昨日方向不同，是找顶状态
-    # 当前方向跟昨日方向相同，是找底状态
-    # """
-    # def handle_open_status(self):
-    #     if self.breakthrough_direction == self.yesterday_direction:
-    #         self.open_status = Constants.OPEN_STATUS_OF_LOW
-    #     else:
-    #         self.open_status = Constants.OPEN_STATUS_OF_TOP
-
 
     """
     将昨日的max_cr相关的参数设置到今天
