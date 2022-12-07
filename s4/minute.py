@@ -559,7 +559,7 @@ class Minute:
     def handle_effective_trend(self):
         if self.cr_obj is not None and self.max_ir_by_cr is not None and self.current_ir is not None:
             if self.breakthrough_direction == self.cr_obj.direction:
-                if self.cr_obj.length > 50 * self.unit_value and  (self.max_ir_by_cr.length > 10 * self.unit_value):
+                if self.cr_obj.length > 80 * self.unit_value and  (self.max_ir_by_cr.length > 10 * self.unit_value):
                         self.effective_cr_list = deepcopy(self.cr_list)
                         self.effective_cr_obj = deepcopy(self.cr_obj) 
                         self.set_ir_last(effective=True)
@@ -659,7 +659,7 @@ class Minute:
                             self.effective_extremum_d.tag = True
                             self.effective_extremum_d_price = self.extremum_d_price
                             self.set_ir_last(effective=True)
-                            # print(f"设置有效d => effective_cr_obj => {self.effective_cr_obj} \ncr_list => {self.effective_cr_list} \neffective_extremum_d => {self.effective_extremum_d} \ncd => {cd} \nir_last => {self.effective_ir_last}")
+                            # print(f"设置有效d => effective_cr_obj => {self.effective_cr_obj} \ncr_list => {self.effective_cr_list} \neffective_extremum_d => {self.effective_extremum_d} \ncd => {cd} \nir_last => {self.effective_ir_last} \neffective_extremum_d_price => {self.effective_extremum_d_price}")
                     elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
                         # if cd.close > self.extremum_d.high:
                         if cd.close > self.last_cd.high:
@@ -668,7 +668,7 @@ class Minute:
                             self.effective_extremum_d.tag = True
                             self.effective_extremum_d_price = self.extremum_d_price
                             self.set_ir_last(effective=True)
-                            # print(f"设置有效d => effective_cr_obj => {self.effective_cr_obj} \ncr_list => {self.effective_cr_list} \neffective_extremum_d => {self.effective_extremum_d} \ncd => {cd} \nir_last => {self.effective_ir_last}")
+                            # print(f"设置有效d => effective_cr_obj => {self.effective_cr_obj} \ncr_list => {self.effective_cr_list} \neffective_extremum_d => {self.effective_extremum_d} \ncd => {cd} \nir_last => {self.effective_ir_last} \neffective_extremum_d_price => {self.effective_extremum_d_price}")
                             
     """
     出现IR>IRlast（IR>10）突破D视为有效突破，有效突破后有效D随之变化，否则就是无效突破
@@ -682,17 +682,17 @@ class Minute:
                         # 去掉有效D
                         self.reset_effective_extremum_d()
                         self.effective_break_through_datetime = cd.datetime
-                        # print(f"有效突破 cd => {cd} \neffective_cr_list => {self.effective_cr_list} \neffective_ir_last => {self.effective_ir_last}")
+                        # print(f"有效突破 cd => {cd} \neffective_cr_list => {self.effective_cr_list} \neffective_ir_last => {self.effective_ir_last} \ncurrent_cr => {self.current_ir}")
                     else:
                         # 给有效D打上无效突破的标记
                         if self.effective_extremum_d.bk_type == Constants.BK_TYPE_OF_NONE:
                             self.effective_extremum_d.bk_type = Constants.BK_TYPE_OF_INEFFECTIVE
             elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
                 if self.current_ir.start_price > self.effective_extremum_d_price > self.current_ir.end_price:
-                    if self.current_ir.length < self.effective_ir_last.length:
+                    if self.current_ir.length > self.effective_ir_last.length:
                         self.reset_effective_extremum_d()
                         self.effective_break_through_datetime = cd.datetime
-                        # print(f"有效突破 cd => {cd} \neffective_cr_list => {self.effective_cr_list} \neffective_ir_last => {self.effective_ir_last}")
+                        # print(f"有效突破 cd => {cd} \neffective_cr_list => {self.effective_cr_list} \neffective_ir_last => {self.effective_ir_last} \ncurrent_cr => {self.current_ir}")
                     else:
                         if self.effective_extremum_d.bk_type == Constants.BK_TYPE_OF_NONE:
                             self.effective_extremum_d.bk_type = Constants.BK_TYPE_OF_INEFFECTIVE
@@ -874,6 +874,7 @@ class Minute:
     """
     def handle_current_ir(self, cd):
         self.current_ir = QuotationLogic.get_current_ir(self.breakthrough_direction, self.last_cd, cd)
+        # print(f"current_ir => {self.current_ir}")
                 
     """
     方向改变执行的动作
