@@ -683,26 +683,26 @@ class TickTest():
             if self.history.cr_obj.length > 50 * self.unit_value and self.history.max_ir_by_cr.length > 10 * self.unit_value:
                 first_cd = self.history.cr_list[0]
                 last_cd = self.history.cr_list[-1]
-                # first_cd_ptime = Logic.ptime(first_cd.datetime)
-                # if first_cd_ptime > self.open_price_tick.datetime:
-                if self.trade_action == Cons.ACTION_CLOSE_LONG and self.history.cr_obj.direction == Cons.DIRECTION_UP:
-                    self.close_price = max(self.close_price, last_cd.low)
-                    self.log_obj.info(f"get_close_price_by_cr_list_and_max_ir_50 \ntrade_action => {self.trade_action} \nold_close_price => {old_close_price} \ncurrent_close_price => {self.close_price} \nfirst_cd => {first_cd} \nlast_cd => {last_cd} \ncr_list => {self.history.cr_list} \ncr_obj => {self.history.cr_obj} \nmax_ir_by_cr => {self.history.max_ir_by_cr} \nopen_price_tick.datetime => {self.open_price_tick.datetime}  \nmax_ir_by_cr => {self.history.max_ir_by_cr}")
-                elif self.trade_action == Cons.ACTION_CLOSE_SHORT and self.history.cr_obj.direction == Cons.DIRECTION_DOWN:
-                    self.close_price = min(self.close_price, last_cd.high)
-                    self.log_obj.info(f"get_close_price_by_cr_list_and_max_ir_50 \ntrade_action => {self.trade_action} \nold_close_price => {old_close_price} \ncurrent_close_price => {self.close_price}  \nfirst_cd => {first_cd} \nlast_cd => {last_cd} \ncr_list => {self.history.cr_list} \ncr_obj => {self.history.cr_obj} \nmax_ir_by_cr => {self.history.max_ir_by_cr} \nopen_price_tick.datetime => {self.open_price_tick.datetime}  \nmax_ir_by_cr => {self.history.max_ir_by_cr}")
-                        # Tick突破Cr>30（Ir>10）后的起点
+                first_cd_ptime = Logic.ptime(first_cd.datetime)
+                if first_cd_ptime > self.open_price_tick.datetime:
+                    if self.trade_action == Cons.ACTION_CLOSE_LONG and self.history.cr_obj.direction == Cons.DIRECTION_UP:
+                        self.close_price = max(self.close_price, last_cd.low)
+                        self.log_obj.info(f"get_close_price_by_cr_list_and_max_ir_50 \ntrade_action => {self.trade_action} \nold_close_price => {old_close_price} \ncurrent_close_price => {self.close_price} \nfirst_cd => {first_cd} \nlast_cd => {last_cd} \ncr_list => {self.history.cr_list} \ncr_obj => {self.history.cr_obj} \nmax_ir_by_cr => {self.history.max_ir_by_cr} \nopen_price_tick.datetime => {self.open_price_tick.datetime}  \nmax_ir_by_cr => {self.history.max_ir_by_cr}")
+                    elif self.trade_action == Cons.ACTION_CLOSE_SHORT and self.history.cr_obj.direction == Cons.DIRECTION_DOWN:
+                        self.close_price = min(self.close_price, last_cd.high)
+                        self.log_obj.info(f"get_close_price_by_cr_list_and_max_ir_50 \ntrade_action => {self.trade_action} \nold_close_price => {old_close_price} \ncurrent_close_price => {self.close_price}  \nfirst_cd => {first_cd} \nlast_cd => {last_cd} \ncr_list => {self.history.cr_list} \ncr_obj => {self.history.cr_obj} \nmax_ir_by_cr => {self.history.max_ir_by_cr} \nopen_price_tick.datetime => {self.open_price_tick.datetime}  \nmax_ir_by_cr => {self.history.max_ir_by_cr}")
+                            # Tick突破Cr>30（Ir>10）后的起点
             elif self.history.cr_obj.length > 30*self.unit_value and self.history.max_ir_by_cr.length > 10*self.unit_value:
                 first_cd = self.history.cr_list[0]
                 first_cd_ptime = Logic.ptime(first_cd.datetime)
-                # if first_cd_ptime > self.open_price_tick.datetime:
-                if self.trade_action == Cons.ACTION_CLOSE_LONG and self.history.cr_obj.direction == Cons.DIRECTION_UP:
-                    self.close_price = max(self.close_price, first_cd.low)
-                    self.log_obj.info(f"get_close_price_by_cr_list_and_max_ir_30 \ntrade_action => {self.trade_action} \nold_close_price => {old_close_price} \ncurrent_close_price => {self.close_price} \nfirst_cd => {first_cd} \ncr_list => {self.history.cr_list} \ncr_obj => {self.history.cr_obj} \nmax_ir_by_cr => {self.history.max_ir_by_cr} \nopen_price_tick.datetime => {self.open_price_tick.datetime}  \nmax_ir_by_cr => {self.history.max_ir_by_cr}")
-                elif self.trade_action == Cons.ACTION_CLOSE_SHORT and self.history.cr_obj.direction == Cons.DIRECTION_DOWN:
-                    self.close_price = min(self.close_price, first_cd.high)
-                    self.log_obj.info(f"get_close_price_by_cr_list_and_max_ir_30 \ntrade_action => {self.trade_action} \nold_close_price => {old_close_price} \ncurrent_close_price => {self.close_price}  \nfirst_cd => {first_cd} \ncr_list => {self.history.cr_list} \ncr_obj => {self.history.cr_obj} \nmax_ir_by_cr => {self.history.max_ir_by_cr} \nopen_price_tick.datetime => {self.open_price_tick.datetime}  \nmax_ir_by_cr => {self.history.max_ir_by_cr}")
-        
+                if first_cd_ptime > self.open_price_tick.datetime:
+                    if self.trade_action == Cons.ACTION_CLOSE_LONG and self.history.cr_obj.direction == Cons.DIRECTION_UP:
+                        self.close_price = max(self.close_price, first_cd.low)
+                        self.log_obj.info(f"get_close_price_by_cr_list_and_max_ir_30 \ntrade_action => {self.trade_action} \nold_close_price => {old_close_price} \ncurrent_close_price => {self.close_price} \nfirst_cd => {first_cd} \ncr_list => {self.history.cr_list} \ncr_obj => {self.history.cr_obj} \nmax_ir_by_cr => {self.history.max_ir_by_cr} \nopen_price_tick.datetime => {self.open_price_tick.datetime}  \nmax_ir_by_cr => {self.history.max_ir_by_cr}")
+                    elif self.trade_action == Cons.ACTION_CLOSE_SHORT and self.history.cr_obj.direction == Cons.DIRECTION_DOWN:
+                        self.close_price = min(self.close_price, first_cd.high)
+                        self.log_obj.info(f"get_close_price_by_cr_list_and_max_ir_30 \ntrade_action => {self.trade_action} \nold_close_price => {old_close_price} \ncurrent_close_price => {self.close_price}  \nfirst_cd => {first_cd} \ncr_list => {self.history.cr_list} \ncr_obj => {self.history.cr_obj} \nmax_ir_by_cr => {self.history.max_ir_by_cr} \nopen_price_tick.datetime => {self.open_price_tick.datetime}  \nmax_ir_by_cr => {self.history.max_ir_by_cr}")
+            
             # Tick突破Cr>30（Ir>10）后的起点
             # elif self.history.cr_obj.length > 30*self.unit_value and self.history.max_ir_by_cr.length > 10*self.unit_value:
             #     if self.trade_action == Cons.ACTION_CLOSE_LONG and self.history.cr_obj.direction == Cons.DIRECTION_UP:
