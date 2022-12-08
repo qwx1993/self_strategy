@@ -545,7 +545,8 @@ class Minute:
         self.handle_effective_extremum_d(cd)
         
         # 设置有效小cr[有效反弹]
-        self.handle_effective_lowercase_cr(cd)
+        # self.handle_effective_lowercase_cr(cd)
+        self.handle_effective_rebound(cd)
         
         # 有效突破跟非有效突破
         self.handle_breakthrough(cd)
@@ -621,6 +622,31 @@ class Minute:
                             # print(f"重置有效小cr")
     
     """
+    有效反弹
+    突破有效IRlast的时候标定状态为突破，突破之后，如果回路到IRlast的起点，就标定为回落
+    """
+    def handle_effective_rebound(self, cd):
+        if self.effective_cr_obj is not None and self.effective_ir_last is not None and self.effective_extremum_d is not None:
+            if self.effective_ir_last.status == Constants.IR_LAST_NONE:
+                if self.effective_ir_last.direction == Constants.DIRECTION_UP:
+                    if cd.low < self.effective_ir_last.start_price:
+                        self.effective_ir_last.status = Constants.IR_LAST_BREAKTHROUGH
+                        # print(f"有效反弹[突破] => {self.effective_ir_last} \ncd => {cd}")
+                elif self.effective_ir_last.direction == Constants.DIRECTION_DOWN:
+                    if cd.high > self.effective_ir_last.start_price:
+                        self.effective_ir_last.status = Constants.IR_LAST_BREAKTHROUGH
+                        # print(f"有效反弹[突破] => {self.effective_ir_last} \ncd => {cd}")
+            elif self.effective_ir_last.status == Constants.IR_LAST_BREAKTHROUGH:
+                if self.effective_ir_last.direction == Constants.DIRECTION_UP:
+                    if cd.low > self.effective_ir_last.start_price:
+                        self.effective_ir_last.status = Constants.IR_LAST_FALLBACK
+                        # print(f"有效反弹[回落] => {self.effective_ir_last} \ncd => {cd}")
+                elif self.effective_ir_last.direction == Constants.DIRECTION_DOWN:
+                    if cd.high < self.effective_ir_last.start_price:
+                        self.effective_ir_last.status = Constants.IR_LAST_FALLBACK
+                        # print(f"有效反弹[回落] => {self.effective_ir_last} \ncd => {cd}")
+    
+    """
     是否有效反弹
     """
     def is_effective_rebound(self):
@@ -659,7 +685,7 @@ class Minute:
                             self.effective_extremum_d.tag = True
                             self.effective_extremum_d_price = self.extremum_d_price
                             self.set_ir_last(effective=True)
-                            print(f"设置有效d => effective_cr_obj => {self.effective_cr_obj} \ncr_list => {self.effective_cr_list} \neffective_extremum_d => {self.effective_extremum_d} \ncd => {cd} \nir_last => {self.effective_ir_last} \neffective_extremum_d_price => {self.effective_extremum_d_price}")
+                            # print(f"设置有效d => effective_cr_obj => {self.effective_cr_obj} \ncr_list => {self.effective_cr_list} \neffective_extremum_d => {self.effective_extremum_d} \ncd => {cd} \nir_last => {self.effective_ir_last} \neffective_extremum_d_price => {self.effective_extremum_d_price}")
                     elif self.breakthrough_direction == Constants.DIRECTION_DOWN:
                         # if cd.close > self.extremum_d.high:
                         if cd.close > self.last_cd.high:
@@ -668,7 +694,7 @@ class Minute:
                             self.effective_extremum_d.tag = True
                             self.effective_extremum_d_price = self.extremum_d_price
                             self.set_ir_last(effective=True)
-                            print(f"设置有效d => effective_cr_obj => {self.effective_cr_obj} \ncr_list => {self.effective_cr_list} \neffective_extremum_d => {self.effective_extremum_d} \ncd => {cd} \nir_last => {self.effective_ir_last} \neffective_extremum_d_price => {self.effective_extremum_d_price}")
+                            # print(f"设置有效d => effective_cr_obj => {self.effective_cr_obj} \ncr_list => {self.effective_cr_list} \neffective_extremum_d => {self.effective_extremum_d} \ncd => {cd} \nir_last => {self.effective_ir_last} \neffective_extremum_d_price => {self.effective_extremum_d_price}")
                             
     """
     出现IR>IRlast（IR>10）突破D视为有效突破，有效突破后有效D随之变化，否则就是无效突破
@@ -682,7 +708,7 @@ class Minute:
                         # 去掉有效D
                         self.reset_effective_extremum_d()
                         self.effective_break_through_datetime = cd.datetime
-                        print(f"有效突破 cd => {cd} \neffective_cr_list => {self.effective_cr_list} \neffective_ir_last => {self.effective_ir_last} \ncurrent_cr => {self.current_ir}")
+                        # print(f"有效突破 cd => {cd} \neffective_cr_list => {self.effective_cr_list} \neffective_ir_last => {self.effective_ir_last} \ncurrent_cr => {self.current_ir}")
                     else:
                         # 给有效D打上无效突破的标记
                         if self.effective_extremum_d.bk_type == Constants.BK_TYPE_OF_NONE:
@@ -692,7 +718,7 @@ class Minute:
                     if self.current_ir.length > self.effective_ir_last.length:
                         self.reset_effective_extremum_d()
                         self.effective_break_through_datetime = cd.datetime
-                        print(f"有效突破 cd => {cd} \neffective_cr_list => {self.effective_cr_list} \neffective_ir_last => {self.effective_ir_last} \ncurrent_cr => {self.current_ir}")
+                        # print(f"有效突破 cd => {cd} \neffective_cr_list => {self.effective_cr_list} \neffective_ir_last => {self.effective_ir_last} \ncurrent_cr => {self.current_ir}")
                     else:
                         if self.effective_extremum_d.bk_type == Constants.BK_TYPE_OF_NONE:
                             self.effective_extremum_d.bk_type = Constants.BK_TYPE_OF_INEFFECTIVE
@@ -729,6 +755,7 @@ class Minute:
         # 讲ir_last设置为有效ir_last
         if effective:
             self.effective_ir_last = self.ir_last
+            self.effective_ir_last.status = Constants.IR_LAST_NONE # 设置IRlast的状态为None
 
     """
     协定ir

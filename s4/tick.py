@@ -273,5 +273,22 @@ class Tick:
             if current_ir.end_price > ir_last.start_price:
                 return True
         return False
+    
+    """
+    通过有效ir_last进行平仓
+    """
+    def open_a_price_by_effective_ir_last(direction, effective_ir_last, tick):
+        if effective_ir_last is None:
+            return False
+        
+        if not effective_ir_last.status == Constants.IR_LAST_FALLBACK:
+            return False
 
+        if direction == Constants.DIRECTION_UP:
+            if tick.current < effective_ir_last.start_price:
+                return True
+        elif direction == Constants.DIRECTION_DOWN:
+            if tick.current > effective_ir_last.start_price:
+                return True
+        return False
 
