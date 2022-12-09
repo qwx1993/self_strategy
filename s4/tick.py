@@ -130,7 +130,7 @@ class Tick:
     """
     根据小cr开仓
     """
-    def open_a_price_by_effective_lowercase_cr(direction, effective_lowercase_cr, tick):
+    def open_a_price_by_effective_lowercase_cr(direction, effective_lowercase_cr, tick, length):
         if effective_lowercase_cr is None or (not effective_lowercase_cr.finish):
             return False
 
@@ -138,6 +138,10 @@ class Tick:
         跟小cr的方向一致不开仓
         """
         if direction ==  effective_lowercase_cr.direction:
+            return False
+
+        # 超过指定长度不开仓
+        if effective_lowercase_cr.length > length:
             return False
    
         # 已开仓的不再开仓
@@ -273,5 +277,22 @@ class Tick:
             if current_ir.end_price > ir_last.start_price:
                 return True
         return False
+    
+    """
+    通过effective_ir_last进行平仓
+    """
+    def close_a_price_by_open_price_effective_ir_last(trade_action, open_price_effective_ir_last, tick):
+        if open_price_effective_ir_last is None:
+            return False
+        
+        if not open_price_effective_ir_last.status == Constants.IR_LAST_FALLBACK:
+            return False
 
+        if trade_action == Constants.ACTION_CLOSE_LONG:
+            if tick.current < open_price_effective_ir_last.start_price:
+                return True
+        elif trade_action == Constants.ACTION_CLOSE_SHORT:
+            if tick.current > open_price_effective_ir_last.start_price:
+                return True
+        return False
 

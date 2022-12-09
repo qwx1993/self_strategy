@@ -570,6 +570,7 @@ class Minute:
                             self.reset_effective_lowercase_cr()
                         # print(f"有效趋势 => effective_cr_obj => {self.effective_cr_obj} \ncr_list => {self.effective_cr_list} \nextremum_d => {self.extremum_d} \n")
                 else:
+                    # print(f"无有效趋势 => cr_obj => {self.cr_obj}")
                     self.set_ir_last()
     
     """

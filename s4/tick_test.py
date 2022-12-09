@@ -92,6 +92,7 @@ class TickTest():
     # ------------------------------------------------- 1129
     open_price_effective_extremum_d_price = None # 开仓时候的 ed
     open_price_ir_last  = None # 开仓后出现的ir_last
+    open_price_effective_ir_last = None # 开仓之后的有效ir_last,满足先突破，再回落，然后使用tick平仓
     same_direction_ir = [] # 跟开平仓方向相同的ir
 
     interval_minutes_count = 0
@@ -143,7 +144,7 @@ class TickTest():
                      current_ir = QuotationLogic.get_current_ir(direction, self.history.last_cd, minute_cd)
                 else:
                     current_ir = None
-                if S4Tick.open_a_price_by_effective_lowercase_cr(direction, self.history.effective_lowercase_cr_obj, tick_obj):
+                if S4Tick.open_a_price_by_effective_lowercase_cr(direction, self.history.effective_lowercase_cr_obj, tick_obj, 50*self.unit_value):
                     # 时间间隔起点
                     if self.history.breakthrough_direction == Cons.DIRECTION_UP:
                         # result = self.short(tick.current, self.hand_number)
@@ -196,11 +197,11 @@ class TickTest():
                             self.close_price_by_lose = self.instance_1.extremum_l_price
                             self.increase_opportunity_number_by_instance_1()
             elif self.trade_action == Cons.ACTION_CLOSE_LONG:
-                current_ir = QuotationLogic.get_current_ir(self.history.breakthrough_direction, self.history.last_cd, minute_cd)
-                if False and S4Tick.close_a_price_by_breakthrough_ir_last(self.trade_action, current_ir, self.open_price_ir_last, self.unit_value):
+                # current_ir = QuotationLogic.get_current_ir(self.history.breakthrough_direction, self.history.last_cd, minute_cd)
+                if False and S4Tick.close_a_price_by_open_price_effective_ir_last(self.trade_action, self.open_price_effective_ir_last, tick_obj):
                     # result = self.sell(tick.current, self.hand_number)
                     self.add_action(tick, Cons.ACTION_CLOSE_LONG, tick.current - self.unit_value)
-                    self.log_obj.info(f"vt_symbol => {self.vt_symbol} \nclose_direction:long \ncurrent_ir => {current_ir} \nopen_price_ir_last => { self.open_price_ir_last}")
+                    self.log_obj.info(f"vt_symbol => {self.vt_symbol} \nclose_direction:long \ntick => {tick_obj} \nopen_price_effective_ir_last => {self.open_price_effective_ir_last}")
                     self.after_close(tick_obj)
                 # 移动平仓
                 elif False and self.is_exceed_last_cd_high(tick) and self.move_stop_bool:
@@ -210,11 +211,11 @@ class TickTest():
                     self.set_close_price_by_agreement()
                     # self.log_obj.info(f"vt_symbol:{self.vt_symbol} => set_close_price_by_agreement => tick_last_price:{tick.current} => close_price => {self.close_price} => agreement_close_price:{self.agreement_close_price} => last_cd:{self.history.last_cd}")
             elif self.trade_action == Cons.ACTION_CLOSE_SHORT:
-                current_ir = QuotationLogic.get_current_ir(self.history.breakthrough_direction, self.history.last_cd, minute_cd)
-                if False and S4Tick.close_a_price_by_breakthrough_ir_last(self.trade_action, current_ir, self.open_price_ir_last, self.unit_value):
+                # current_ir = QuotationLogic.get_current_ir(self.history.breakthrough_direction, self.history.last_cd, minute_cd)
+                if False and S4Tick.close_a_price_by_open_price_effective_ir_last(self.trade_action, self.open_price_effective_ir_last, tick_obj):
                     # result = self.cover(tick.current, self.hand_number)
                     self.add_action(tick, Cons.ACTION_CLOSE_SHORT, tick.current + self.unit_value)
-                    self.log_obj.info(f"vt_symbol => {self.vt_symbol} \nclose_direction:short \ncurrent_ir => {current_ir} \nopen_price_ir_last => { self.open_price_ir_last}")
+                    self.log_obj.info(f"vt_symbol => {self.vt_symbol} \nclose_direction:short \ntick => {tick_obj} \nopen_price_effective_ir_last => {self.open_price_effective_ir_last}")
                     self.after_close(tick_obj)
                     # logging.info(f"vt_symbol:{self.vt_symbol} => set_close_price_by_agreement => tick_last_price:{tick.current} => close_price => {self.close_price} => agreement_close_price:{self.agreement_close_price} => last_cd:{self.history.last_cd}")
                  # 移动平仓
@@ -253,20 +254,14 @@ class TickTest():
             # 开仓时记录开仓后每分钟得数据
             if self.trade_action is not None:
                 self.complete_start_list.append(cd)
- 
-            # self.refresh_close_by_current_ir(cd)
-            # # 通过cr_list 刷新平仓价
-            # self.get_close_price_by_cr_list()
-            # self.append_same_direction_ir()
-            # 通过cr_list的长度来调整开仓
+
+            # 设置ir_last
+            self.set_open_price_ir_last()
+            # 设置平仓的有效反弹
+            self.handle_effective_rebound_for_close(cd)
+
             self.get_close_price_by_cr_list_and_max_ir()
-            # self.get_close_price_by_last_second_ir()
 
-            # 检查是否刷新了协定ir
-            # self.handle_need_close_by_refresh_agreement_ir()
-
-            # 用分钟级别平仓
-            # print(f"cd => {cd}")
             effective_breakthrough_bool = S4Tick.close_a_price_by_effective_breakthrough(self.history.effective_break_through_datetime, cd)
             is_close_by_duration =  self.is_close_by_duration()
             if self.trade_action == Cons.ACTION_CLOSE_LONG:
@@ -689,12 +684,14 @@ class TickTest():
                 if first_cd_ptime > self.open_price_tick.datetime:
                     if self.trade_action == Cons.ACTION_CLOSE_LONG and self.history.cr_obj.direction == Cons.DIRECTION_UP:
                         self.close_price = max(self.close_price, last_cd.low)
+                        self.set_open_price_effective_ir_last()
                         self.has_change_close_price = True
-                        self.log_obj.info(f"get_close_price_by_cr_list_and_max_ir_50 \ntrade_action => {self.trade_action} \nold_close_price => {old_close_price} \ncurrent_close_price => {self.close_price} \nfirst_cd => {first_cd} \nlast_cd => {last_cd} \ncr_list => {self.history.cr_list} \ncr_obj => {self.history.cr_obj} \nmax_ir_by_cr => {self.history.max_ir_by_cr} \nopen_price_tick.datetime => {self.open_price_tick.datetime}  \nmax_ir_by_cr => {self.history.max_ir_by_cr}")
+                        self.log_obj.info(f"get_close_price_by_cr_list_and_max_ir_50 \ntrade_action => {self.trade_action} \nold_close_price => {old_close_price} \ncurrent_close_price => {self.close_price} \nfirst_cd => {first_cd} \nlast_cd => {last_cd} \ncr_list => {self.history.cr_list} \ncr_obj => {self.history.cr_obj} \nmax_ir_by_cr => {self.history.max_ir_by_cr} \nopen_price_tick.datetime => {self.open_price_tick.datetime}  \nmax_ir_by_cr => {self.history.max_ir_by_cr} \nopen_price_effective_ir_last => {self.open_price_effective_ir_last}")
                     elif self.trade_action == Cons.ACTION_CLOSE_SHORT and self.history.cr_obj.direction == Cons.DIRECTION_DOWN:
                         self.close_price = min(self.close_price, last_cd.high)
+                        self.set_open_price_effective_ir_last()
                         self.has_change_close_price = True
-                        self.log_obj.info(f"get_close_price_by_cr_list_and_max_ir_50 \ntrade_action => {self.trade_action} \nold_close_price => {old_close_price} \ncurrent_close_price => {self.close_price}  \nfirst_cd => {first_cd} \nlast_cd => {last_cd} \ncr_list => {self.history.cr_list} \ncr_obj => {self.history.cr_obj} \nmax_ir_by_cr => {self.history.max_ir_by_cr} \nopen_price_tick.datetime => {self.open_price_tick.datetime}  \nmax_ir_by_cr => {self.history.max_ir_by_cr}")
+                        self.log_obj.info(f"get_close_price_by_cr_list_and_max_ir_50 \ntrade_action => {self.trade_action} \nold_close_price => {old_close_price} \ncurrent_close_price => {self.close_price}  \nfirst_cd => {first_cd} \nlast_cd => {last_cd} \ncr_list => {self.history.cr_list} \ncr_obj => {self.history.cr_obj} \nmax_ir_by_cr => {self.history.max_ir_by_cr} \nopen_price_tick.datetime => {self.open_price_tick.datetime}  \nmax_ir_by_cr => {self.history.max_ir_by_cr} \nopen_price_effective_ir_last => {self.open_price_effective_ir_last}")
                             # Tick突破Cr>30（Ir>10）后的起点
             elif self.history.cr_obj.length > 30*self.unit_value and self.history.max_ir_by_cr.length > 10*self.unit_value:
                 first_cd = self.history.cr_list[0]
@@ -870,3 +867,50 @@ class TickTest():
             if self.interval_minutes_count > 60 and not self.has_change_close_price:
                 return True
         return False
+    
+    """
+    在开仓之后统计
+    当前ir的长度大于10，如果方向跟开仓方向一致就设置
+    """
+    def set_open_price_ir_last(self):
+        if self.trade_action is not None:
+            if self.history.current_ir is not None and self.history.current_ir.length > 10*self.unit_value:
+                if self.trade_action == Cons.ACTION_CLOSE_LONG:
+                    if self.history.current_ir.direction == Cons.DIRECTION_UP:
+                        self.open_price_ir_last = deepcopy(self.history.current_ir)
+                elif self.trade_action == Cons.ACTION_CLOSE_SHORT:
+                    if self.history.current_ir.direction == Cons.DIRECTION_DOWN:
+                        self.open_price_ir_last = deepcopy(self.history.current_ir)
+    
+    """
+    将开仓后统计的最后的ir_last设置为有效ir_last
+    """
+    def set_open_price_effective_ir_last(self):
+        if self.open_price_ir_last is not None:
+            self.open_price_effective_ir_last = deepcopy(self.open_price_ir_last)
+            self.open_price_effective_ir_last.status = Cons.IR_LAST_NONE
+
+    
+    """
+    突破有效IRlast的时候标定状态为突破，突破之后，如果回路到IRlast的起点，就标定为回落
+    """
+    def handle_effective_rebound_for_close(self, cd):
+        if self.trade_action is not None and self.open_price_effective_ir_last is not None:
+            if self.open_price_effective_ir_last.status == Cons.IR_LAST_NONE:
+                if self.open_price_effective_ir_last.direction == Cons.DIRECTION_UP:
+                    if cd.close < self.open_price_effective_ir_last.start_price:
+                        self.open_price_effective_ir_last.status = Cons.IR_LAST_BREAKTHROUGH
+                        # print(f"有效反弹[突破] => {self.open_price_effective_ir_last} \ncd => {cd}")
+                elif self.open_price_effective_ir_last.direction == Cons.DIRECTION_DOWN:
+                    if cd.close > self.open_price_effective_ir_last.start_price:
+                        self.open_price_effective_ir_last.status = Cons.IR_LAST_BREAKTHROUGH
+                        # print(f"有效反弹[突破] => {self.open_price_effective_ir_last} \ncd => {cd}")
+            elif self.open_price_effective_ir_last.status == Cons.IR_LAST_BREAKTHROUGH:
+                if self.open_price_effective_ir_last.direction == Cons.DIRECTION_UP:
+                    if cd.close > self.open_price_effective_ir_last.start_price:
+                        self.open_price_effective_ir_last.status = Cons.IR_LAST_FALLBACK
+                        # print(f"有效反弹[回落] => {self.effective_ir_last} \ncd => {cd}")
+                elif self.open_price_effective_ir_last.direction == Cons.DIRECTION_DOWN:
+                    if cd.close < self.open_price_effective_ir_last.start_price:
+                        self.open_price_effective_ir_last.status = Cons.IR_LAST_FALLBACK
+                        # print(f"有效反弹[回落] => {self.effective_ir_last} \ncd => {cd}")

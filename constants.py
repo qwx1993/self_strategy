@@ -125,6 +125,10 @@ class Constants:
     BK_TYPE_OF_EFFECTIVE = 1 # 有效突破
     BK_TYPE_OF_DISORDER = 2 # 有效无序
 
+    IR_LAST_NONE = 0 # 无状态
+    IR_LAST_BREAKTHROUGH = 1 # 突破IRlast
+    IR_LAST_FALLBACK = 2 # 回落
+
     STR_ACTIONS_AND_STATES = {
         OPEN_A_POSITION_ONE_LONG: {
             "cn": "情况一开多",
