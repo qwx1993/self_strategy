@@ -152,7 +152,8 @@ class TickTest():
                         self.open_price = tick.current - self.unit_value
                         self.open_price_tick = tick
                         # self.open_price_effective_extremum_d_price = self.history.effective_extremum_d_price
-                        self.close_price = self.history.effective_extremum_d_price
+                        # self.close_price = self.history.effective_extremum_d_price
+                        self.close_price = self.history.effective_lowercase_cr_obj.start_price
                         self.log_obj.info(f"vt_symbol => {self.vt_symbol} \ntrade_type => short_by_d \ndirction => {self.history.breakthrough_direction} \ntick => {tick.current} \neffective_lowercase_cr_obj => {self.history.effective_lowercase_cr_obj} \neffective_lowercase_cr_list => {self.history.effective_lowercase_cr_list} \nlast_cd => {self.history.last_cd}  \ncurrent_ir => {current_ir} \nunit_value => {self.unit_value} \neffective_cr_list => {self.history.effective_cr_list} \neffective_cr_obj => {self.history.effective_cr_obj} \neffective_ir_last => {self.history.effective_ir_last} \neffective_extremum_d => {self.history.effective_extremum_d} \neffective_extremum_d_price => {self.history.effective_extremum_d_price}")
                         self.trade_action = Cons.ACTION_CLOSE_SHORT
                         self.open_type = Cons.OPEN_BY_D
@@ -164,7 +165,8 @@ class TickTest():
                         self.open_price = tick.current + self.unit_value
                         self.open_price_tick = tick
                         # self.open_price_effective_extremum_d_price = self.history.effective_extremum_d_price
-                        self.close_price = self.history.effective_extremum_d_price
+                        # self.close_price = self.history.effective_extremum_d_price
+                        self.close_price = self.history.effective_lowercase_cr_obj.start_price
                         self.log_obj.info(f"vt_symbol => {self.vt_symbol} \ntrade_type => long_by_d \ndirction => {self.history.breakthrough_direction} \ntick => {tick.current} \neffective_lowercase_cr_obj => {self.history.effective_lowercase_cr_obj} \neffective_lowercase_cr_list => {self.history.effective_lowercase_cr_list} \nlast_cd => {self.history.last_cd}  \ncurrent_ir => {current_ir} \nunit_value => {self.unit_value} \neffective_cr_list => {self.history.effective_cr_list} \neffective_cr_obj => {self.history.effective_cr_obj} \neffective_ir_last => {self.history.effective_ir_last} \neffective_extremum_d => {self.history.effective_extremum_d} \neffective_extremum_d_price => {self.history.effective_extremum_d_price}")
                         self.trade_action = Cons.ACTION_CLOSE_LONG 
                         self.open_type = Cons.OPEN_BY_D
@@ -697,14 +699,14 @@ class TickTest():
                 first_cd = self.history.cr_list[0]
                 first_cd_ptime = Logic.ptime(first_cd.datetime)
                 if first_cd_ptime > self.open_price_tick.datetime:
+                    new_close_price = QuotationLogic.get_last_price_by_cr_list(self.history.cr_list, self.history.cr_obj.end_price, 30*self.unit_value)
                     if self.trade_action == Cons.ACTION_CLOSE_LONG and self.history.cr_obj.direction == Cons.DIRECTION_UP:
-                        self.close_price = max(self.close_price, first_cd.low)
-                        self.has_change_close_price = True
-                        self.log_obj.info(f"get_close_price_by_cr_list_and_max_ir_30 \ntrade_action => {self.trade_action} \nold_close_price => {old_close_price} \ncurrent_close_price => {self.close_price} \nfirst_cd => {first_cd} \ncr_list => {self.history.cr_list} \ncr_obj => {self.history.cr_obj} \nmax_ir_by_cr => {self.history.max_ir_by_cr} \nopen_price_tick.datetime => {self.open_price_tick.datetime}  \nmax_ir_by_cr => {self.history.max_ir_by_cr}")
+                        self.close_price = max(self.close_price, new_close_price)
+                        self.log_obj.info(f"get_close_price_by_cr_list_and_max_ir_30 \ntrade_action => {self.trade_action} \nold_close_price => {old_close_price} \ncurrent_close_price => {self.close_price} \nfirst_cd => {first_cd} \ncr_list => {self.history.cr_list} \ncr_obj => {self.history.cr_obj} \nmax_ir_by_cr => {self.history.max_ir_by_cr} \nopen_price_tick.datetime => {self.open_price_tick.datetime}  \nmax_ir_by_cr => {self.history.max_ir_by_cr} \nnew_close_price => {new_close_price}")
                     elif self.trade_action == Cons.ACTION_CLOSE_SHORT and self.history.cr_obj.direction == Cons.DIRECTION_DOWN:
-                        self.close_price = min(self.close_price, first_cd.high)
-                        self.has_change_close_price = True
-                        self.log_obj.info(f"get_close_price_by_cr_list_and_max_ir_30 \ntrade_action => {self.trade_action} \nold_close_price => {old_close_price} \ncurrent_close_price => {self.close_price}  \nfirst_cd => {first_cd} \ncr_list => {self.history.cr_list} \ncr_obj => {self.history.cr_obj} \nmax_ir_by_cr => {self.history.max_ir_by_cr} \nopen_price_tick.datetime => {self.open_price_tick.datetime}  \nmax_ir_by_cr => {self.history.max_ir_by_cr}")
+                        self.close_price = min(self.close_price, new_close_price)
+                        self.log_obj.info(f"get_close_price_by_cr_list_and_max_ir_30 \ntrade_action => {self.trade_action} \nold_close_price => {old_close_price} \ncurrent_close_price => {self.close_price}  \nfirst_cd => {first_cd} \ncr_list => {self.history.cr_list} \ncr_obj => {self.history.cr_obj} \nmax_ir_by_cr => {self.history.max_ir_by_cr} \nopen_price_tick.datetime => {self.open_price_tick.datetime}  \nmax_ir_by_cr => {self.history.max_ir_by_cr} \nnew_close_price => {new_close_price}")
+
             
             # Tick突破Cr>30（Ir>10）后的起点
             # elif self.history.cr_obj.length > 30*self.unit_value and self.history.max_ir_by_cr.length > 10*self.unit_value:

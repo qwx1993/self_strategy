@@ -323,4 +323,23 @@ class QuotationLogic:
                     if max_ir_by_cr is None or (current_ir.length > max_ir_by_cr.length):
                         max_ir_by_cr = deepcopy(current_ir)
             return max_ir_by_cr
+    
+
+    """
+    获取满足条件的价格
+    """ 
+    def get_last_price_by_cr_list(l, end_price, length):
+        price = None
+        first_cd = l[0]
+        direction = first_cd.direction
+        if direction == Constants.DIRECTION_UP:
+            for cd in l:
+                if abs(end_price - cd.low) > length and (cd.high <= end_price):
+                    price = cd.low
+        elif direction == Constants.DIRECTION_DOWN:
+            for cd in l:
+                if abs(end_price - cd.high) > length and (cd.low >= end_price):
+                    price = cd.high
+        
+        return price
 
