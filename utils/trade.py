@@ -127,15 +127,15 @@ def simulation_need_close_position(vt_symbol, obj, type='tick'):
     if hour == 14 and minute >= 58:
         return True
 
-    if vt_symbol in twenty_three_list:
-        if hour == 22 and minute >= 58:
-            return True 
-    elif vt_symbol in one_list:
-        if hour == 0 and minute >= 58:
-            return True
-    elif vt_symbol in half_past_two_list:
-        if hour == 2 and minute >= 28:
-            return True
+    # if vt_symbol in twenty_three_list:
+    #     if hour == 22 and minute >= 58:
+    #         return True 
+    # elif vt_symbol in one_list:
+    #     if hour == 0 and minute >= 58:
+    #         return True
+    # elif vt_symbol in half_past_two_list:
+    #     if hour == 2 and minute >= 28:
+    #         return True
     return False
 
 """
@@ -151,14 +151,14 @@ def simulation_can_open_a_position(vt_symbol, tick):
     hour = tick.datetime.hour
     minute = tick.datetime.minute
 
-    if hour == 2 and minute > 20:
-        return False
-    elif (hour == 14 and minute > 50) or (hour == 15):
+    # if hour == 2 and minute > 20:
+    #     return False
+    if (hour == 14 and minute > 50) or (hour == 15):
         return False
 
-    if hour == 9 and minute < 1:
-        return False
-    elif hour == 13 and minute < 31:
-        return False
+    # if hour == 9 and minute < 1:
+    #     return False
+    # elif hour == 13 and minute < 31:
+    #     return False
 
     return not simulation_need_close_position(vt_symbol, tick)
