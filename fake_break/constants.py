@@ -1,0 +1,8 @@
+class Constants:
+    EFFECTIVE_STATUS_OF_DOWN = 0 # 向上
+    EFFECTIVE_STATUS_OF_UP = 1 # 向下
+    EFFECTIVE_STATUS_OF_NONE = -1 # 无状态
+
+    MOVE_EFFECTIVE_STATUS_OF_NONE = -1 # 运动有效状态
+    MOVE_EFFECTIVE_STATUS_OF_DOWN = 0 # 向下的有效状态
+    MOVE_EFFECTIVE_STATUS_OF_UP = 1 # 向上的有效状态
