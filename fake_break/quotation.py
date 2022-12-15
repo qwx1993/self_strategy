@@ -9,17 +9,22 @@ class Quotation:
     up_obj = None # 上涨对象
     up_interval_list = [] # 向上区间list
     up_continuous_obj = None # 向上连续对象
+    last_up_obj = None # 最后向上的对象
+    effective_up_trend_obj = None # 有效向上趋势对象
 
     down_obj = None # 下跌对象
     # temp_down_obj = None # 过渡期间使用的对象
     down_interval_list = [] # 向下区间list
     down_continuous_obj = None # 向下连续对象
+    last_down_obj = None # 最后的下跌对象
 
     status = Constants.HISTORY_STATUS_OF_NONE # 状态，初始化起点状态，行情状态
     last_cd = None
     effective_status = FKCons.EFFECTIVE_STATUS_OF_NONE # 有效价格状态
     effective_move_status = FKCons.MOVE_EFFECTIVE_STATUS_OF_NONE # 有效运动状态
     continouns_status = FKCons.CONTINUOUS_STATUS_OF_NONE # 连续状态
+    effective_down_trend_obj = None # 有效向下趋势对象
+
 
     def __init__(self, unit_value) -> None:
         self.unit_value = unit_value
@@ -66,11 +71,11 @@ class Quotation:
         # 有效区间
         self.handle_effective_interval_list(tick)
 
-        # 判断反转
-        self.handle_effective_reverse()
-
         # 统计有效连续 有效运动
         self.handle_effective_move()
+
+        # 判断反转
+        self.handle_effective_reverse()
 
         # 反向有效运动
         self.hanle_reverse_effective_move()
@@ -81,6 +86,7 @@ class Quotation:
     处理向上有效区间对象，如果低于起点则重置，如果高于终点就刷新终点跟长度
     """
     def handle_up_effective_price(self, tick):
+        self.last_up_obj = deepcopy(self.up_obj)
         current = tick.current
         if current < self.up_obj.start:
             self.up_obj = Logic.get_base_obj(current, current)
@@ -91,6 +97,7 @@ class Quotation:
     处理向下有效区间对象，如果高于起点则重置，如果低于终点就刷新终点跟长度
     """
     def handle_down_effective_price(self, tick):
+        self.last_down_obj = deepcopy(self.down_obj)
         current = tick.current
         if current > self.down_obj.start:
             self.down_obj = Logic.get_base_obj(current, current)
@@ -113,18 +120,21 @@ class Quotation:
     def handle_effective_interval_list(self, tick):
         if self.effective_status == FKCons.EFFECTIVE_STATUS_OF_UP:
             if self.down_obj.length >= 10*self.unit_value:
-                if self.up_obj.length > 0:
-                    self.up_interval_list.append(self.up_obj)
+                self.init_continuous_status(FKCons.CONTINUOUS_STATUS_OF_UP)
+                if self.last_up_obj is not None and self.continouns_status == FKCons.CONTINUOUS_STATUS_OF_UP:
+                    self.up_interval_list.append(self.last_up_obj)
+                    print(f"up_interval_list => {self.up_interval_list}")
                 self.up_obj = Logic.get_base_obj(tick.current, tick.current)
                 self.onchange_effective_status(FKCons.EFFECTIVE_STATUS_OF_DOWN)
-                self.init_continuous_status(FKCons.CONTINUOUS_STATUS_OF_UP)
         elif self.effective_status == FKCons.EFFECTIVE_STATUS_OF_DOWN:
-            if self.up_obj.length > 10*self.unit_value:
-                if self.down_obj.length > 0:
-                    self.down_interval_list.append(self.down_obj)
+            if self.up_obj.length >= 10*self.unit_value:
+                self.init_continuous_status(FKCons.CONTINUOUS_STATUS_OF_DOWN)
+                if self.last_down_obj is not None and self.continouns_status == FKCons.CONTINUOUS_STATUS_OF_DOWN:
+                    self.down_interval_list.append(self.last_down_obj)
+                    # print(f"down_interval_list => {self.down_interval_list} {self.up_obj.length}")
                 self.down_obj = Logic.get_base_obj(tick.current, tick.current)
                 self.onchange_effective_status(FKCons.EFFECTIVE_STATUS_OF_UP)
-                self.init_continuous_status(FKCons.CONTINUOUS_STATUS_OF_DOWN)
+                
 
     """
     出现反向突破时，进入新的有效方向状态，将之前的有效连续对象去掉，区间只保留起点
@@ -151,12 +161,12 @@ class Quotation:
                 last_obj = self.up_interval_list[-1]
                 if self.down_obj.end < last_obj.start and not self.down_obj.check:
                     self.down_obj.check = True
-                    self.onchange_continous_status(FKCons.CONTINUOUS_STATUS_OF_DOWN)
-                    if up_interval_list_length == 1:
-                        self.up_interval_list = []
-                    else:
-                        self.up_interval_list = []
-                        self.up_interval_list.append(first_obj)
+                    self.onchange_continouns_status(FKCons.CONTINUOUS_STATUS_OF_DOWN)
+                    # if up_interval_list_length == 1:
+                    #     self.up_interval_list = []
+                    # else:
+                    #     self.up_interval_list = []
+                    #     self.up_interval_list.append(first_obj)
         elif self.effective_status == FKCons.EFFECTIVE_STATUS_OF_UP:
             down_interval_list_length = len(self.down_interval_list)
             if down_interval_list_length > 0:
@@ -164,20 +174,17 @@ class Quotation:
                 last_obj = self.down_interval_list[-1]
                 if self.up_obj.end > last_obj.start and not self.up_obj.check:
                     self.up_obj.check = True
-                    self.onchange_continous_status(FKCons.CONTINUOUS_STATUS_OF_UP)
-                    if down_interval_list_length == 1:
-                        self.down_interval_list = []
-                    else:
-                        self.down_interval_list = []
-                        self.down_interval_list.append(first_obj)
+                    self.onchange_continouns_status(FKCons.CONTINUOUS_STATUS_OF_UP)
+                    # if down_interval_list_length == 1:
+                    #     self.down_interval_list = []
+                    # else:
+                    #     self.down_interval_list = []
+                    #     self.down_interval_list.append(first_obj)
 
-    def onchange_continous_status(self, continous_status):
-                   # 向下的有效被打破
-        self.continous_status = continous_status
-        if continous_status == FKCons.CONTINUOUS_STATUS_OF_UP:
-            self.down_continuous_obj = None
-        elif continous_status == FKCons.CONTINUOUS_STATUS_OF_DOWN:
-            self.up_continuous_obj = None   
+    def onchange_continouns_status(self, continouns_status):
+        # 向下的有效被打破
+        self.continouns_status = continouns_status
+   
 
     """
     处理有效区间连续
@@ -194,8 +201,14 @@ class Quotation:
                 self.up_continuous_obj.start = first_obj.start
                 self.up_continuous_obj.end = last_obj.end
                 self.up_continuous_obj.length = abs(first_obj.start - last_obj.end)
+            elif len(self.up_interval_list) == 1:
+                first_obj = self.up_interval_list[0]
+                if self.up_continuous_obj is None:
+                    self.up_continuous_obj = SimpleNamespace()
+                self.up_continuous_obj.start = first_obj.start
+                self.up_continuous_obj.end = first_obj.end
+                self.up_continuous_obj.length = first_obj.length
                 self.init_effective_move_status(FKCons.MOVE_EFFECTIVE_STATUS_OF_UP)
-                print(f"进入有效运动 up")
             else:
                 self.up_continuous_obj = None
         elif self.continouns_status == FKCons.CONTINUOUS_STATUS_OF_DOWN:
@@ -207,6 +220,14 @@ class Quotation:
                 self.down_continuous_obj.start = first_obj.start
                 self.down_continuous_obj.end = last_obj.end
                 self.down_continuous_obj.length = abs(first_obj.start - last_obj.end)
+
+            elif len(self.down_interval_list) == 1:
+                first_obj = self.down_interval_list[0]
+                if self.down_continuous_obj is None:
+                    self.down_continuous_obj = SimpleNamespace()
+                self.down_continuous_obj.start = first_obj.start
+                self.down_continuous_obj.end = first_obj.end
+                self.down_continuous_obj.length = first_obj.length
                 self.init_effective_move_status(FKCons.MOVE_EFFECTIVE_STATUS_OF_DOWN)
                 print(f"进入有效运动 down")
             else:
@@ -224,10 +245,10 @@ class Quotation:
     """
     def handle_effective_trend(self):
         if self.up_continuous_obj is not None and self.up_continuous_obj.length > 50*self.unit_value:
-            print(f"进入向上的有效趋势 up_continuous_obj => {self.up_continuous_obj}")
-        
+            self.effective_up_trend_obj = deepcopy(self.up_continuous_obj)
         if self.down_continuous_obj is not None and self.down_continuous_obj.length > 50*self.unit_value:
             print(f"进入向下的有效趋势 down_continuous_obj => {self.down_continuous_obj}")
+            self.eff
 
     """
     回到起点时去掉区间list
@@ -238,10 +259,14 @@ class Quotation:
             if self.down_obj.end < first_cd.start:
                 self.onchange_effective_move_status(FKCons.EFFECTIVE_STATUS_OF_NONE)
                 print(f"出现了反向运动up to down {self.up_interval_list}")
+                self.up_interval_list = []
+                self.up_continuous_obj = None
         elif self.effective_move_status == FKCons.EFFECTIVE_STATUS_OF_DOWN:
             first_cd = self.down_interval_list[0]
             if self.up_obj.end > first_cd.start:
                 self.onchange_effective_move_status(FKCons.EFFECTIVE_STATUS_OF_NONE)
+                self.down_interval_list = []
+                self.down_continuous_obj = None
                 print(f"出现了反向运动down to up")
     
     """
