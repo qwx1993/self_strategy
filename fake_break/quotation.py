@@ -3,6 +3,7 @@ from self_strategy.fake_break.logic import Logic
 from copy import deepcopy
 from types import SimpleNamespace
 from self_strategy.fake_break.constants import Constants as FKCons
+import sys
 
 class Quotation:
     unit_value = 0 # 单位价格
@@ -10,7 +11,7 @@ class Quotation:
     up_interval_list = [] # 向上区间list
     up_continuous_obj = None # 向上连续对象
     last_up_obj = None # 最后向上的对象
-    effective_up_trend_obj = None # 有效向上趋势对象
+
 
     down_obj = None # 下跌对象
     # temp_down_obj = None # 过渡期间使用的对象
@@ -23,7 +24,8 @@ class Quotation:
     effective_status = FKCons.EFFECTIVE_STATUS_OF_NONE # 有效价格状态
     effective_move_status = FKCons.MOVE_EFFECTIVE_STATUS_OF_NONE # 有效运动状态
     continouns_status = FKCons.CONTINUOUS_STATUS_OF_NONE # 连续状态
-    effective_down_trend_obj = None # 有效向下趋势对象
+    
+    effective_trend_obj = None # 有效趋势对象
 
 
     def __init__(self, unit_value) -> None:
@@ -74,7 +76,7 @@ class Quotation:
         # 统计有效连续 有效运动
         self.handle_effective_move()
 
-        # 判断反转
+        # 反向有效价格区间
         self.handle_effective_reverse()
 
         # 反向有效运动
@@ -92,6 +94,7 @@ class Quotation:
             self.up_obj = Logic.get_base_obj(current, current)
         elif current > self.up_obj.end:
             self.up_obj = Logic.refresh_base_obj(self.up_obj, current)
+        
     
     """
     处理向下有效区间对象，如果高于起点则重置，如果低于终点就刷新终点跟长度
@@ -122,18 +125,24 @@ class Quotation:
             if self.down_obj.length >= 10*self.unit_value:
                 self.init_continuous_status(FKCons.CONTINUOUS_STATUS_OF_UP)
                 if self.last_up_obj is not None and self.continouns_status == FKCons.CONTINUOUS_STATUS_OF_UP:
-                    self.up_interval_list.append(self.last_up_obj)
-                    print(f"up_interval_list => {self.up_interval_list}")
+                    # self.up_interval_list.append(self.last_up_obj)
+                    self.up_interval_list = Logic.append(self.up_interval_list, self.last_up_obj)
+                    # print(f"up_interval_list => {self.up_interval_list}")
                 self.up_obj = Logic.get_base_obj(tick.current, tick.current)
                 self.onchange_effective_status(FKCons.EFFECTIVE_STATUS_OF_DOWN)
         elif self.effective_status == FKCons.EFFECTIVE_STATUS_OF_DOWN:
             if self.up_obj.length >= 10*self.unit_value:
                 self.init_continuous_status(FKCons.CONTINUOUS_STATUS_OF_DOWN)
                 if self.last_down_obj is not None and self.continouns_status == FKCons.CONTINUOUS_STATUS_OF_DOWN:
-                    self.down_interval_list.append(self.last_down_obj)
+                    # self.down_interval_list.append(self.last_down_obj)
+                    self.down_interval_list = Logic.append(self.down_interval_list, self.last_down_obj)
                     # print(f"down_interval_list => {self.down_interval_list} {self.up_obj.length}")
                 self.down_obj = Logic.get_base_obj(tick.current, tick.current)
                 self.onchange_effective_status(FKCons.EFFECTIVE_STATUS_OF_UP)
+        
+        if self.up_continuous_obj is not None and  self.up_continuous_obj.direction == -1:
+            print(f"up_interval_list => {self.up_interval_list}")
+            sys.exit(1)
                 
 
     """
@@ -195,19 +204,10 @@ class Quotation:
             if len(self.up_interval_list) >= 2:
                 first_obj = self.up_interval_list[0]
                 last_obj = self.up_interval_list[-1]
-
-                if self.up_continuous_obj is None:
-                    self.up_continuous_obj = SimpleNamespace()
-                self.up_continuous_obj.start = first_obj.start
-                self.up_continuous_obj.end = last_obj.end
-                self.up_continuous_obj.length = abs(first_obj.start - last_obj.end)
+                self.up_continuous_obj = Logic.build_continouns_obj(self.up_continuous_obj, first_obj.start, last_obj.end)
             elif len(self.up_interval_list) == 1:
                 first_obj = self.up_interval_list[0]
-                if self.up_continuous_obj is None:
-                    self.up_continuous_obj = SimpleNamespace()
-                self.up_continuous_obj.start = first_obj.start
-                self.up_continuous_obj.end = first_obj.end
-                self.up_continuous_obj.length = first_obj.length
+                self.up_continuous_obj = Logic.build_continouns_obj(self.up_continuous_obj, first_obj.start, first_obj.end)
                 self.init_effective_move_status(FKCons.MOVE_EFFECTIVE_STATUS_OF_UP)
             else:
                 self.up_continuous_obj = None
@@ -215,21 +215,12 @@ class Quotation:
             if len(self.down_interval_list) >= 2:
                 first_obj = self.down_interval_list[0]
                 last_obj = self.down_interval_list[-1]
-                if self.down_continuous_obj is None:
-                    self.down_continuous_obj = SimpleNamespace()
-                self.down_continuous_obj.start = first_obj.start
-                self.down_continuous_obj.end = last_obj.end
-                self.down_continuous_obj.length = abs(first_obj.start - last_obj.end)
-
+                self.down_continuous_obj = Logic.build_continouns_obj(self.down_continuous_obj, first_obj.start, last_obj.end)
             elif len(self.down_interval_list) == 1:
                 first_obj = self.down_interval_list[0]
-                if self.down_continuous_obj is None:
-                    self.down_continuous_obj = SimpleNamespace()
-                self.down_continuous_obj.start = first_obj.start
-                self.down_continuous_obj.end = first_obj.end
-                self.down_continuous_obj.length = first_obj.length
+                self.down_continuous_obj = Logic.build_continouns_obj(self.down_continuous_obj, first_obj.start, first_obj.end)
                 self.init_effective_move_status(FKCons.MOVE_EFFECTIVE_STATUS_OF_DOWN)
-                print(f"进入有效运动 down")
+                # print(f"进入有效运动 down")
             else:
                 self.down_continuous_obj = None
 
@@ -241,33 +232,40 @@ class Quotation:
             self.effective_move_status = move_status
         
     """
-    初步的有效趋势
+    初步的有效趋势 暂时只做开空版本
     """
     def handle_effective_trend(self):
         if self.up_continuous_obj is not None and self.up_continuous_obj.length > 50*self.unit_value:
-            self.effective_up_trend_obj = deepcopy(self.up_continuous_obj)
-        if self.down_continuous_obj is not None and self.down_continuous_obj.length > 50*self.unit_value:
-            print(f"进入向下的有效趋势 down_continuous_obj => {self.down_continuous_obj}")
-            self.eff
+            self.effective_trend_obj = deepcopy(self.up_continuous_obj)
+        else:
+            self.effective_trend_obj = None
+        
+        if self.effective_trend_obj is not None and self.continouns_status == FKCons.CONTINUOUS_STATUS_OF_DOWN:
+            self.effective_trend_obj = None
+        # else:
+        #     self.effective_trend_obj = None
+        # elif self.down_continuous_obj is not None and self.down_continuous_obj.length > 50*self.unit_value:
+        #     # self.effective_trend_obj = deepcopy(self.down_continuous_obj)
+        #     pass
 
     """
     回到起点时去掉区间list
     """
     def hanle_reverse_effective_move(self):
-        if self.effective_move_status == FKCons.EFFECTIVE_STATUS_OF_UP:
+        if len(self.up_interval_list) > 0:
             first_cd = self.up_interval_list[0]
             if self.down_obj.end < first_cd.start:
                 self.onchange_effective_move_status(FKCons.EFFECTIVE_STATUS_OF_NONE)
-                print(f"出现了反向运动up to down {self.up_interval_list}")
+                # print(f"出现了反向运动up to down {self.up_interval_list}")
                 self.up_interval_list = []
                 self.up_continuous_obj = None
-        elif self.effective_move_status == FKCons.EFFECTIVE_STATUS_OF_DOWN:
+        elif len(self.down_interval_list) > 0:
             first_cd = self.down_interval_list[0]
             if self.up_obj.end > first_cd.start:
                 self.onchange_effective_move_status(FKCons.EFFECTIVE_STATUS_OF_NONE)
                 self.down_interval_list = []
                 self.down_continuous_obj = None
-                print(f"出现了反向运动down to up")
+                # print(f"出现了反向运动down to up")
     
     """
     反向运动之后触发事件
