@@ -10,7 +10,7 @@ class Trade:
     """
     通过tick进行开仓
     """ 
-    def open_a_price(trend_obj, last_obj, tick):
+    def open_a_price(trend_obj, last_obj, effective_status, tick):
         if trend_obj is None or last_obj is None:
             return False
 
@@ -20,9 +20,9 @@ class Trade:
         direction = trend_obj.direction
 
         if direction == Constants.DIRECTION_UP:
-            if tick.current < last_obj.start:
+            if tick.current < last_obj.start and effective_status == FBCons.EFFECTIVE_STATUS_OF_DOWN:
                 return True
-        elif direction == Constants.DIRECTION_DOWN:
+        elif direction == Constants.DIRECTION_DOWN and effective_status == FBCons.EFFECTIVE_STATUS_OF_UP:
             if tick.current > last_obj.start:
                 return True
 

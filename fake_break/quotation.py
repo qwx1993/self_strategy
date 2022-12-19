@@ -4,6 +4,7 @@ from copy import deepcopy
 from types import SimpleNamespace
 from self_strategy.fake_break.constants import Constants as FKCons
 import sys
+from self_strategy.logic import Logic as SLogic
 
 class Quotation:
     unit_value = 0 # 单位价格
@@ -82,7 +83,7 @@ class Quotation:
         # 反向有效运动
         self.hanle_reverse_effective_move()
 
-        self.handle_effective_trend()
+        self.handle_effective_trend(tick)
 
     """
     处理向上有效区间对象，如果低于起点则重置，如果高于终点就刷新终点跟长度
@@ -127,7 +128,6 @@ class Quotation:
                 if self.last_up_obj is not None and self.continouns_status == FKCons.CONTINUOUS_STATUS_OF_UP:
                     # self.up_interval_list.append(self.last_up_obj)
                     self.up_interval_list = Logic.append(self.up_interval_list, self.last_up_obj)
-                    # print(f"up_interval_list => {self.up_interval_list}")
                 self.up_obj = Logic.get_base_obj(tick.current, tick.current)
                 self.onchange_effective_status(FKCons.EFFECTIVE_STATUS_OF_DOWN)
         elif self.effective_status == FKCons.EFFECTIVE_STATUS_OF_DOWN:
@@ -136,13 +136,8 @@ class Quotation:
                 if self.last_down_obj is not None and self.continouns_status == FKCons.CONTINUOUS_STATUS_OF_DOWN:
                     # self.down_interval_list.append(self.last_down_obj)
                     self.down_interval_list = Logic.append(self.down_interval_list, self.last_down_obj)
-                    # print(f"down_interval_list => {self.down_interval_list} {self.up_obj.length}")
                 self.down_obj = Logic.get_base_obj(tick.current, tick.current)
                 self.onchange_effective_status(FKCons.EFFECTIVE_STATUS_OF_UP)
-        
-        if self.up_continuous_obj is not None and  self.up_continuous_obj.direction == -1:
-            print(f"up_interval_list => {self.up_interval_list}")
-            sys.exit(1)
                 
 
     """
@@ -193,6 +188,10 @@ class Quotation:
     def onchange_continouns_status(self, continouns_status):
         # 向下的有效被打破
         self.continouns_status = continouns_status
+        if self.continouns_status == FKCons.CONTINUOUS_STATUS_OF_UP:
+            self.down_continuous_obj = None
+        elif self.continouns_status == FKCons.CONTINUOUS_STATUS_OF_DOWN:
+            self.up_continuous_obj = None
    
 
     """
@@ -234,9 +233,9 @@ class Quotation:
     """
     初步的有效趋势 暂时只做开空版本
     """
-    def handle_effective_trend(self):
+    def handle_effective_trend(self, tick):
         if self.up_continuous_obj is not None and self.up_continuous_obj.length > 50*self.unit_value:
-            self.effective_trend_obj = deepcopy(self.up_continuous_obj)
+            self.effective_trend_obj = deepcopy(self.up_continuous_obj) 
         else:
             self.effective_trend_obj = None
         

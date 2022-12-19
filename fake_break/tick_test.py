@@ -58,22 +58,25 @@ class TickTest():
         if self.trade_action is None and self.quotation.effective_trend_obj is not None:
             trend_obj = self.quotation.effective_trend_obj
             if trend_obj.direction == Cons.DIRECTION_UP:
-                last_obj = self.quotation.last_up_obj
+                last_obj = self.quotation.up_interval_list[-1]
             else:
-                last_obj = self.quotation.last_down_obj
-            if Trade.open_a_price(trend_obj, last_obj, tick_obj):
+                last_obj = self.quotation.down_interval_list[-1]
+            if Trade.open_a_price(trend_obj, last_obj, self.quotation.effective_status, tick_obj):
                 if trend_obj.direction == Cons.DIRECTION_UP:
                     self.add_action(tick, Cons.ACTION_OPEN_SHORT, tick.current - self.unit_value)
                     self.open_price = tick.current - self.unit_value
                     self.open_price_tick = tick
-                    self.log_obj.info(f"vt_symbol => {self.vt_symbol} \ntrade_type => short \ntrend_obj => {trend_obj} \ntick => {tick} \nlast_obj => {last_obj}")
+                    self.log_obj.info(f"vt_symbol => {self.vt_symbol} \ntrade_type => short \ntrend_obj => {trend_obj} \ntick => {tick} \nlast_obj => {last_obj} \ncontinouns_status => {self.quotation.continouns_status} \neffective_status => {self.quotation.effective_status}")
                     self.trade_action = Cons.ACTION_CLOSE_SHORT
                 elif trend_obj.direction == Cons.DIRECTION_DOWN:
                     self.add_action(tick, Cons.ACTION_OPEN_LONG, tick.current + self.unit_value)
                     self.open_price = tick.current + self.unit_value
-                    self.log_obj.info(f"vt_symbol => {self.vt_symbol} \ntrade_type => long \ntrend_obj => {trend_obj} \ntick => {tick} \nlast_obj => {last_obj}")
+                    self.log_obj.info(f"vt_symbol => {self.vt_symbol} \ntrade_type => long \ntrend_obj => {trend_obj} \ntick => {tick} \nlast_obj => {last_obj} \ncontinouns_status => {self.quotation.continouns_status} \neffective_status => {self.quotation.effective_status}")
                     self.trade_action = Cons.ACTION_CLOSE_LONG
             self.quotation.analysis(tick_obj) 
+            if self.trade_action is not None:
+                self.log_obj.info(f"params => {self.vt_symbol} \ntrade_type => long \ntrend_obj => {trend_obj} \ntick => {tick} \nlast_obj => {last_obj} \ncontinouns_status11 => {self.quotation.continouns_status} \ndown_obj => {self.quotation.down_obj}")
+
         else:
             self.quotation.analysis(tick_obj)
             if self.trade_action == Cons.ACTION_CLOSE_LONG:
