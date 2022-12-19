@@ -27,6 +27,8 @@ class Quotation:
     continouns_status = FKCons.CONTINUOUS_STATUS_OF_NONE # 连续状态
     
     effective_trend_obj = None # 有效趋势对象
+    extremum_end = None
+
 
 
     def __init__(self, unit_value) -> None:
@@ -235,12 +237,18 @@ class Quotation:
     """
     def handle_effective_trend(self, tick):
         if self.up_continuous_obj is not None and self.up_continuous_obj.length > 50*self.unit_value:
-            self.effective_trend_obj = deepcopy(self.up_continuous_obj) 
+            if Logic.is_extremum_end(Constants.DIRECTION_UP, self.extremum_end, self.up_continuous_obj.end):
+                self.effective_trend_obj = deepcopy(self.up_continuous_obj) 
+                # 设置极值终点
+                self.extremum_end = self.effective_trend_obj.end
+            elif self.effective_trend_obj is not None and not self.up_continuous_obj.end == self.effective_trend_obj.end:
+                self.effective_trend_obj = None
+            # print(f"这里开不出来 {self.extremum_end} {self.up_continuous_obj}")
         else:
             self.effective_trend_obj = None
         
-        if self.effective_trend_obj is not None and self.continouns_status == FKCons.CONTINUOUS_STATUS_OF_DOWN:
-            self.effective_trend_obj = None
+        # if self.effective_trend_obj is not None and self.up_continuous_obj is not None and not self.effective_trend_obj.end == self.up_continuous_obj.end:
+        #     self.effective_trend_obj = None
         # else:
         #     self.effective_trend_obj = None
         # elif self.down_continuous_obj is not None and self.down_continuous_obj.length > 50*self.unit_value:
@@ -258,12 +266,14 @@ class Quotation:
                 # print(f"出现了反向运动up to down {self.up_interval_list}")
                 self.up_interval_list = []
                 self.up_continuous_obj = None
+                self.reset_extremum_end()
         elif len(self.down_interval_list) > 0:
             first_cd = self.down_interval_list[0]
             if self.up_obj.end > first_cd.start:
                 self.onchange_effective_move_status(FKCons.EFFECTIVE_STATUS_OF_NONE)
                 self.down_interval_list = []
                 self.down_continuous_obj = None
+                self.reset_extremum_end()
                 # print(f"出现了反向运动down to up")
     
     """
@@ -281,3 +291,6 @@ class Quotation:
         #     down_first_cd = self.down_interval_list[0]
         #     if tick.current > down_first_cd.start:
         #         self.down_interval_list = []
+
+    def reset_extremum_end(self):
+        self.extremum_end = None

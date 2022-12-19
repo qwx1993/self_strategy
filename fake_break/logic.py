@@ -65,3 +65,20 @@ class Logic:
             l = []
             l = [first_obj, obj]
         return l
+    
+    """
+    是否为终点的极值，现在只延续终点的极值进行开仓
+    """
+    def is_extremum_end(direction, extremum_end, end_value):
+        # return True
+        if extremum_end is None:
+            return True
+        
+        if direction == Constants.DIRECTION_UP:
+            if end_value > extremum_end:
+                return True
+        elif direction == Constants.DIRECTION_DOWN:
+            if end_value < extremum_end:
+                return True
+            
+        return False
