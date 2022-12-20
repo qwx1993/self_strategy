@@ -5,6 +5,9 @@ from types import SimpleNamespace
 from self_strategy.fake_break.constants import Constants as FKCons
 import sys
 from self_strategy.logic import Logic as SLogic
+from self_strategy.utils import (
+    file,
+)
 
 class Quotation:
     unit_value = 0 # 单位价格
@@ -27,7 +30,10 @@ class Quotation:
     continouns_status = FKCons.CONTINUOUS_STATUS_OF_NONE # 连续状态
     
     effective_trend_obj = None # 有效趋势对象
-    extremum_end = None
+    interval_length = 20 # 有效价格间隔长度
+    effective_trend_length = 100
+
+    log_obj = None
 
 
 
@@ -35,6 +41,9 @@ class Quotation:
         self.unit_value = unit_value
         self.up_obj = None
         self.down_obj = None
+        self.log_obj = file.get_logger(f"quotation_{self.interval_length}")
+        self.interval_length = self.interval_length*unit_value
+        self.effective_trend_length = self.effective_trend_length*unit_value
 
     def analysis(self, tick):
         if self.status == Constants.HISTORY_STATUS_OF_NONE: 
@@ -115,17 +124,18 @@ class Quotation:
     """
     def init_effective_status(self):
         if self.effective_status == FKCons.EFFECTIVE_STATUS_OF_NONE:
-            if self.up_obj.length >= 10*self.unit_value:
+            if self.up_obj.length >= self.interval_length:
                 self.effective_status = FKCons.EFFECTIVE_STATUS_OF_UP
-            elif self.down_obj.length >= 10*self.unit_value:
+            elif self.down_obj.length >= self.interval_length:
                 self.effective_status = FKCons.EFFECTIVE_STATUS_OF_DOWN
     
     """
-    处理有效区间列表，当上下两个方向统计的长度都大于10单位时,长度较大的被打断写入到对应list中，并初始化统计值
+    处理有效区间列表，当上下两个方向统计的长度都大于interval_length单位时,长度较大的被打断写入到对应list中，并初始化统计值
     """
     def handle_effective_interval_list(self, tick):
         if self.effective_status == FKCons.EFFECTIVE_STATUS_OF_UP:
-            if self.down_obj.length >= 10*self.unit_value:
+            if self.down_obj.length >= self.interval_length:
+                self.log_obj.info(f"up => {self.last_up_obj}")
                 self.init_continuous_status(FKCons.CONTINUOUS_STATUS_OF_UP)
                 if self.last_up_obj is not None and self.continouns_status == FKCons.CONTINUOUS_STATUS_OF_UP:
                     # self.up_interval_list.append(self.last_up_obj)
@@ -133,7 +143,8 @@ class Quotation:
                 self.up_obj = Logic.get_base_obj(tick.current, tick.current)
                 self.onchange_effective_status(FKCons.EFFECTIVE_STATUS_OF_DOWN)
         elif self.effective_status == FKCons.EFFECTIVE_STATUS_OF_DOWN:
-            if self.up_obj.length >= 10*self.unit_value:
+            if self.up_obj.length >= self.interval_length:
+                self.log_obj.info(f"down => {self.last_down_obj}")
                 self.init_continuous_status(FKCons.CONTINUOUS_STATUS_OF_DOWN)
                 if self.last_down_obj is not None and self.continouns_status == FKCons.CONTINUOUS_STATUS_OF_DOWN:
                     # self.down_interval_list.append(self.last_down_obj)
@@ -236,24 +247,10 @@ class Quotation:
     初步的有效趋势 暂时只做开空版本
     """
     def handle_effective_trend(self, tick):
-        if self.up_continuous_obj is not None and self.up_continuous_obj.length > 50*self.unit_value:
-            if Logic.is_extremum_end(Constants.DIRECTION_UP, self.extremum_end, self.up_continuous_obj.end):
-                self.effective_trend_obj = deepcopy(self.up_continuous_obj) 
-                # 设置极值终点
-                self.extremum_end = self.effective_trend_obj.end
-            elif self.effective_trend_obj is not None and not self.up_continuous_obj.end == self.effective_trend_obj.end:
-                self.effective_trend_obj = None
-            # print(f"这里开不出来 {self.extremum_end} {self.up_continuous_obj}")
+        if self.up_continuous_obj is not None and self.up_continuous_obj.length > self.effective_trend_length:
+            self.effective_trend_obj = deepcopy(self.up_continuous_obj) 
         else:
             self.effective_trend_obj = None
-        
-        # if self.effective_trend_obj is not None and self.up_continuous_obj is not None and not self.effective_trend_obj.end == self.up_continuous_obj.end:
-        #     self.effective_trend_obj = None
-        # else:
-        #     self.effective_trend_obj = None
-        # elif self.down_continuous_obj is not None and self.down_continuous_obj.length > 50*self.unit_value:
-        #     # self.effective_trend_obj = deepcopy(self.down_continuous_obj)
-        #     pass
 
     """
     回到起点时去掉区间list
@@ -294,3 +291,13 @@ class Quotation:
 
     def reset_extremum_end(self):
         self.extremum_end = None
+
+    """
+    在平仓之后，如果终点下移就重置，否则不重置
+    """
+    def reset_up_factor_by_close(self):
+        self.up_continuous_obj = None # 向上连续对象
+        self.up_interval_list = [] # 向上y有效价格区间的list
+        self.effective_trend_obj = None # 有效趋势
+
+    

@@ -30,6 +30,7 @@ class TickTest():
     trade_action = None 
     actions = [] # 交易动作
     unit_value = None
+    open_price_effective_trend = None # 开仓时有效趋势的终点
 
  
 
@@ -66,17 +67,16 @@ class TickTest():
                     self.add_action(tick, Cons.ACTION_OPEN_SHORT, tick.current - self.unit_value)
                     self.open_price = tick.current - self.unit_value
                     self.open_price_tick = tick
-                    self.log_obj.info(f"vt_symbol => {self.vt_symbol} \ntrade_type => short \ntrend_obj => {trend_obj} \ntick => {tick} \nlast_obj => {last_obj} \ncontinouns_status => {self.quotation.continouns_status} \neffective_status => {self.quotation.effective_status}")
+                    self.log_obj.info(f"vt_symbol => {self.vt_symbol} \ntrade_type => short \ntrend_obj => {trend_obj} \ntick => {tick} \nlast_obj => {last_obj} \ncontinouns_status => {self.quotation.continouns_status} \neffective_status => {self.quotation.effective_status} \ndown_obj => {self.quotation.down_obj}")
                     self.trade_action = Cons.ACTION_CLOSE_SHORT
+                    self.open_price_effective_trend = deepcopy(self.quotation.effective_trend_obj)
                 elif trend_obj.direction == Cons.DIRECTION_DOWN:
                     self.add_action(tick, Cons.ACTION_OPEN_LONG, tick.current + self.unit_value)
                     self.open_price = tick.current + self.unit_value
-                    self.log_obj.info(f"vt_symbol => {self.vt_symbol} \ntrade_type => long \ntrend_obj => {trend_obj} \ntick => {tick} \nlast_obj => {last_obj} \ncontinouns_status => {self.quotation.continouns_status} \neffective_status => {self.quotation.effective_status}")
+                    self.log_obj.info(f"vt_symbol => {self.vt_symbol} \ntrade_type => long \ntrend_obj => {trend_obj} \ntick => {tick} \nlast_obj => {last_obj} \ncontinouns_status => {self.quotation.continouns_status} \neffective_status => {self.quotation.effective_status} \ndown_obj => {self.quotation.down_obj}")
                     self.trade_action = Cons.ACTION_CLOSE_LONG
+                    self.open_price_effective_trend = deepcopy(self.quotation.effective_trend_obj)
             self.quotation.analysis(tick_obj) 
-            if self.trade_action is not None:
-                self.log_obj.info(f"params => {self.vt_symbol} \ntrade_type => long \ntrend_obj => {trend_obj} \ntick => {tick} \nlast_obj => {last_obj} \ncontinouns_status11 => {self.quotation.continouns_status} \ndown_obj => {self.quotation.down_obj}")
-
         else:
             self.quotation.analysis(tick_obj)
             if self.trade_action == Cons.ACTION_CLOSE_LONG:
@@ -125,3 +125,10 @@ class TickTest():
     """
     def after_close(self, tick):
         self.trade_action = None
+        if self.open_price_effective_trend.direction == Cons.DIRECTION_UP:
+            if tick.current < self.open_price_effective_trend.end:
+                self.quotation.reset_up_factor_by_close()
+            else:
+                pass
+
+    
