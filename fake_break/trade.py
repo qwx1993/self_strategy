@@ -22,8 +22,8 @@ class Trade:
         if direction == Constants.DIRECTION_UP:
             if tick.current < last_obj.start and effective_status == FBCons.EFFECTIVE_STATUS_OF_DOWN:
                 return True
-        elif direction == Constants.DIRECTION_DOWN and effective_status == FBCons.EFFECTIVE_STATUS_OF_UP:
-            if tick.current > last_obj.start:
+        elif direction == Constants.DIRECTION_DOWN:
+            if tick.current > last_obj.start and effective_status == FBCons.EFFECTIVE_STATUS_OF_UP:
                 return True
 
         return False

@@ -247,24 +247,30 @@ class Quotation:
     初步的有效趋势 暂时只做开空版本
     """
     def handle_effective_trend(self, tick):
-        if self.up_continuous_obj is not None and self.up_continuous_obj.length > self.effective_trend_length:
-            self.effective_trend_obj = deepcopy(self.up_continuous_obj) 
+        # if self.up_continuous_obj is not None and self.up_continuous_obj.length > self.effective_trend_length:
+        #     self.effective_trend_obj = deepcopy(self.up_continuous_obj) 
+        # else:
+        #     self.effective_trend_obj = None
+
+        if self.down_continuous_obj is not None and self.down_continuous_obj.length > self.effective_trend_length:
+            self.effective_trend_obj = deepcopy(self.down_continuous_obj) 
         else:
             self.effective_trend_obj = None
 
     """
-    回到起点时去掉区间list
+    回到起点时去掉区间list todo 暂时处理
     """
     def hanle_reverse_effective_move(self):
-        if len(self.up_interval_list) > 0:
-            first_cd = self.up_interval_list[0]
-            if self.down_obj.end < first_cd.start:
-                self.onchange_effective_move_status(FKCons.EFFECTIVE_STATUS_OF_NONE)
-                # print(f"出现了反向运动up to down {self.up_interval_list}")
-                self.up_interval_list = []
-                self.up_continuous_obj = None
-                self.reset_extremum_end()
-        elif len(self.down_interval_list) > 0:
+        # if len(self.up_interval_list) > 0:
+        #     first_cd = self.up_interval_list[0]
+        #     if self.down_obj.end < first_cd.start:
+        #         self.onchange_effective_move_status(FKCons.EFFECTIVE_STATUS_OF_NONE)
+        #         # print(f"出现了反向运动up to down {self.up_interval_list}")
+        #         self.up_interval_list = []
+        #         self.up_continuous_obj = None
+        #         self.reset_extremum_end()
+        #         print(f"跑到了这里来了 11111")
+        if len(self.down_interval_list) > 0:
             first_cd = self.down_interval_list[0]
             if self.up_obj.end > first_cd.start:
                 self.onchange_effective_move_status(FKCons.EFFECTIVE_STATUS_OF_NONE)
@@ -298,6 +304,14 @@ class Quotation:
     def reset_up_factor_by_close(self):
         self.up_continuous_obj = None # 向上连续对象
         self.up_interval_list = [] # 向上y有效价格区间的list
+        self.effective_trend_obj = None # 有效趋势
+    
+    """
+    在平仓之后，如果盈利就充值，否则不重置
+    """
+    def reset_down_factor_by_close(self):
+        self.down_continuous_obj = None # 向下连续对象
+        self.down_interval_list = [] # 向下有效价格区间的list
         self.effective_trend_obj = None # 有效趋势
 
     

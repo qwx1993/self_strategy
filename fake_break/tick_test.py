@@ -29,7 +29,7 @@ class TickTest():
     hand_number = 1
     trade_action = None 
     actions = [] # 交易动作
-    unit_value = None
+    unit_value = None # 单位值
     open_price_effective_trend = None # 开仓时有效趋势的终点
     open_price_tick = None # 开仓时的tick数据
 
@@ -74,6 +74,7 @@ class TickTest():
                 elif trend_obj.direction == Cons.DIRECTION_DOWN:
                     self.add_action(tick, Cons.ACTION_OPEN_LONG, tick.current + self.unit_value)
                     self.open_price = tick.current + self.unit_value
+                    self.open_price_tick = tick
                     self.log_obj.info(f"vt_symbol => {self.vt_symbol} \ntrade_type => long \ntrend_obj => {trend_obj} \ntick => {tick} \nlast_obj => {last_obj} \ncontinouns_status => {self.quotation.continouns_status} \neffective_status => {self.quotation.effective_status} \ndown_obj => {self.quotation.down_obj}")
                     self.trade_action = Cons.ACTION_CLOSE_LONG
                     self.open_price_effective_trend = deepcopy(self.quotation.effective_trend_obj)
@@ -129,9 +130,8 @@ class TickTest():
         if self.open_price_effective_trend.direction == Cons.DIRECTION_UP:
             if (self.open_price_tick.current - tick.current) > 2*self.unit_value:
                 self.quotation.reset_up_factor_by_close()
-                # result = self.open_price_tick.current - tick.current 
-                # print(f"open_price_tick => {self.open_price_tick.current} tick.current => {tick.current} result => {result}")
-            elif (tick.current - self.open_price_tick.current) >2*self.unit_value:
-                pass
+        elif self.open_price_effective_trend.direction == Cons.DIRECTION_DOWN:
+            if (tick.current - self.open_price_tick.current) >2*self.unit_value:
+                self.quotation.reset_down_factor_by_close()
 
     
