@@ -31,6 +31,7 @@ class TickTest():
     actions = [] # 交易动作
     unit_value = None
     open_price_effective_trend = None # 开仓时有效趋势的终点
+    open_price_tick = None # 开仓时的tick数据
 
  
 
@@ -126,9 +127,11 @@ class TickTest():
     def after_close(self, tick):
         self.trade_action = None
         if self.open_price_effective_trend.direction == Cons.DIRECTION_UP:
-            if tick.current < self.open_price_effective_trend.end:
+            if (self.open_price_tick.current - tick.current) > 2*self.unit_value:
                 self.quotation.reset_up_factor_by_close()
-            else:
+                # result = self.open_price_tick.current - tick.current 
+                # print(f"open_price_tick => {self.open_price_tick.current} tick.current => {tick.current} result => {result}")
+            elif (tick.current - self.open_price_tick.current) >2*self.unit_value:
                 pass
 
     
