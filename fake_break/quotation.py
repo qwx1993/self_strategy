@@ -34,7 +34,7 @@ class Quotation:
     effective_trend_length = 100
 
     log_obj = None
-
+    open_version = FKCons.OPEN_VERSION_OF_SHORT # 开空版本
 
 
     def __init__(self, unit_value) -> None:
@@ -256,22 +256,24 @@ class Quotation:
     回到起点时去掉区间list
     """
     def hanle_reverse_effective_move(self):
-        if len(self.up_interval_list) > 0:
-            first_cd = self.up_interval_list[0]
-            if self.down_obj.end < first_cd.start:
-                self.onchange_effective_move_status(FKCons.EFFECTIVE_STATUS_OF_NONE)
-                # print(f"出现了反向运动up to down {self.up_interval_list}")
-                self.up_interval_list = []
-                self.up_continuous_obj = None
-                self.reset_extremum_end()
-        elif len(self.down_interval_list) > 0:
-            first_cd = self.down_interval_list[0]
-            if self.up_obj.end > first_cd.start:
-                self.onchange_effective_move_status(FKCons.EFFECTIVE_STATUS_OF_NONE)
-                self.down_interval_list = []
-                self.down_continuous_obj = None
-                self.reset_extremum_end()
-                # print(f"出现了反向运动down to up")
+        if self.open_version == FKCons.OPEN_VERSION_OF_SHORT:
+            if len(self.up_interval_list) > 0:
+                first_cd = self.up_interval_list[0]
+                if self.down_obj.end < first_cd.start:
+                    self.onchange_effective_move_status(FKCons.EFFECTIVE_STATUS_OF_NONE)
+                    # print(f"出现了反向运动up to down {self.up_interval_list}")
+                    self.up_interval_list = []
+                    self.up_continuous_obj = None
+                    self.reset_extremum_end()
+        elif self.open_version == FKCons.OPEN_VERSION_OF_LONG:
+            if len(self.down_interval_list) > 0:
+                first_cd = self.down_interval_list[0]
+                if self.up_obj.end > first_cd.start:
+                    self.onchange_effective_move_status(FKCons.EFFECTIVE_STATUS_OF_NONE)
+                    self.down_interval_list = []
+                    self.down_continuous_obj = None
+                    self.reset_extremum_end()
+                    print(f"出现了反向运动down to up")
     
     """
     反向运动之后触发事件
