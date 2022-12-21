@@ -54,17 +54,34 @@ class Logic:
         return continouns_obj
 
     """
-    只保留第一个跟最后一个
+    只保留第一个跟最后两个
     """
     def append(l, obj):
         l_len = len(l)
-        if l_len == 0:
+        if l_len < 3:
             l.append(obj)
         else:
             first_obj = l[0]
+            last_obj = l[-1]
             l = []
-            l = [first_obj, obj]
+            l = [first_obj, last_obj, obj]
+
         return l
+    
+    """
+    只保留最后两个
+    """
+    def append_last(l, obj):
+        l_len = len(l)
+        if l_len < 2:
+            l.append(obj)
+        else:
+            last_obj = l[-1]
+            l = []
+            l = [last_obj, obj]
+        
+        return l
+            
     
     """
     是否为终点的极值，现在只延续终点的极值进行开仓

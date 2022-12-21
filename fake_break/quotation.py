@@ -15,11 +15,13 @@ class Quotation:
     up_interval_list = [] # 向上区间list
     up_continuous_obj = None # 向上连续对象
     last_up_obj = None # 最后向上的对象
-
+    last_up_interval_list = [] # 统计为最后向上的两个区间
 
     down_obj = None # 下跌对象
     # temp_down_obj = None # 过渡期间使用的对象
     down_interval_list = [] # 向下区间list
+    last_down_interval_list = [] # 统计为最后向下的两个区间
+    
     down_continuous_obj = None # 向下连续对象
     last_down_obj = None # 最后的下跌对象
 
@@ -136,6 +138,7 @@ class Quotation:
         if self.effective_status == FKCons.EFFECTIVE_STATUS_OF_UP:
             if self.down_obj.length >= self.interval_length:
                 self.log_obj.info(f"up => {self.last_up_obj}")
+                self.last_up_interval_list = Logic.append_last(self.last_up_interval_list, self.last_up_obj)
                 self.init_continuous_status(FKCons.CONTINUOUS_STATUS_OF_UP)
                 if self.last_up_obj is not None and self.continouns_status == FKCons.CONTINUOUS_STATUS_OF_UP:
                     # self.up_interval_list.append(self.last_up_obj)
@@ -145,6 +148,7 @@ class Quotation:
         elif self.effective_status == FKCons.EFFECTIVE_STATUS_OF_DOWN:
             if self.up_obj.length >= self.interval_length:
                 self.log_obj.info(f"down => {self.last_down_obj}")
+                self.last_down_interval_list = Logic.append_last(self.last_down_interval_list, self.last_down_obj)
                 self.init_continuous_status(FKCons.CONTINUOUS_STATUS_OF_DOWN)
                 if self.last_down_obj is not None and self.continouns_status == FKCons.CONTINUOUS_STATUS_OF_DOWN:
                     # self.down_interval_list.append(self.last_down_obj)
