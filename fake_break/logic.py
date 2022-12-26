@@ -67,6 +67,20 @@ class Logic:
         return l
     
     """
+    只保留最后两个
+    """
+    def append_last(l, obj):
+        l_len = len(l)
+        if l_len < 2:
+            l.append(obj)
+        else:
+            last_obj = l[-1]
+            l = []
+            l = [last_obj, obj]
+        
+        return l
+    
+    """
     是否为终点的极值，现在只延续终点的极值进行开仓
     """
     def is_extremum_end(direction, extremum_end, end_value):

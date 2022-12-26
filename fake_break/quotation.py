@@ -22,6 +22,7 @@ class Quotation:
     down_interval_list = [] # 向下区间list
     down_continuous_obj = None # 向下连续对象
     last_down_obj = None # 最后的下跌对象
+    last_down_interval_list = [] # 统计为最后向下的两个区间
 
     status = Constants.HISTORY_STATUS_OF_NONE # 状态，初始化起点状态，行情状态
     last_cd = None
@@ -145,6 +146,7 @@ class Quotation:
         elif self.effective_status == FKCons.EFFECTIVE_STATUS_OF_DOWN:
             if self.up_obj.length >= self.interval_length:
                 self.log_obj.info(f"down => {self.last_down_obj}")
+                self.last_down_interval_list = Logic.append_last(self.last_down_interval_list, self.last_down_obj)
                 self.init_continuous_status(FKCons.CONTINUOUS_STATUS_OF_DOWN)
                 if self.last_down_obj is not None and self.continouns_status == FKCons.CONTINUOUS_STATUS_OF_DOWN:
                     # self.down_interval_list.append(self.last_down_obj)
