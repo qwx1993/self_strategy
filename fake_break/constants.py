@@ -11,3 +11,7 @@ class Constants:
     MOVE_EFFECTIVE_STATUS_OF_DOWN = 'down' # 向下的有效状态
     MOVE_EFFECTIVE_STATUS_OF_UP = 'up' # 向上的有效状态
 
+    INVERSE_STATS_OF_NONE = 0 # 默认状态
+    INVERSE_STATUS_OF_INIT = 1 # 初始进入状态
+    INVERSE_STATS_OF_BACK = 2 # 回调状态
+

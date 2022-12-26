@@ -33,7 +33,8 @@ class TickTest():
     open_price_effective_trend = None # 开仓时有效趋势的终点
     open_price_tick = None # 开仓时的tick数据
     need_check_close_effective_trend = None
-
+    inverse_status = FBCons.INVERSE_STATS_OF_NONE # 进入逆区间的状态
+    last_obj = None
  
 
     # 添加参数和变量名到对应的列表
@@ -51,35 +52,71 @@ class TickTest():
         self.log_obj = file.get_logger(self.vt_symbol)
         self.quotation = Quotation(self.unit_value)
         self.actions = []
+       
 
     """
     通过该函数收到Tick推送。
     """     
     def on_tick(self, tick):
         tick_obj = self.get_tick_object(tick)
-
-        if self.trade_action is None and self.quotation.effective_trend_obj is not None and self.need_check_close_effective_trend is None:
-            trend_obj = self.quotation.effective_trend_obj
-            if trend_obj.direction == Cons.DIRECTION_UP:
-                last_obj = self.quotation.up_interval_list[-1]
-            else:
-                last_obj = self.quotation.down_interval_list[-1]
-            if Trade.open_a_price(trend_obj, last_obj, self.quotation.effective_status, tick_obj):
-                if trend_obj.direction == Cons.DIRECTION_UP:
-                    self.add_action(tick, Cons.ACTION_OPEN_SHORT, tick.current - self.unit_value)
-                    self.open_price = tick.current - self.unit_value
-                    self.open_price_tick = tick
-                    self.log_obj.info(f"vt_symbol => {self.vt_symbol} \ntrade_type => short \ntrend_obj => {trend_obj} \ntick => {tick} \nlast_obj => {last_obj} \ncontinouns_status => {self.quotation.continouns_status} \neffective_status => {self.quotation.effective_status} \ndown_obj => {self.quotation.down_obj}")
-                    self.trade_action = Cons.ACTION_CLOSE_SHORT
-                    self.open_price_effective_trend = deepcopy(self.quotation.effective_trend_obj)
-                elif trend_obj.direction == Cons.DIRECTION_DOWN:
-                    self.add_action(tick, Cons.ACTION_OPEN_LONG, tick.current + self.unit_value)
-                    self.open_price = tick.current + self.unit_value
-                    self.open_price_tick = tick
-                    self.log_obj.info(f"vt_symbol => {self.vt_symbol} \ntrade_type => long \ntrend_obj => {trend_obj} \ntick => {tick} \nlast_obj => {last_obj} \ncontinouns_status => {self.quotation.continouns_status} \neffective_status => {self.quotation.effective_status} \ndown_obj => {self.quotation.down_obj}")
-                    self.trade_action = Cons.ACTION_CLOSE_LONG
-                    self.open_price_effective_trend = deepcopy(self.quotation.effective_trend_obj)
-            self.quotation.analysis(tick_obj) 
+        if self.trade_action is None:
+            trend_obj = None
+            if self.inverse_status == FBCons.INVERSE_STATS_OF_NONE:
+                if self.quotation.effective_trend_obj is not None and self.need_check_close_effective_trend is None:
+                    trend_obj = self.quotation.effective_trend_obj
+                    if trend_obj.direction == Cons.DIRECTION_UP:
+                        self.last_obj = self.quotation.up_interval_list[-1]
+                    else:
+                        self.last_obj = self.quotation.down_interval_list[-1]
+                    if Trade.open_a_price(trend_obj, self.last_obj, self.quotation.effective_status, tick_obj):
+                        self.inverse_status = FBCons.INVERSE_STATUS_OF_INIT
+                        self.open_price_effective_trend = deepcopy(self.quotation.effective_trend_obj)
+                        self.log_obj.info(f"?????????????????????????????????/")
+                        # if trend_obj.direction == Cons.DIRECTION_UP:
+                        #     self.add_action(tick, Cons.ACTION_OPEN_SHORT, tick.current - self.unit_value)
+                        #     self.open_price = tick.current - self.unit_value
+                        #     self.open_price_tick = tick
+                        #     self.log_obj.info(f"vt_symbol => {self.vt_symbol} \ntrade_type => short \ntrend_obj => {trend_obj} \ntick => {tick} \nlast_obj => {last_obj} \ncontinouns_status => {self.quotation.continouns_status} \neffective_status => {self.quotation.effective_status} \ndown_obj => {self.quotation.down_obj}")
+                        #     self.trade_action = Cons.ACTION_CLOSE_SHORT
+                        # elif trend_obj.direction == Cons.DIRECTION_DOWN:
+                        #     self.add_action(tick, Cons.ACTION_OPEN_LONG, tick.current + self.unit_value)
+                        #     self.open_price = tick.current + self.unit_value
+                        #     self.open_price_tick = tick
+                        #     self.log_obj.info(f"vt_symbol => {self.vt_symbol} \ntrade_type => long \ntrend_obj => {trend_obj} \ntick => {tick} \nlast_obj => {last_obj} \ncontinouns_status => {self.quotation.continouns_status} \neffective_status => {self.quotation.effective_status} \ndown_obj => {self.quotation.down_obj}")
+                        #     self.trade_action = Cons.ACTION_CLOSE_LONG
+                self.quotation.analysis(tick_obj) 
+            elif self.inverse_status == FBCons.INVERSE_STATUS_OF_INIT:
+                self.quotation.analysis(tick_obj)
+                if self.open_price_effective_trend.direction == Cons.DIRECTION_UP:
+                    if self.quotation.effective_status == FBCons.EFFECTIVE_STATUS_OF_UP:
+                        self.inverse_status = FBCons.INVERSE_STATS_OF_BACK
+                elif self.open_price_effective_trend.direction == Cons.DIRECTION_DOWN:
+                    if self.quotation.effective_status == FBCons.EFFECTIVE_STATUS_OF_DOWN:
+                        self.inverse_status = FBCons.INVERSE_STATS_OF_BACK
+            elif self.inverse_status == FBCons.INVERSE_STATS_OF_BACK:
+                self.quotation.analysis(tick_obj)
+                if self.open_price_effective_trend.direction == Cons.DIRECTION_UP:
+                    if tick.current > self.open_price_effective_trend.end:
+                        self.inverse_status = FBCons.INVERSE_STATS_OF_NONE
+                    else:
+                        if self.quotation.effective_status == FBCons.EFFECTIVE_STATUS_OF_DOWN:
+                            self.add_action(tick, Cons.ACTION_OPEN_SHORT, tick.current - self.unit_value)
+                            self.open_price = tick.current - self.unit_value
+                            self.open_price_tick = tick
+                            self.log_obj.info(f"vt_symbol => {self.vt_symbol} \ntrade_type => short \ntrend_obj => {self.open_price_effective_trend} \ntick => {tick} \nlast_obj => {self.last_obj} \ncontinouns_status => {self.quotation.continouns_status} \neffective_status => {self.quotation.effective_status} \ndown_obj => {self.quotation.down_obj}")
+                            self.trade_action = Cons.ACTION_CLOSE_SHORT
+                            self.inverse_status = FBCons.INVERSE_STATS_OF_NONE
+                elif self.open_price_effective_trend.direction == Cons.DIRECTION_DOWN:
+                    if tick.current < self.open_price_effective_trend.end:
+                        self.inverse_status = FBCons.INVERSE_STATS_OF_NONE
+                    else:
+                        if self.quotation.effective_status == FBCons.EFFECTIVE_STATUS_OF_UP:
+                            self.add_action(tick, Cons.ACTION_OPEN_LONG, tick.current + self.unit_value)
+                            self.open_price = tick.current + self.unit_value
+                            self.open_price_tick = tick
+                            self.log_obj.info(f"vt_symbol => {self.vt_symbol} \ntrade_type => long \ntrend_obj => {self.open_price_effective_trend} \ntick => {tick} \nlast_obj => {self.last_obj} \ncontinouns_status => {self.quotation.continouns_status} \neffective_status => {self.quotation.effective_status} \nup_obj => {self.quotation.up_obj}")
+                            self.trade_action = Cons.ACTION_CLOSE_LONG
+                            self.inverse_status = FBCons.INVERSE_STATS_OF_NONE
         else:
             self.quotation.analysis(tick_obj)
             if self.trade_action == Cons.ACTION_CLOSE_LONG:
