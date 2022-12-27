@@ -18,6 +18,7 @@ from copy import deepcopy
 from self_strategy.fake_break.trade import Trade
 from self_strategy.constants import Constants as Cons
 from self_strategy.fake_break.constants import Constants as FBCons
+from self_strategy.utils import trade as Utrade
 
 
 # tick 数据测试
@@ -64,7 +65,7 @@ class TickTest():
                 last_obj = self.quotation.up_interval_list[-1]
             else:
                 last_obj = self.quotation.down_interval_list[-1]
-            if Trade.open_a_price(trend_obj, last_obj, self.quotation.effective_status, tick_obj):
+            if Trade.open_a_price(trend_obj, last_obj, self.quotation.effective_status, tick_obj) and Utrade.simulation_can_open_a_position(self.vt_symbol, tick_obj):
                 if trend_obj.direction == Cons.DIRECTION_UP:
                     self.add_action(tick, Cons.ACTION_OPEN_SHORT, tick.current - self.unit_value)
                     self.open_price = tick.current - self.unit_value
@@ -83,13 +84,16 @@ class TickTest():
         else:
             self.quotation.analysis(tick_obj)
             if self.trade_action == Cons.ACTION_CLOSE_LONG:
-                if Trade.close_a_price(self.trade_action, self.quotation.continouns_status):
+                if Trade.close_a_price(self.trade_action, self.quotation.continouns_status) or Utrade.simulation_need_close_position(self.vt_symbol, tick_obj):
                     self.add_action(tick, Cons.ACTION_CLOSE_LONG, tick.current - self.unit_value)
-                    last_obj = self.quotation.up_interval_list[-1]
+                    if len(self.quotation.up_interval_list) > 0:
+                        last_obj = self.quotation.up_interval_list[-1]
+                    else:
+                        last_obj = None
                     self.log_obj.info(f"vt_symbol => {self.vt_symbol} \nclose_direction:long \ntick => {tick_obj} \nlast_up_obj => {last_obj} \ndown_obj => {self.quotation.down_obj} \ncontinouns_status => {self.quotation.continouns_status}")
                     self.after_close(tick_obj)
             elif self.trade_action == Cons.ACTION_CLOSE_SHORT:
-                if Trade.close_a_price(self.trade_action, self.quotation.continouns_status):
+                if Trade.close_a_price(self.trade_action, self.quotation.continouns_status) or Utrade.simulation_need_close_position(self.vt_symbol, tick_obj):
                     self.add_action(tick, Cons.ACTION_CLOSE_SHORT, tick.current + self.unit_value)
                     last_obj = self.quotation.down_interval_list[-1]
                     self.log_obj.info(f"vt_symbol => {self.vt_symbol} \nclose_direction:short \ntick => {tick_obj} \nlast_down_obj => {last_obj} \nup_obj => {self.quotation.up_obj} \ncontinouns_status => {self.quotation.continouns_status}")

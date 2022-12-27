@@ -27,16 +27,16 @@ class Price:
             vt_symbol_id = rqdatac.id_convert(vt_symbol)
       
             # value_5m = rqdatac.get_price(vt_symbol_id, start_date=start_date, end_date=end_date, frequency='5m')[["open", "high", "low", "close"]]
-            # value_5m.to_csv('C:/Users/Administrator/strategies/data/' + f"{vt_symbol}_5m.csv" )
+            # value_5m.to_csv('C:/Users/king/strategies/data/' + f"{vt_symbol}_5m.csv" )
 
             # # 写入3m 
             # value_3m = rqdatac.get_price(vt_symbol_id, start_date=start_date, end_date=end_date, frequency='3m')[["open", "high", "low", "close"]] 
-            # value_3m.to_csv('C:/Users/Administrator/strategies/data/' + f"{vt_symbol}_3m.csv" )
+            # value_3m.to_csv('C:/Users/king/strategies/data/' + f"{vt_symbol}_3m.csv" )
 
             # 写入1m 
             print(vt_symbol_id)
             value_1m = rqdatac.get_price(vt_symbol_id, start_date=start_date, end_date=end_date, frequency='1m')[["open", "high", "low", "close"]] 
-            value_1m.to_csv('C:/Users/Administrator/strategies/data/' + f"{vt_symbol}_1m.csv" )
+            value_1m.to_csv('C:/Users/king/strategies/data/' + f"{vt_symbol}_1m.csv" )
             
 
         """
@@ -51,7 +51,7 @@ class Price:
             vt_symbol = rqdatac.id_convert(vt_symbol)
       
             value_tick = rqdatac.get_price(vt_symbol, start_date=start_date, end_date=end_date, frequency='tick')[["last"]]
-            value_tick.to_csv('C:/Users/Administrator/strategies/data_tick/' + f"{vt_symbol}_tick.csv" )
+            value_tick.to_csv('C:/Users/king/strategies/data_tick/' + f"{vt_symbol}_tick.csv" )
 
         """
         保存主力合约的数据
@@ -62,7 +62,7 @@ class Price:
             end_date = Logic.get_date_str(d1, -1)
             print(f"参数 => underlying_symbols:{underlying_symbols} => start_date:{start_date} => end_date:{end_date}")
             value_1m = rqdatac.futures.get_dominant_price(underlying_symbols, start_date=start_date, end_date=end_date, frequency='1m')[["open", "high", "low", "close"]] 
-            value_1m.to_csv('C:/Users/Administrator/strategies/data/' + f"{underlying_symbols}_dominant_{days}_1m.csv" )
+            value_1m.to_csv('C:/Users/king/strategies/data/' + f"{underlying_symbols}_dominant_{days}_1m.csv" )
         
         """
         保存主力合约tick数据
@@ -73,7 +73,7 @@ class Price:
             end_date = Logic.get_date_str(d1, -1)
             print(f"参数 => underlying_symbols:{underlying_symbols} => start_date:{start_date} => end_date:{end_date}")
             value_1m = rqdatac.futures.get_dominant_price(underlying_symbols, start_date=start_date, end_date=end_date, frequency='tick', adjust_type='none')[["last"]] 
-            value_1m.to_csv('C:/Users/Administrator/strategies/data_tick/' + f"{underlying_symbols}_dominant_{days}_tick.csv" )
+            value_1m.to_csv('C:/Users/king/strategies/data_tick/' + f"{underlying_symbols}_dominant_{days}_tick.csv" )
         
         """
         下载指定日期的tick合约数据
@@ -81,7 +81,7 @@ class Price:
         def save_appoint_dominant_tick_price(self, underlying_symbols, start_date, end_date):
             print(f"参数 => underlying_symbols:{underlying_symbols} => start_date:{start_date} => end_date:{end_date}")
             value_1m = rqdatac.futures.get_dominant_price(underlying_symbols, start_date=start_date, end_date=end_date, frequency='tick', adjust_type='none')[["last"]] 
-            value_1m.to_csv('C:/Users/Administrator/strategies/data_tick/' + f"{underlying_symbols}_dominant_test_tick.csv" )
+            value_1m.to_csv('C:/Users/king/strategies/data_tick/' + f"{underlying_symbols}_dominant_test_tick.csv" )
 
         """
         保存当天合约数据保存到csv中
@@ -89,7 +89,7 @@ class Price:
         def save_same_day_price(self, vt_symbol, start_date, end_date):
             vt_symbol = rqdatac.id_convert(vt_symbol)
             value_1m = rqdatac.get_price(vt_symbol, start_date=start_date, end_date=end_date, frequency='1m', expect_df=True)[[ "open", "high", "low", "close"]] 
-            value_1m.to_csv('C:/Users/Administrator/strategies/data/' + f"{vt_symbol}_same_day_1m.csv" )
+            value_1m.to_csv('C:/Users/king/strategies/data/' + f"{vt_symbol}_same_day_1m.csv" )
 
         """
         获取当天数据，转化成自定义格式

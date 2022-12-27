@@ -123,8 +123,10 @@ def simulation_need_close_position(vt_symbol, obj, type='tick'):
         'SC_DOMINANT_TEST_TICK',
         'SC_DOMINANT_60_TICK',
     ]
+    if hour == 2 and minute > 20:
+        return True
         # 两点之后平仓
-    if hour == 14 and minute >= 58:
+    if hour == 14 and minute >= 50:
         return True
 
     # if vt_symbol in twenty_three_list:
@@ -150,10 +152,11 @@ def can_open_a_position(vt_symbol):
 def simulation_can_open_a_position(vt_symbol, tick):
     hour = tick.datetime.hour
     minute = tick.datetime.minute
-
-    # if hour == 2 and minute > 20:
-    #     return False
-    if (hour == 14 and minute > 50) or (hour == 15):
+    # 晚上2点后不开仓
+    if hour == 2:
+        return False
+    # 
+    if (hour == 14 and minute > 30) or (hour == 15):
         return False
 
     # if hour == 9 and minute < 1:
