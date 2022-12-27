@@ -40,3 +40,12 @@ class Trade:
                 return True
 
         return False
+    
+    def close_by_length(trade_action, effective_status):
+        if trade_action == Constants.ACTION_CLOSE_LONG:
+            if effective_status == FBCons.EFFECTIVE_STATUS_OF_DOWN:
+                return True
+        elif trade_action == Constants.ACTION_CLOSE_SHORT:
+            if effective_status == FBCons.EFFECTIVE_STATUS_OF_UP:
+                return True
+        return False
