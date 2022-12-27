@@ -71,7 +71,6 @@ class TickTest():
                     if Trade.open_a_price(trend_obj, self.last_obj, self.quotation.effective_status, tick_obj):
                         self.inverse_status = FBCons.INVERSE_STATUS_OF_INIT
                         self.open_price_effective_trend = deepcopy(self.quotation.effective_trend_obj)
-                        self.log_obj.info(f"?????????????????????????????????/")
                         # if trend_obj.direction == Cons.DIRECTION_UP:
                         #     self.add_action(tick, Cons.ACTION_OPEN_SHORT, tick.current - self.unit_value)
                         #     self.open_price = tick.current - self.unit_value
@@ -189,7 +188,7 @@ class TickTest():
     """
     def reset_up_factor_by_position(self):
         if self.need_check_close_effective_trend.direction == Cons.DIRECTION_UP and self.quotation.effective_status == FBCons.EFFECTIVE_STATUS_OF_DOWN:
-            last_up_obj = self.quotation.up_interval_list[-1]
+            last_up_obj = self.quotation.last_up_interval_list[-1]
             if last_up_obj.end < self.need_check_close_effective_trend.end:
                 self.quotation.reset_up_factor_by_close()
                 self.log_obj.info(f"reset_open_type => short \nlast_up_obj => {last_up_obj} \nneed_check_close_effective_trend => {self.need_check_close_effective_trend}")

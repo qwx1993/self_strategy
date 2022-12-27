@@ -15,6 +15,7 @@ class Quotation:
     up_interval_list = [] # 向上区间list
     up_continuous_obj = None # 向上连续对象
     last_up_obj = None # 最后向上的对象
+    last_up_interval_list = [] # 最后向上的两个区间
 
 
     down_obj = None # 下跌对象
@@ -137,6 +138,7 @@ class Quotation:
         if self.effective_status == FKCons.EFFECTIVE_STATUS_OF_UP:
             if self.down_obj.length >= self.interval_length:
                 self.log_obj.info(f"up => {self.last_up_obj}")
+                self.last_up_interval_list = Logic.append_last(self.last_up_interval_list, self.last_up_obj)
                 self.init_continuous_status(FKCons.CONTINUOUS_STATUS_OF_UP)
                 if self.last_up_obj is not None and self.continouns_status == FKCons.CONTINUOUS_STATUS_OF_UP:
                     # self.up_interval_list.append(self.last_up_obj)
@@ -249,37 +251,35 @@ class Quotation:
     初步的有效趋势 暂时只做开空版本
     """
     def handle_effective_trend(self, tick):
-        # if self.up_continuous_obj is not None and self.up_continuous_obj.length > self.effective_trend_length:
-        #     self.effective_trend_obj = deepcopy(self.up_continuous_obj) 
-        # else:
-        #     self.effective_trend_obj = None
-
-        if self.down_continuous_obj is not None and self.down_continuous_obj.length > self.effective_trend_length:
-            self.effective_trend_obj = deepcopy(self.down_continuous_obj) 
+        if self.up_continuous_obj is not None and self.up_continuous_obj.length > self.effective_trend_length:
+            self.effective_trend_obj = deepcopy(self.up_continuous_obj) 
         else:
             self.effective_trend_obj = None
+
+        # if self.down_continuous_obj is not None and self.down_continuous_obj.length > self.effective_trend_length:
+        #     self.effective_trend_obj = deepcopy(self.down_continuous_obj) 
+        # else:
+        #     self.effective_trend_obj = None
 
     """
     回到起点时去掉区间list todo 暂时处理
     """
     def hanle_reverse_effective_move(self):
-        # if len(self.up_interval_list) > 0:
-        #     first_cd = self.up_interval_list[0]
-        #     if self.down_obj.end < first_cd.start:
-        #         self.onchange_effective_move_status(FKCons.EFFECTIVE_STATUS_OF_NONE)
-        #         # print(f"出现了反向运动up to down {self.up_interval_list}")
-        #         self.up_interval_list = []
-        #         self.up_continuous_obj = None
-        #         self.reset_extremum_end()
-        #         print(f"跑到了这里来了 11111")
-        if len(self.down_interval_list) > 0:
-            first_cd = self.down_interval_list[0]
-            if self.up_obj.end > first_cd.start:
+        if len(self.up_interval_list) > 0:
+            first_cd = self.up_interval_list[0]
+            if self.down_obj.end < first_cd.start:
                 self.onchange_effective_move_status(FKCons.EFFECTIVE_STATUS_OF_NONE)
-                self.down_interval_list = []
-                self.down_continuous_obj = None
+                self.up_interval_list = []
+                self.up_continuous_obj = None
                 self.reset_extremum_end()
-                # print(f"出现了反向运动down to up")
+        # if len(self.down_interval_list) > 0:
+        #     first_cd = self.down_interval_list[0]
+        #     if self.up_obj.end > first_cd.start:
+        #         self.onchange_effective_move_status(FKCons.EFFECTIVE_STATUS_OF_NONE)
+        #         self.down_interval_list = []
+        #         self.down_continuous_obj = None
+        #         self.reset_extremum_end()
+
     
     """
     反向运动之后触发事件
