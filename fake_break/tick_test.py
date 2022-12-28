@@ -84,19 +84,16 @@ class TickTest():
         else:
             self.quotation.analysis(tick_obj)
             if self.trade_action == Cons.ACTION_CLOSE_LONG:
-                if Trade.close_by_length(self.trade_action, self.quotation.effective_status) or Utrade.simulation_need_close_position(self.vt_symbol, tick_obj):
+                if Trade.close_by_appoint_price(self.trade_action, self.open_price_effective_trend.end, tick_obj) or Utrade.simulation_need_close_position(self.vt_symbol, tick_obj):
                     self.add_action(tick, Cons.ACTION_CLOSE_LONG, tick.current - self.unit_value)
-                    if len(self.quotation.up_interval_list) > 0:
-                        last_obj = self.quotation.up_interval_list[-1]
-                    else:
-                        last_obj = None
-                    self.log_obj.info(f"vt_symbol => {self.vt_symbol} \nclose_direction:long \ntick => {tick_obj} \nlast_up_obj => {last_obj} \ndown_obj => {self.quotation.down_obj} \ncontinouns_status => {self.quotation.continouns_status} \neffective_status => {self.quotation.effective_status}")
+                    last_obj = self.quotation.up_interval_list[-1]
+                    self.log_obj.info(f"vt_symbol => {self.vt_symbol} \nclose_direction:long \ntick => {tick_obj} \nlast_up_obj => {last_obj} \ndown_obj => {self.quotation.down_obj} \ncontinouns_status => {self.quotation.continouns_status}")
                     self.after_close(tick_obj)
             elif self.trade_action == Cons.ACTION_CLOSE_SHORT:
-                if Trade.close_by_length(self.trade_action, self.quotation.effective_status) or Utrade.simulation_need_close_position(self.vt_symbol, tick_obj):
+                if Trade.close_by_appoint_price(self.trade_action, self.open_price_effective_trend.end, tick_obj) or Utrade.simulation_need_close_position(self.vt_symbol, tick_obj):
                     self.add_action(tick, Cons.ACTION_CLOSE_SHORT, tick.current + self.unit_value)
                     last_obj = self.quotation.down_interval_list[-1]
-                    self.log_obj.info(f"vt_symbol => {self.vt_symbol} \nclose_direction:short \ntick => {tick_obj} \nlast_down_obj => {last_obj} \nup_obj => {self.quotation.up_obj} \ncontinouns_status => {self.quotation.continouns_status} \neffective_status => {self.quotation.effective_status}")
+                    self.log_obj.info(f"vt_symbol => {self.vt_symbol} \nclose_direction:short \ntick => {tick_obj} \nlast_down_obj => {last_obj} \nup_obj => {self.quotation.up_obj} \ncontinouns_status => {self.quotation.continouns_status}")
                     self.after_close(tick_obj)
         """
         当需要检查出场终点跟起点关系时
@@ -137,13 +134,13 @@ class TickTest():
     """
     def after_close(self, tick):
         self.trade_action = None
-        if self.close_by_win(tick):
-            if self.open_price_effective_trend.direction == Cons.DIRECTION_UP:
-                self.quotation.reset_up_factor_by_close()
-            elif self.open_price_effective_trend.direction == Cons.DIRECTION_DOWN:
-                self.quotation.reset_down_factor_by_close()
-        else:
-            self.need_check_close_effective_trend = deepcopy(self.open_price_effective_trend)
+        # if self.close_by_win(tick):
+        #     if self.open_price_effective_trend.direction == Cons.DIRECTION_UP:
+        #         self.quotation.reset_up_factor_by_close()
+        #     elif self.open_price_effective_trend.direction == Cons.DIRECTION_DOWN:
+        #         self.quotation.reset_down_factor_by_close()
+        # else:
+        #     self.need_check_close_effective_trend = deepcopy(self.open_price_effective_trend)
 
     """
     通过输赢重置因子
