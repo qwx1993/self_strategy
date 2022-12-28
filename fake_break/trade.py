@@ -57,3 +57,15 @@ class Trade:
                 else:
                     return True
         return False
+    
+    """
+    通过指定价格进行止损
+    """
+    def close_by_appoint_price(trade_action, price, tick):
+        if trade_action == Constants.ACTION_CLOSE_LONG:
+            if tick.current < price:
+                return True
+        elif trade_action == Constants.ACTION_CLOSE_SHORT:
+            if tick.current > price:
+                return True
+        return False
