@@ -31,8 +31,8 @@ class Quotation:
     continouns_status = FKCons.CONTINUOUS_STATUS_OF_NONE # 连续状态
     
     effective_trend_obj = None # 有效趋势对象
-    interval_length = 10 # 有效价格间隔长度
-    effective_trend_length = 100
+    interval_length = 20 # 有效价格间隔长度
+    effective_trend_length = 500
 
     log_obj = None
 
