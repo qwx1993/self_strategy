@@ -32,20 +32,20 @@ class Quotation:
     continouns_status = FKCons.CONTINUOUS_STATUS_OF_NONE # 连续状态
     
     effective_trend_obj = None # 有效趋势对象
-    interval_length = 20 # 有效价格间隔长度
-    effective_trend_length = 500
+    interval_length = None # 有效价格间隔长度
+    effective_trend_length = None
 
     log_obj = None
 
 
 
-    def __init__(self, unit_value) -> None:
+    def __init__(self, unit_value, interval_length, effective_trend_length) -> None:
         self.unit_value = unit_value
         self.up_obj = None
         self.down_obj = None
-        self.log_obj = file.get_logger(f"quotation_{self.interval_length}")
-        self.interval_length = self.interval_length*unit_value
-        self.effective_trend_length = self.effective_trend_length*unit_value
+        self.log_obj = file.get_logger(f"quotation_{interval_length}")
+        self.interval_length = interval_length*unit_value
+        self.effective_trend_length = effective_trend_length*unit_value
 
     def analysis(self, tick):
         if self.status == Constants.HISTORY_STATUS_OF_NONE: 
