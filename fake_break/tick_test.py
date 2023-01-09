@@ -34,6 +34,7 @@ class TickTest():
     open_price_effective_trend = None # 开仓时有效趋势的终点
     open_price_tick = None # 开仓时的tick数据
     need_check_close_effective_trend = None
+    version = 'long'
 
  
 
@@ -41,6 +42,8 @@ class TickTest():
     def __init__(self, 
         vt_symbol,
         unit_value,
+        interval_length,
+        effective_trend_length
            ):
         """"""
         self.vt_symbol = vt_symbol
@@ -50,7 +53,7 @@ class TickTest():
         初始化日志
         """
         self.log_obj = file.get_logger(self.vt_symbol)
-        self.quotation = Quotation(self.unit_value)
+        self.quotation = Quotation(self.unit_value, interval_length, effective_trend_length)
         self.actions = []
 
     """
