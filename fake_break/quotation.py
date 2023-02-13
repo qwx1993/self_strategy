@@ -263,15 +263,14 @@ class Quotation:
     回到起点时去掉区间list todo 暂时处理
     """
     def hanle_reverse_effective_move(self):
-        # if len(self.up_interval_list) > 0:
-        #     first_cd = self.up_interval_list[0]
-        #     if self.down_obj.end < first_cd.start:
-        #         self.onchange_effective_move_status(FKCons.EFFECTIVE_STATUS_OF_NONE)
-        #         # print(f"出现了反向运动up to down {self.up_interval_list}")
-        #         self.up_interval_list = []
-        #         self.up_continuous_obj = None
-        #         self.reset_extremum_end()
-        #         print(f"跑到了这里来了 11111")
+        if len(self.up_interval_list) > 0:
+            first_cd = self.up_interval_list[0]
+            if self.down_obj.end < first_cd.start:
+                self.onchange_effective_move_status(FKCons.EFFECTIVE_STATUS_OF_NONE)
+                self.up_interval_list = []
+                self.up_continuous_obj = None
+                self.reset_extremum_end()
+                
         if len(self.down_interval_list) > 0:
             first_cd = self.down_interval_list[0]
             if self.up_obj.end > first_cd.start:
