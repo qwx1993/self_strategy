@@ -205,8 +205,12 @@ class Quotation:
         self.continouns_status = continouns_status
         if self.continouns_status == FKCons.CONTINUOUS_STATUS_OF_UP:
             self.down_continuous_obj = None
+            # 有效趋势对象重置为None
+            self.effective_trend_obj = None
         elif self.continouns_status == FKCons.CONTINUOUS_STATUS_OF_DOWN:
             self.up_continuous_obj = None
+            # 有效趋势对象重置为None
+            self.effective_trend_obj = None
    
 
     """
@@ -246,18 +250,19 @@ class Quotation:
             self.effective_move_status = move_status
         
     """
-    初步的有效趋势 暂时只做开空版本
+    初步的有效趋势 暂时只做开空版本,通过连续状态做限定
     """
     def handle_effective_trend(self, tick):
-        # if self.up_continuous_obj is not None and self.up_continuous_obj.length > self.effective_trend_length:
-        #     self.effective_trend_obj = deepcopy(self.up_continuous_obj) 
-        # else:
-        #     self.effective_trend_obj = None
-
-        if self.down_continuous_obj is not None and self.down_continuous_obj.length > self.effective_trend_length:
-            self.effective_trend_obj = deepcopy(self.down_continuous_obj) 
-        else:
-            self.effective_trend_obj = None
+        if self.continouns_status == FKCons.CONTINUOUS_STATUS_OF_UP:
+            if self.up_continuous_obj is not None and self.up_continuous_obj.length > self.effective_trend_length:
+                self.effective_trend_obj = deepcopy(self.up_continuous_obj) 
+            else:
+                self.effective_trend_obj = None
+        elif self.continouns_status == FKCons.CONTINUOUS_STATUS_OF_DOWN:
+            if self.down_continuous_obj is not None and self.down_continuous_obj.length > self.effective_trend_length:
+                self.effective_trend_obj = deepcopy(self.down_continuous_obj) 
+            else:
+                self.effective_trend_obj = None
 
     """
     回到起点时去掉区间list todo 暂时处理
