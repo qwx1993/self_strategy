@@ -38,4 +38,4 @@ vnpy的安装盘下，例如C盘：
 C:\veighna_studio\Lib\site-packages\self_strategy
 
 ### vnpy项目地址：
-![文档](https://www.vnpy.com/docs/cn/index.html)
+[文档链接](https://www.cnblogs.com/bigtree2pingping/)
