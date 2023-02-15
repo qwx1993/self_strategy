@@ -86,7 +86,7 @@ class TickTest():
         else:
             self.quotation.analysis(tick_obj)
             if self.trade_action == Cons.ACTION_CLOSE_LONG:
-                if Trade.close_by_length(self.trade_action, self.quotation.effective_status) or Utrade.simulation_need_close_position(self.vt_symbol, tick_obj):
+                if Trade.close_by_effective_status(self.trade_action, self.quotation.effective_status) or Utrade.simulation_need_close_position(self.vt_symbol, tick_obj):
                     self.add_action(tick, Cons.ACTION_CLOSE_LONG, tick.current - self.unit_value)
                     if len(self.quotation.up_interval_list) > 0:
                         last_obj = self.quotation.up_interval_list[-1]
@@ -95,11 +95,12 @@ class TickTest():
                     self.log_obj.info(f"vt_symbol => {self.vt_symbol} \nclose_direction:long \ntick => {tick_obj} \nlast_up_obj => {last_obj} \ndown_obj => {self.quotation.down_obj} \ncontinouns_status => {self.quotation.continouns_status} \neffective_status => {self.quotation.effective_status}")
                     self.after_close(tick_obj)
             elif self.trade_action == Cons.ACTION_CLOSE_SHORT:
-                if Trade.close_by_length(self.trade_action, self.quotation.effective_status) or Utrade.simulation_need_close_position(self.vt_symbol, tick_obj):
+                if Trade.close_by_effective_status(self.trade_action, self.quotation.effective_status) or Utrade.simulation_need_close_position(self.vt_symbol, tick_obj):
                     self.add_action(tick, Cons.ACTION_CLOSE_SHORT, tick.current + self.unit_value)
                     last_obj = self.quotation.down_interval_list[-1]
                     self.log_obj.info(f"vt_symbol => {self.vt_symbol} \nclose_direction:short \ntick => {tick_obj} \nlast_down_obj => {last_obj} \nup_obj => {self.quotation.up_obj} \ncontinouns_status => {self.quotation.continouns_status} \neffective_status => {self.quotation.effective_status}")
                     self.after_close(tick_obj)
+                    
         """
         当需要检查出场终点跟起点关系时
         """

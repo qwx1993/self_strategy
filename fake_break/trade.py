@@ -41,7 +41,10 @@ class Trade:
 
         return False
     
-    def close_by_length(trade_action, effective_status):
+    """
+    根据有效价格状态进行平仓
+    """
+    def close_by_effective_status(trade_action, effective_status):
         if trade_action == Constants.ACTION_CLOSE_LONG:
             if effective_status == FBCons.EFFECTIVE_STATUS_OF_DOWN:
                 return True
