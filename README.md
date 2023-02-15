@@ -29,4 +29,10 @@ max_ir_by_cr : 从cr中找出最大的ir
 有效运动状态（暂时没有使用）
 
 ## 策略交易文件 fake_break/tick_test.py
+此文件是模拟实盘的测试代码，接入实盘要做部分调整
 以tick数据进入到策略逻辑中，出现反向有效价格区间大于上一个有效区间时进入开仓，参考图例：doc/fake_break_v10_1_long.png
+
+
+### 项目文件需放置位置
+vnpy的安装盘下，例如C盘：
+C:\veighna_studio\Lib\site-packages\self_strategy
