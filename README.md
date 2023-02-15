@@ -36,3 +36,6 @@ max_ir_by_cr : 从cr中找出最大的ir
 ### 项目文件需放置位置
 vnpy的安装盘下，例如C盘：
 C:\veighna_studio\Lib\site-packages\self_strategy
+
+### vnpy项目地址：
+![文档](https://www.vnpy.com/docs/cn/index.html)
