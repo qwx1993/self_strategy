@@ -15,3 +15,18 @@ cr:
 相同方向的分钟数据列表，当新的一分钟跟list的方向不一致时，就重置cr
 ir : 当前一分钟的幅度，如果跟上一分钟是连续的就加起来
 max_ir_by_cr : 从cr中找出最大的ir
+
+# fake_break_v10_1_long 做多版本
+## 行情统计文件 fake_break/quotation.py
+进本要素：
+有效价格
+有效区间
+有效连续 
+有效运动
+状态
+有效状态
+连续状态
+有效运动状态（暂时没有使用）
+
+## 策略交易文件 fake_break/tick_test.py
+以tick数据进入到策略逻辑中，出现反向有效价格区间大于上一个有效区间时进入开仓，参考图例：doc/fake_break_v10_1_long.png
