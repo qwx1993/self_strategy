@@ -121,6 +121,7 @@ class Quotation:
     
     """
     初始化主程序的有效方向
+    依据最先达到有效价格定方向，当向上对象先达到，初始化有效状态为向上，当向下对象先达到，初始化有效状态为向下
     """
     def init_effective_status(self):
         if self.effective_status == FKCons.EFFECTIVE_STATUS_OF_NONE:
@@ -130,7 +131,8 @@ class Quotation:
                 self.effective_status = FKCons.EFFECTIVE_STATUS_OF_DOWN
     
     """
-    处理有效区间列表，当上下两个方向统计的长度都大于interval_length单位时,长度较大的被打断写入到对应list中，并初始化统计值
+    当有效状态向上时，此时如果向下对象长度达到有效价格长度，将最后的向上对象写入到向上区间列表，并重置向上对象
+    当有效状态向下时，此时如果向上对象长度达到有效价格长度，将最后的向下对象写入到向下区间列表，并重置向下对象
     """
     def handle_effective_interval_list(self, tick):
         if self.effective_status == FKCons.EFFECTIVE_STATUS_OF_UP:
@@ -170,12 +172,13 @@ class Quotation:
 
     """
     处理反转
+    有效状态向下时，如果向上区间列表长度大于0，当向下对象的终点比最后一个向上对象的起点更低时，发生反转，更新连续状态为向下
+    有效状态向上时，如果向下区间列表长度大于0，当向上对象的终点比最后一个向下对象的起点更低时，发生反转，更新连续状态为向上
     """    
     def handle_effective_reverse(self):
         if self.effective_status == FKCons.EFFECTIVE_STATUS_OF_DOWN:
             up_interval_list_length = len(self.up_interval_list)
             if up_interval_list_length > 0:
-                first_obj = self.up_interval_list[0]
                 last_obj = self.up_interval_list[-1]
                 if self.down_obj.end < last_obj.start and not self.down_obj.check:
                     self.down_obj.check = True
@@ -188,7 +191,6 @@ class Quotation:
         elif self.effective_status == FKCons.EFFECTIVE_STATUS_OF_UP:
             down_interval_list_length = len(self.down_interval_list)
             if down_interval_list_length > 0:
-                first_obj = self.down_interval_list[0]
                 last_obj = self.down_interval_list[-1]
                 if self.up_obj.end > last_obj.start and not self.up_obj.check:
                     self.up_obj.check = True
@@ -210,6 +212,8 @@ class Quotation:
 
     """
     处理有效区间连续
+    连续状态向上时，如果向上区间列表不为空，更新向上连续对象
+    连续状态向下时，如果向下区间列表不为空，更新向下连续对象
     """     
     def handle_effective_move(self):
         # 正向价格连续
@@ -245,7 +249,7 @@ class Quotation:
             self.effective_move_status = move_status
         
     """
-    初步的有效趋势 暂时只做开空版本
+    如果向下连续对象不为None且向下连续对象的长度超过有效趋势长度，设置为有效趋势对象
     """
     def handle_effective_trend(self, tick):
         # if self.up_continuous_obj is not None and self.up_continuous_obj.length > self.effective_trend_length:
@@ -259,7 +263,7 @@ class Quotation:
             self.effective_trend_obj = None
 
     """
-    回到起点时去掉区间list todo 暂时处理
+    如果向下区间列表不为空，当向上对象的终点比列表中第一个向下对象的起点高，就重置向下区间列表跟向下连续对象
     """
     def hanle_reverse_effective_move(self):
         # if len(self.up_interval_list) > 0:
@@ -296,6 +300,7 @@ class Quotation:
         #     if tick.current > down_first_cd.start:
         #         self.down_interval_list = []
 
+    # todo 暂时没用上
     def reset_extremum_end(self):
         self.extremum_end = None
 
@@ -308,7 +313,7 @@ class Quotation:
         self.effective_trend_obj = None # 有效趋势
     
     """
-    在平仓之后，如果盈利就充值，否则不重置
+    在平仓之后，如果盈利就重置，否则不重置
     """
     def reset_down_factor_by_close(self):
         self.down_continuous_obj = None # 向下连续对象

@@ -28,13 +28,13 @@ class TickTest():
     history = None # 行情实例
     # 定义参数
     hand_number = 1
-    trade_action = None 
-    actions = [] # 交易动作
+    trade_action = None  # 当前交易动作
+    actions = [] # 交易动作列表
     unit_value = None # 单位值
-    open_price_effective_trend = None # 开仓时有效趋势的终点
+    open_price_effective_trend = None # 开仓时有效趋势
     open_price_tick = None # 开仓时的tick数据
-    need_check_close_effective_trend = None
-    version = 'long'
+    need_check_close_effective_trend = None # 用于检查平仓时价格低于开仓时的有效趋势时，是否重置进入新的循环
+    version = 'long' # 版本信息
 
  
 
