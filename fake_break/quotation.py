@@ -257,7 +257,7 @@ class Quotation:
         # else:
         #     self.effective_trend_obj = None
 
-        if self.down_continuous_obj is not None and self.down_continuous_obj.length < self.effective_trend_length and self.down_continuous_obj.length > 10:
+        if self.down_continuous_obj is not None and self.down_continuous_obj.length > self.effective_trend_length:
             self.effective_trend_obj = deepcopy(self.down_continuous_obj) 
         else:
             self.effective_trend_obj = None
