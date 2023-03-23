@@ -251,7 +251,7 @@ class Quotation:
     初步的有效趋势 暂时只做开空版本
     """
     def handle_effective_trend(self, tick):
-        if self.up_continuous_obj is not None and self.up_continuous_obj.length > self.effective_trend_length and self.down_continuous_obj.length > 10:
+        if self.up_continuous_obj is not None and self.up_continuous_obj.length > self.effective_trend_length and self.up_continuous_obj.length > 10:
             self.effective_trend_obj = deepcopy(self.up_continuous_obj) 
         else:
             self.effective_trend_obj = None
