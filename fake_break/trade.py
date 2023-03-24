@@ -38,10 +38,10 @@ class Trade:
         direction = trend_obj.direction
 
         if direction == Constants.DIRECTION_UP:
-            if tick.current > last_obj.start and effective_status == FBCons.EFFECTIVE_STATUS_OF_UP:
+            if tick.current > last_obj.end and effective_status == FBCons.EFFECTIVE_STATUS_OF_UP:
                 return True
         elif direction == Constants.DIRECTION_DOWN:
-            if tick.current < last_obj.start and effective_status == FBCons.EFFECTIVE_STATUS_OF_DOWN:
+            if tick.current < last_obj.end and effective_status == FBCons.EFFECTIVE_STATUS_OF_DOWN:
                 return True
 
         return False
