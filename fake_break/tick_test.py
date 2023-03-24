@@ -89,7 +89,7 @@ class TickTest():
                     elif trend_obj.direction == Cons.DIRECTION_DOWN:
                         #self.add_action(tick, Cons.ACTION_OPEN_LONG, tick.current + self.unit_value)
 
-                         self.add_action(tick, Cons.ACTION_OPEN_SHORT, tick.current + self.unit_value)
+                        self.add_action(tick, Cons.ACTION_OPEN_SHORT, tick.current + self.unit_value)
 
                         self.open_price = tick.current + self.unit_value
                         self.open_price_tick = tick
