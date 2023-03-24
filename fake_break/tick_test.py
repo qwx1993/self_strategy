@@ -102,7 +102,7 @@ class TickTest():
         else:
             self.quotation.analysis(tick_obj)
             if self.trade_action == Cons.ACTION_CLOSE_LONG:
-                if Trade.close_by_appoint_price(self.trade_action, self.open_price_effective_trend.end, tick_obj):
+                if Trade.close_by_appoint_price(self.trade_action, last_obj.start, tick_obj):
                     self.add_action(tick, Cons.ACTION_CLOSE_LONG, tick.current - self.unit_value)
                     last_obj = self.quotation.up_interval_list[-1]
                     self.log_obj.info(f"vt_symbol => {self.vt_symbol} \nclose_direction:long \ntick => {tick_obj} \nlast_up_obj => {last_obj} \ndown_obj => {self.quotation.down_obj} \ncontinouns_status => {self.quotation.continouns_status}")
